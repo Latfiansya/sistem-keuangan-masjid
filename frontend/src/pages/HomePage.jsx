@@ -1,34 +1,62 @@
-import { useEffect, useState } from 'react'
-import { Info } from 'lucide-react'
-import { getHealth } from '../services/healthService.js'
+import { CalendarDays, Expand, Users, Heart, HeartPulse, Coins, ImageOff } from 'lucide-react'
+import { useOutletContext } from 'react-router'
+import Button from '../components/Button.jsx'
+import VisionMission from '../components/VisionMission.jsx'
+import AgendaSummary from '../components/AgendaSummary.jsx'
+
+const icons = { calendar: CalendarDays, expand: Expand, users: Users, heart: Heart, health: HeartPulse, economy: Coins }
 
 export default function HomePage() {
-  const [status, setStatus] = useState('Memeriksa koneksi data…')
-
-  useEffect(() => {
-    const controller = new AbortController()
-
-    getHealth({ signal: controller.signal })
-      .then((health) => {
-        if (!controller.signal.aborted) {
-          setStatus(`Sumber data: ${health.source}. Status: ${health.status}.`)
-        }
-      })
-      .catch((error) => {
-        if (!controller.signal.aborted) setStatus(error.message)
-      })
-
-    return () => controller.abort()
-  }, [])
+  const { content, error } = useOutletContext()
+  if (error) return <p role="alert" className="page-container content-status">{error}</p>
+  if (!content) return <p role="status" className="page-container content-status">Memuat konten Beranda…</p>
 
   return (
     <>
-      <h1 className="mb-4 text-2xl font-semibold">Beranda</h1>
-      <p>Fondasi aplikasi siap dikembangkan. Tampilan menunggu frame Figma resmi.</p>
-      <p role="status" className="mt-4 flex items-center gap-2 text-sm">
-        <Info size={16} aria-hidden="true" />
-        {status}
-      </p>
+      <section className="hero" aria-labelledby="hero-heading">
+        <div className="hero-copy">
+          <h1 id="hero-heading">MASJID<br />AL-HIDAYAH</h1>
+          <p>{content.heroDescription}</p>
+          <div className="hero-actions">
+            <Button disabled title="Halaman Agenda belum tersedia">Lihat Agenda</Button>
+            <Button to="/profil" variant="glass">Profil Masjid</Button>
+          </div>
+        </div>
+        <div className="hero-image-placeholder"><ImageOff aria-hidden="true" /><span>Placeholder foto Masjid Al-Hidayah<br /><small>Foto asli belum tersedia</small></span></div>
+      </section>
+
+      <section className="statistics page-container" aria-label="Sekilas masjid">
+        {content.statistics.map(({ label, value, icon }) => {
+          const Icon = icons[icon]
+          return <div className="stat-card" key={label}><Icon aria-hidden="true" /><p>{label}</p><strong>{value}</strong></div>
+        })}
+      </section>
+
+      <VisionMission vision={content.vision} missions={content.missions} />
+      <AgendaSummary agenda={content.agenda} />
+
+      <section className="prosperity-section" aria-labelledby="prosperity-heading">
+        <h2 id="prosperity-heading">Kemakmuran Masjid</h2>
+        <div className="program-grid">
+          {content.programs.map(({ title, description, icon }, index) => {
+            const Icon = icons[icon]
+            return (
+              <article key={title} className={`program-card${index === 1 ? ' program-card--featured' : ''}`}>
+                <div className="program-heading"><h3>{title}</h3><Icon aria-hidden="true" /></div>
+                <p>{description}</p>
+              </article>
+            )
+          })}
+        </div>
+      </section>
+
+      <section className="finance-cta" aria-labelledby="finance-heading">
+        <div>
+          <h2 id="finance-heading">Transparansi &amp; Akuntabilitas Keuangan</h2>
+          <p>Lihat ringkasan pemasukan dan pengeluaran dana Masjid Al-Hidayah secara realtime melalui kode akses yang dibagikan pengurus masjid.</p>
+          <Button to="/laporan-keuangan">Lihat Laporan Keuangan</Button>
+        </div>
+      </section>
     </>
   )
 }

@@ -1,6 +1,6 @@
 # Sistem Keuangan dan Profil Masjid Al-Hidayah
 
-Repository kolaborasi mahasiswa untuk frontend publik dan backend sistem keuangan masjid. Milestone 0 menyediakan fondasi teknis; halaman yang tersedia masih placeholder, menunggu frame Figma resmi dan kesepakatan kebutuhan bisnis.
+Repository kolaborasi mahasiswa untuk frontend publik dan backend sistem keuangan masjid. M1.1 mengimplementasikan layout publik dan Beranda berdasarkan referensi final lokal, dengan placeholder foto/logo. Profil dan Laporan tetap placeholder; halaman berikutnya menunggu instruksi terpisah.
 
 ## Teknologi dan prasyarat
 
@@ -33,7 +33,7 @@ Terminal pertama, frontend mandiri:
 npm run dev:frontend
 ```
 
-Buka `http://localhost:5173`. Route awal: `/`, `/profil`, `/laporan-keuangan`. Navbar dan Footer dipakai bersama melalui `PublicLayout`. Halaman tidak dikenal menampilkan placeholder 404.
+Buka `http://localhost:5173`. Route awal: `/`, `/profil`, `/laporan-keuangan`. Navbar dan Footer dipakai bersama melalui `PublicLayout`. Agenda, Kontak, dan Masuk Pengurus belum aktif. Halaman tidak dikenal menampilkan placeholder 404.
 
 Terminal kedua, backend mandiri:
 
@@ -68,9 +68,9 @@ VITE_DATA_SOURCE=mock
 VITE_API_BASE_URL=/api
 ```
 
-- `mock` adalah bawaan, tidak menghubungi backend. Status mock pada Beranda hanya contoh data teknis.
-- Ubah `VITE_DATA_SOURCE=api` untuk memakai endpoint health backend. Jalankan backend lalu restart Vite setelah mengubah `.env`.
-- Komponen memanggil `src/services/healthService.js`; service memilih mock atau HTTP dan menangani respons/error. Terapkan pola ini pada data dinamis berikutnya setelah kontrak disepakati.
+- `mock` adalah bawaan, tidak menghubungi backend. Beranda dan Footer memakai konten referensi dari `publicContentService`; konten ini belum menjadi data produksi terverifikasi.
+- `VITE_DATA_SOURCE=api` tersedia pada service health. Konten publik belum memiliki endpoint bisnis; Beranda menampilkan pesan integrasi belum tersedia pada mode ini. Restart Vite setelah mengubah `.env`.
+- `PublicLayout` memuat konten melalui `src/services/publicContentService.js` lalu membagikannya kepada Beranda. Service health tetap tersedia; komponen tidak memanggil API langsung.
 - Proxy Vite meneruskan `/api` ke `http://127.0.0.1:3000`, sehingga integrasi lokal tidak memerlukan CORS. Jika port backend berubah, sesuaikan target di `frontend/vite.config.js`.
 - Semua variabel `VITE_*` tersedia pada browser: jangan mengisinya dengan rahasia. Nilainya ditanam saat build.
 - Proxy hanya berlaku pada server development Vite. Untuk integrasi di hosting kelak, tim perlu menyepakati routing `/api` atau URL API dan kebijakan CORS. Hosting dengan BrowserRouter juga perlu fallback ke `index.html` untuk route frontend. Belum ada konfigurasi deployment pada milestone ini.
@@ -95,7 +95,7 @@ Untuk memeriksa hasil build lokal: `npm run preview --workspace frontend`. Previ
 frontend/
   src/
     components/  # PublicLayout, Navbar, Footer
-    pages/       # Placeholder halaman publik dan 404
+    pages/       # Beranda; placeholder Profil, Laporan, dan 404
     services/    # Pengambilan data melalui mock atau HTTP
     mocks/       # Data contoh teknis
     utils/       # Pembacaan konfigurasi frontend
