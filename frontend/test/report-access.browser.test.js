@@ -5,7 +5,7 @@ const baseUrl = process.env.REPORT_BROWSER_QA_URL
 const apiUrl = process.env.REPORT_BROWSER_API_QA_URL
 const cdpUrl = process.env.REPORT_BROWSER_CDP_URL
 
-test('interaksi gate pada Chrome terpisah', {
+test('interaksi gate dan laporan pada Chrome terpisah', {
   skip: !baseUrl || !apiUrl || !cdpUrl ? 'Jalankan server mock/API dan Chrome QA sesuai README.' : false,
   timeout: 30000,
 }, async (t) => {
@@ -57,6 +57,17 @@ test('interaksi gate pada Chrome terpisah', {
     await send('Input.insertText', { text: value })
   }
   const submit = () => evaluate('document.querySelector(".report-access-form").requestSubmit()')
+  const setDates = async (startDate, endDate) => {
+    await evaluate(`(() => {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
+      for (const [label, value] of ${JSON.stringify([['Tanggal awal', startDate], ['Tanggal akhir', endDate]])}) {
+        const input = document.querySelector('input[aria-label="' + label + '"]')
+        setter.call(input, value)
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      }
+    })()`)
+  }
+  const applyDates = () => evaluate('document.querySelector(".financial-custom-range").requestSubmit()')
 
   try {
     await send('Page.enable')
@@ -72,7 +83,7 @@ test('interaksi gate pada Chrome terpisah', {
     await t.test('sandi kosong menampilkan pesan tanpa membuka laporan', async () => {
       await submit()
       await waitFor('document.querySelector("[role=alert]")?.textContent.includes("Sandi wajib diisi")')
-      assert.equal(await evaluate('!!document.querySelector(".report-placeholder")'), false)
+      assert.equal(await evaluate('!!document.querySelector(".financial-report")'), false)
     })
     await t.test('sandi salah menampilkan loading lalu error dan tetap pada gate', async () => {
       await fillPassword('salah')
@@ -94,14 +105,58 @@ test('interaksi gate pada Chrome terpisah', {
       await waitFor('document.querySelector("form")?.getAttribute("aria-busy") === "true"')
       await waitFor('document.querySelector("button[type=submit]")?.disabled === false')
     })
-    await t.test('Enter dengan sandi benar membuka placeholder dan membersihkan input', async () => {
+    await t.test('Enter dengan sandi benar membuka laporan dan membersihkan input', async () => {
       await fillPassword('demo123')
       assert.equal(await evaluate('document.querySelector("#report-password").value'), 'demo123')
       await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' })
       await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
-      await waitFor('!!document.querySelector(".report-placeholder")')
+      await waitFor('!!document.querySelector(".financial-report")')
       assert.equal(await evaluate('document.querySelectorAll("input[type=password]").length'), 0)
       assert.equal(await evaluate('document.activeElement.tagName'), 'H1')
+      assert.equal(await evaluate('document.querySelector(".financial-results").getAttribute("aria-busy")'), 'true')
+    })
+    await t.test('laporan menampilkan 50 transaksi, total konsisten dan unduhan nonaktif', async () => {
+      await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 50')
+      assert.equal(await evaluate('document.querySelector(".financial-table--income .financial-subtotal").textContent'), 'Rp 10.665.500')
+      assert.equal(await evaluate('document.querySelector(".financial-table--expense .financial-subtotal").textContent'), 'Rp 8.771.500')
+      assert.equal(await evaluate('document.querySelector(".financial-summary-table tfoot td:last-child").textContent'), '20.484.700')
+      assert.equal(await evaluate('document.querySelector(".financial-export button").disabled'), true)
+      assert.equal(await evaluate('!!document.querySelector(".financial-presets select")'), false)
+    })
+    await t.test('draft tanggal baru berlaku setelah Terapkan dan saldo awal mengikuti mutasi sebelumnya', async () => {
+      await setDates('2026-04-03', '2026-04-05')
+      assert.equal(await evaluate('document.querySelectorAll(".financial-transactions-table tbody tr").length'), 50)
+      await applyDates()
+      await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 9')
+      assert.equal(await evaluate('document.querySelector(".financial-summary-table tfoot td:first-of-type").textContent'), '15.445.700')
+      assert.equal(await evaluate('document.querySelector(".financial-summary-table tfoot td:last-child").textContent'), '16.602.700')
+    })
+    await t.test('tanggal terbalik ditolak dan mempertahankan laporan sebelumnya', async () => {
+      await setDates('2026-04-30', '2026-04-01')
+      await applyDates()
+      await waitFor('document.querySelector(".financial-filter-error")?.textContent.includes("tidak boleh melebihi")')
+      assert.equal(await evaluate('document.querySelectorAll(".financial-transactions-table tbody tr").length'), 9)
+    })
+    await t.test('hari kosong dalam April menampilkan tabel kosong dan saldo terbawa', async () => {
+      await setDates('2026-04-04', '2026-04-04')
+      await applyDates()
+      await waitFor('document.querySelectorAll(".financial-table-empty").length === 2')
+      assert.equal(await evaluate('document.querySelector(".financial-summary-table tfoot td:last-child").textContent'), '16.815.700')
+    })
+    await t.test('preset mingguan memakai akhir April dan memperbarui tabel serta ringkasan', async () => {
+      await evaluate(`document.querySelector('.financial-presets button').click()`)
+      await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 14')
+      assert.equal(await evaluate('document.querySelector(".financial-summary-table tfoot td:last-child").textContent'), '20.484.700')
+    })
+    await t.test('preset tiga bulan dan bulan tanpa data tidak ditampilkan sebagai saldo nol', async () => {
+      await evaluate('document.querySelectorAll(".financial-presets button")[2].click()')
+      await waitFor('document.querySelector(".financial-status")?.textContent.includes("belum lengkap")')
+      assert.equal(await evaluate('document.querySelectorAll(".financial-summary-table").length'), 0)
+      await evaluate(`(() => { const e=document.querySelector('.financial-month select'); e.value='2026-03'; e.dispatchEvent(new Event('change',{bubbles:true})) })()`)
+      await waitFor('document.querySelector("#financial-detail-heading").textContent.includes("Maret 2026") && document.querySelector(".financial-status")?.textContent.includes("belum lengkap")')
+      assert.equal(await evaluate('document.querySelectorAll(".financial-transactions-table").length'), 0)
+      await evaluate(`document.querySelectorAll('.financial-presets button')[1].click()`)
+      await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 50')
     })
     await t.test('sandi/status tidak ditulis ke URL, storage atau cookie', async () => {
       assert.equal(await evaluate('localStorage.length + sessionStorage.length'), 0)
@@ -112,7 +167,7 @@ test('interaksi gate pada Chrome terpisah', {
       await send('Page.reload', { ignoreCache: true })
       await waitFor('!!document.querySelector("#report-password")')
       assert.equal(await evaluate('document.querySelector("#report-password").value'), '')
-      assert.equal(await evaluate('!!document.querySelector(".report-placeholder")'), false)
+      assert.equal(await evaluate('!!document.querySelector(".financial-report")'), false)
     })
     await t.test('mode API gagal dengan pesan integrasi dan dapat dicoba kembali', async () => {
       await openGate(apiUrl)
@@ -120,7 +175,7 @@ test('interaksi gate pada Chrome terpisah', {
       await submit()
       await waitFor('document.querySelector("[role=alert]")?.textContent.includes("API belum tersedia")')
       assert.equal(await evaluate('document.querySelector("button[type=submit]").disabled'), false)
-      assert.equal(await evaluate('!!document.querySelector(".report-placeholder")'), false)
+      assert.equal(await evaluate('!!document.querySelector(".financial-report")'), false)
     })
     await t.test('CTA Beranda dan tautan Footer seluruh halaman membuka gate', async () => {
       for (const route of ['/', '/agenda', '/profil', '/kontak']) {
@@ -140,8 +195,8 @@ test('interaksi gate pada Chrome terpisah', {
     await t.test('navigasi keluar setelah akses berhasil mengembalikan gate saat dibuka lagi', async () => {
       await fillPassword('demo123')
       await submit()
-      await waitFor('!!document.querySelector(".report-placeholder")')
-      await evaluate('document.querySelector(".report-placeholder a").click()')
+      await waitFor('!!document.querySelector(".financial-report")')
+      await evaluate('document.querySelector(".financial-report a").click()')
       await waitFor('location.pathname === "/" && !!document.querySelector(".hero")')
       await evaluate('document.querySelector(".finance-cta a").click()')
       await waitFor('!!document.querySelector("#report-password")')

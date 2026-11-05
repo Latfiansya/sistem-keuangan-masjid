@@ -1,22 +1,85 @@
 import { useEffect, useRef, useState } from 'react'
-import Button from '../components/Button.jsx'
+import { ArrowLeft, CalendarDays, Download } from 'lucide-react'
+import { Link } from 'react-router'
+import FinancialTable from '../components/FinancialTable.jsx'
+import BalanceSummary from '../components/BalanceSummary.jsx'
 import ReportAccessPanel from '../components/ReportAccessPanel.jsx'
+import { getReport } from '../services/reportService.js'
+import { DEFAULT_REPORT_RANGE, getMonthRange, getPresetRange, validateReportRange } from '../utils/reportCalculations.js'
+import { formatReportMonth, formatReportPeriod } from '../utils/reportFormatters.js'
 
 export default function FinancialReportPage() {
   const [hasAccess, setHasAccess] = useState(false)
+  const [range, setRange] = useState({ ...DEFAULT_REPORT_RANGE })
+  const [draft, setDraft] = useState({ ...DEFAULT_REPORT_RANGE })
+  const [activePreset, setActivePreset] = useState('custom')
+  const [showCustomRange, setShowCustomRange] = useState(true)
+  const [filterError, setFilterError] = useState('')
+  const [reportState, setReportState] = useState({ report: null, loading: true, error: '' })
   const heading = useRef(null)
   useEffect(() => {
     window.scrollTo(0, 0)
     if (hasAccess) heading.current?.focus()
   }, [hasAccess])
 
+  useEffect(() => {
+    if (!hasAccess) return
+    const controller = new AbortController()
+    getReport({ ...range, signal: controller.signal })
+      .then((report) => { if (!controller.signal.aborted) setReportState({ report, loading: false, error: '' }) })
+      .catch((cause) => { if (!controller.signal.aborted) setReportState({ report: null, loading: false, error: cause.message }) })
+    return () => controller.abort()
+  }, [hasAccess, range])
+
+  function applyRange(nextRange, preset, showCustom) {
+    try {
+      validateReportRange(nextRange)
+      setReportState((previous) => ({ ...previous, loading: true, error: '' }))
+      setRange(nextRange)
+      setDraft(nextRange)
+      setActivePreset(preset)
+      setShowCustomRange(showCustom)
+      setFilterError('')
+    } catch (cause) { setFilterError(cause.message) }
+  }
+
+  const { report, loading, error } = reportState
+  const period = formatReportPeriod(range)
+  const year = range.startDate.slice(0, 4) === range.endDate.slice(0, 4) ? range.startDate.slice(0, 4) : `${range.startDate.slice(0, 4)}–${range.endDate.slice(0, 4)}`
+
   return (
     <main className={`report-page${hasAccess ? ' report-page--opened' : ''}`}>
-      {hasAccess ? <section className="report-placeholder">
-        <h1 ref={heading} tabIndex={-1}>Laporan Keuangan</h1>
-        <p>Tampilan dan kebutuhan data laporan akan disepakati pada milestone berikutnya.</p>
-        <Button to="/">Kembali ke Beranda</Button>
-      </section> : <ReportAccessPanel onAccessGranted={() => setHasAccess(true)} />}
+      {hasAccess ? <div className="financial-report">
+        <header className="financial-header">
+          <Link to="/" className="financial-navigation"><ArrowLeft aria-hidden="true" />Beranda</Link>
+          <div className="financial-header-identity"><h1 ref={heading} tabIndex={-1}>Laporan Keuangan {year}</h1><p>{report?.name ?? 'Masjid Al-Hidayah'}</p><small>Data contoh pengembangan · bukan laporan produksi</small></div>
+          <div className="financial-export"><button type="button" className="financial-navigation" disabled aria-describedby="financial-export-status"><Download aria-hidden="true" />Unduh</button><small id="financial-export-status">Unduhan belum tersedia.</small></div>
+        </header>
+
+        <section className="financial-filters" aria-labelledby="financial-detail-heading">
+          <div className="financial-filters-top"><div><h2 id="financial-detail-heading">Detail {period}</h2><p>Rincian pemasukan, pengeluaran, dan resume saldo bulan berjalan</p></div><div className="financial-presets" aria-label="Pilihan periode">
+            {[['1w', '1 minggu terakhir'], ['1m', '1 bulan terakhir'], ['3m', '3 bulan terakhir']].map(([id, label]) => <button key={id} type="button" className={activePreset === id ? 'is-active' : ''} aria-pressed={activePreset === id} onClick={() => applyRange(getPresetRange(id), id, false)}>{label}</button>)}
+            <button type="button" className={activePreset === 'custom' ? 'is-active' : ''} aria-pressed={activePreset === 'custom'} onClick={() => { setActivePreset('custom'); setShowCustomRange(true) }}><CalendarDays aria-hidden="true" />Pilih Tanggal</button>
+          </div></div>
+          <div className="financial-filters-bottom">
+            <form className="financial-custom-range" onSubmit={(event) => { event.preventDefault(); applyRange({ ...draft }, 'custom', true) }} noValidate>
+              {showCustomRange && <><span className="financial-range-label"><CalendarDays aria-hidden="true" />Rentang Kustom:</span>
+                <label className="financial-date-control"><CalendarDays aria-hidden="true" /><span><small>Tanggal Awal</small><input type="date" aria-label="Tanggal awal" value={draft.startDate} onChange={(event) => setDraft((previous) => ({ ...previous, startDate: event.target.value }))} /></span></label>
+                <label className="financial-date-control"><CalendarDays aria-hidden="true" /><span><small>Tanggal Akhir</small><input type="date" aria-label="Tanggal akhir" value={draft.endDate} onChange={(event) => setDraft((previous) => ({ ...previous, endDate: event.target.value }))} /></span></label>
+                <button type="submit" className="financial-apply">Terapkan</button></>}
+            </form>
+            <label className="financial-month">Pilih Bulan:<select aria-label="Pilih bulan laporan" value={range.endDate.slice(0, 7)} onChange={(event) => applyRange(getMonthRange(event.target.value), 'month', false)}>{(report?.months ?? ['2026-04']).map((month) => <option key={month} value={month}>{formatReportMonth(month)}</option>)}</select></label>
+          </div>
+          {filterError && <p role="alert" className="financial-filter-error">{filterError}</p>}
+        </section>
+
+        <div className="financial-results" aria-busy={loading}>
+          {loading ? <p role="status" className="financial-status">Memuat laporan keuangan…</p> : error ? <p role="alert" className="financial-status">{error}</p> : !report ? <p role="status" className="financial-status">Laporan belum tersedia.</p> : report.status === 'unavailable' ? <p role="status" className="financial-status">{report.message}</p> : <>
+            <div className="financial-transactions-grid">{['income', 'expense'].map((type) => <FinancialTable key={type} type={type} transactions={report.transactions.filter((item) => item.type === type)} subtotal={report.summary.totals[type]} categories={report.summary.rows} />)}</div>
+            <BalanceSummary summary={report.summary} period={formatReportPeriod(report.range)} />
+          </>}
+        </div>
+      </div> : <ReportAccessPanel onAccessGranted={() => setHasAccess(true)} />}
     </main>
   )
 }

@@ -6,7 +6,7 @@ Sembilan tampilan user telah dinyatakan final oleh pengguna. Referensi implement
 | --- | --- | --- | --- |
 | Beranda (`HomePage`) | `/` | `01-beranda.png` | HTML/CSS dan mock melalui service; foto/logo Blade serta Plus Jakarta Sans lokal terintegrasi pada M1.1a |
 | Profil Masjid (`ProfilePage`) | `/profil` | `03-profil.png` | M1.3: header, statistik bersama, visi-misi, linimasa, tujuh pengurus, CTA Kontak |
-| Laporan Keuangan (`FinancialReportPage`) | `/laporan-keuangan` | `05-laporan.png`, `07-token.png` | M1.5a: gate sandi bersama; laporan setelah akses masih placeholder M1.5b |
+| Laporan Keuangan (`FinancialReportPage`) | `/laporan-keuangan` | `05-laporan.png`, `07-token.png` | M1.5a: gate sandi; M1.5b: laporan mock April 2026, filter tanggal, dua tabel dan ringkasan |
 | Agenda (`AgendaPage`) | `/agenda` | `02-agenda.png` | M1.2: banner dan kelompok 5/2/5, mock/service bersama Beranda, responsive |
 | Kontak (`ContactPage`) | `/kontak` | `04-kontak.png` | M1.4: Donasi, informasi takmir dan placeholder lokasi; data transaksi/kontak menunggu konfirmasi |
 | Pilihan format/pratinjau | Belum diterapkan | `06-format-unduhan.png`, `08-preview-pdf.png`, `09-preview-png.png` | Di luar M1.1 |
@@ -115,3 +115,21 @@ QA Chrome headless development dan preview build pada 1728 × 1080, 1366 × 768 
 Regresi empat halaman publik: geometri identik dengan baseline M1.4 pada ketiga viewport. Sembilan dari 12 PNG identik; Beranda mobile, Profil desktop dan Kontak laptop yang berbeda ditinjau visual tanpa perubahan komposisi. Belum merupakan kesamaan piksel dengan raster akses: halo/shadow, bentuk ikon dan pemenggalan teks masih pendekatan CSS. Frame akses tidak menunjukkan seluruh tinggi viewport dan belum tersedia desain mobile resmi.
 
 Laporan tetap placeholder; tabel/filter M1.5b dan ekspor M1.6 belum dibuat. Gate hanya pembatas antarmuka; endpoint laporan tanpa autentikasi tetap dapat diakses langsung jika nanti tersedia.
+
+
+## M1.5b — Laporan keuangan publik
+
+Referensi final `design-references/user/05-laporan.png` (1728 × 3225 px). Struktur/konten/interaksi diperiksa pada `resources/views/pages/laporan/index.blade.php`, partial `trx-row`/`resume-table`, `data.php` dan CSS/JavaScript terkait, commit Blade `12e0155f6a5aba59f4776403c711082f27fa2dce`. Tidak mengubah repository sumber, menggunakan Figma MCP, atau mengimpor stylesheet Laravel utuh.
+
+- FinancialReportPage mempertahankan state gate M1.5a dan route `/laporan-keuangan`. Setelah sandi benar, placeholder diganti laporan putih tanpa Navbar/Footer. ReportAccessPanel dan fungsi pengecekan sandi tidak diubah; refresh dan keluar–masuk route tetap meminta sandi.
+- Header berisi Beranda, identitas/tahun dan Unduh; informasi periode, tiga preset dan Pilih Tanggal mengikuti posisi final. Rentang kustom terlihat pada awal April. Pilihan bulan mengikuti opsi referensi Blade, tetapi hanya April memiliki data. Tidak memigrasikan filter kategori atau sorting tambahan dari Blade.
+- `FinancialTable` dipakai dua kali: pemasukan teal, pengeluaran merah. Setiap transaksi berisi uraian, tanggal, badge kategori dan nominal, dengan jumlah/subtotal pada header. `BalanceSummary` memakai tabel semantik untuk tiga kategori dan total. Tidak membuat komponen untuk tiap baris/label.
+- Satu mock berisi 50 transaksi integer melalui getReport; fungsi kalkulasi sederhana menyediakan saldo awal/akhir, subtotal dan total. Keterangan “Data contoh pengembangan · bukan laporan produksi” terlihat pada halaman. Unduh nonaktif dengan status “Unduhan belum tersedia”; tidak membuat state/route format atau ekspor.
+- Kas Masjid memakai pengeluaran hasil transaksi **Rp5.791.500**, sesuai final, menggantikan angka keliru **Rp6.791.500** pada resume Blade. Tanggal **Beli Sapu mengikuti 26 April 2026 pada final**, sementara Blade menuliskan 25 April; nominal Rp22.000 tidak diubah. Uraian yang sudah disingkat pada sumber tidak dikarang kepanjangannya.
+- Filter tanggal inklusif; draft kustom baru berlaku setelah Terapkan. Saldo awal rentang di dalam April dihitung dari saldo 1 April ditambah pemasukan/pengeluaran sebelumnya. Preset mingguan 24–30 April, bulanan 1–30 April, tiga bulan 1 Februari–30 April. Rentang melampaui cakupan menampilkan status data belum lengkap dan menyembunyikan angka/tabel; hari kosong di dalam cakupan menampilkan transaksi nol dengan saldo terbawa.
+
+CSS terbatas kelas `financial-*` dan kondisi report-page--opened; gate tidak berubah. Desktop memakai dua kolom dengan baris sekitar 70,5 px, laptop 64 px; mobile menumpuk pemasukan lalu pengeluaran, dengan baris 78 px dan scroll horizontal lokal hanya pada tabel resume. Iterasi merapatkan resume, memperbaiki padding ganda mobile, dan menjaga preset satu baris di laptop.
+
+QA Chrome development dan preview build pada 1728 × 1080, 1366 × 768, 390 × 844, zoom 100%: PASS. Panjang akhir sekitar 3239/2952/5104 px. Desktop sangat dekat dengan panjang raster 3225 px; tambahan keterangan mock dan status unduhan tetap terlihat. Pemeriksaan meliputi 17/33 baris, subtotal/saldo, loading/empty/error tanggal/periode tidak lengkap, header tidak bertabrakan dan scroll lokal resume tanpa overflow halaman. Screenshot di `tmp/m15b-qa/`, tidak di-stage.
+
+Regresi Beranda/Agenda/Profil/Kontak serta gate: geometri identik pada semua viewport. Sebanyak 13 dari 15 PNG identik; Beranda mobile dan Profil desktop ditinjau visual tanpa perubahan komposisi. Perbedaan visual tersisa: pemformatan input tanggal native browser, pemenggalan/ellipsis uraian dan kategori panjang, detail tipografi/border. Belum tersedia desain mobile resmi. Fokus keyboard pada heading mempertahankan indikator fokus bersama.

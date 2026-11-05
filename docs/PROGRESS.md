@@ -292,3 +292,54 @@ Halo/shadow, ikon dan pemenggalan teks belum identik piksel dengan raster. Frame
 README, DESIGN_MAP dan API_CONTRACT diperbarui. Status, daftar file, diff, whitespace, file sensitif serta staged diff diperiksa. Hanya kode/test/dokumentasi M1.5a disiapkan; tidak ada screenshot QA, temporary files, referensi desain, `.env`, credential produksi atau build di staging. Tidak memanggil Figma MCP dan tidak menjalankan commit, push, merge, rebase atau perubahan backend.
 
 Usulan pesan commit: `feat: tambahkan gate sandi bersama untuk akses laporan keuangan`.
+
+## M1.5b — Laporan keuangan publik
+
+Status: implementasi selesai dan tervalidasi; siap ditinjau serta di-commit manual. Branch `feature/frontend-publik`; awal pekerjaan bersih selain `design-references/` untracked. Tidak melanjutkan M1.6.
+
+### Implementasi
+
+- FinancialReportPage mengganti placeholder setelah gate dengan laporan putih: header masjid/tahun, Beranda, periode/rentang tanggal, dua tabel, jumlah/subtotal transaksi, dan resume saldo kategori/total. ReportAccessPanel, sandi demo, state akses dan route tetap dipertahankan; tidak ada Navbar/Footer publik pada laporan.
+- FinancialTable digunakan dua kali, BalanceSummary menampilkan rekapitulasi. Mock dinamis hanya diakses melalui reportService.getReport; utilitas kalkulasi dipisahkan dari format tampilan. Tidak ada filter kategori/sorting tambahan, komponen tiap baris, dependency baru atau perubahan backend.
+- Laporan diberi keterangan jelas sebagai data contoh pengembangan, bukan laporan produksi. Tombol Unduh terlihat tetapi nonaktif dengan status, tanpa state/route pemilihan format atau ekspor.
+- Filter tanggal inklusif dan draft berlaku setelah Terapkan; tanggal kosong/tidak valid/terbalik ditolak. Saldo awal kustom berasal dari saldo awal April ditambah mutasi sebelumnya. Preset memakai akhir April, bukan tanggal komputer. Bulan/rentang di luar cakupan menampilkan data belum tersedia/lengkap, bukan nol. Loading, hari tanpa transaksi, error tanggal dan error integrasi API ditangani.
+
+### Audit dan rekonsiliasi
+
+Transaksi Blade pada commit `12e0155f6a5aba59f4776403c711082f27fa2dce` diparsing menjadi 50 baris dengan ID stabil, tanggal ISO, jenis, uraian, kategori dan integer Rupiah. Penjumlahan aktual cocok dengan audit; sumber tidak diubah.
+
+| Kategori | Saldo awal | Pemasukan | Pengeluaran | Saldo akhir |
+| --- | ---: | ---: | ---: | ---: |
+| Kas Masjid | 15.256.700 | 8.657.500 | 5.791.500 | 18.122.700 |
+| Pembangunan & Pemeliharaan | 1.335.000 | 685.000 | 300.000 | 1.720.000 |
+| Jum’at Berkah | 1.999.000 | 1.323.000 | 2.680.000 | 642.000 |
+| TOTAL | 18.590.700 | 10.665.500 | 8.771.500 | 20.484.700 |
+
+Terdapat 17 pemasukan dan 33 pengeluaran. Angka 6.791.500 pada resume Kas Masjid di Blade salah; penjumlahan transaksi dan desain final menunjukkan 5.791.500. Ringkasan dihitung ulang, tidak menyalin angka salah. Beli Sapu mengikuti tanggal 26 April pada desain, sementara Blade menuliskan 25 April; nominal 22.000 tidak diubah. Uraian yang sudah disingkat di sumber dipertahankan.
+
+Rentang 3–5 April menghasilkan 9 transaksi, saldo awal 15.445.700 dan saldo akhir 16.602.700. Rentang 24–30 April menghasilkan 14 transaksi, saldo awal 15.195.700, pemasukan 5.979.000, pengeluaran 690.000 dan saldo akhir 20.484.700. Pada 4 April tidak ada transaksi; saldo terbawa 16.815.700. Ketiganya diverifikasi otomatis; mutasi mock tidak terjadi.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan.
+- Seluruh test dengan konfigurasi Chrome QA: PASS — 43 hasil frontend (26 unit/struktur, 16 skenario browser dan satu induk suite) serta 3 test backend; tidak ada test dilewati. Delapan test laporan baru mencakup audit/kategori, batas tanggal, saldo awal khusus, validasi, periode tidak lengkap, hari kosong, konsistensi komponen, isolasi data, pembatalan dan error API. Suite browser gate diperluas untuk laporan/filter tanpa mengubah mekanisme gate.
+- `npm run build`: PASS. Suite interaksi juga dijalankan terhadap preview hasil build: PASS.
+- Browser memastikan sandi benar/salah, Enter, submit ganda, loading, refresh, tidak ada penyimpanan akses, navigasi CTA/Footer/Beranda, perubahan draft/Terapkan, tanggal terbalik, saldo hari kosong, preset dan bulan tanpa data.
+
+| Viewport | QA visual Chrome development dan preview build pada zoom 100% |
+| --- | --- |
+| 1728 × 1080 | PASS — kontainer 1528 px, dua tabel, baris sekitar 70,5 px, panjang 3239 px dibanding raster 3225 px |
+| 1366 × 768 | PASS — kontainer 1209 px, preset satu baris, baris 64 px, panjang 2952 px |
+| 390 × 844 | PASS — kontainer 358 px, pemasukan lalu pengeluaran, baris 78 px, panjang 5104 px; resume bergeser lokal |
+
+Screenshot dibandingkan dengan 05-laporan.png dan diperbaiki secara iteratif: merapatkan resume, memperbaiki padding mobile, posisi preset laptop dan kepadatan baris. Loading/empty/error/periode tidak lengkap, subtotal, saldo, font lokal dan header tanpa tabrakan diperiksa pada tiga viewport. Tidak ada overflow halaman atau error runtime/aset aplikasi selain favicon bawaan. Screenshot viewport/panjang penuh/resume/error tersimpan di `tmp/m15b-qa/`, diabaikan Git.
+
+Regresi empat halaman publik dan gate: geometri identik dengan baseline M1.5a pada seluruh viewport; 13 dari 15 PNG identik. Beranda mobile dan Profil desktop yang berbeda ditinjau visual tanpa perubahan komposisi. Kode ReportAccessPanel dan badan fungsi checkReportPassword tetap sama.
+
+### Batasan dan Git
+
+Input tanggal memakai format/kontrol native browser; pemenggalan teks, ellipsis kategori dan detail font/border belum identik piksel. Belum ada desain mobile resmi. Penanda mock/status unduhan merupakan keterangan yang diperlukan. Gate tetap hanya pembatas antarmuka dan tidak melindungi endpoint laporan publik. GET laporan/POST sandi masih usulan, tidak dibuat pada Express; cakupan mock hanya April.
+
+README, DESIGN_MAP dan API_CONTRACT diperbarui. Status, diff, daftar file, whitespace dan staged diff diperiksa; hanya file kode/test/dokumentasi M1.5b disiapkan. Tidak menyertakan referensi, screenshot QA, temporary files, `.env`, credential, dependency atau build. Tidak memanggil Figma MCP; tidak melakukan commit, push, merge, rebase, perubahan backend atau pekerjaan M1.6.
+
+Usulan pesan commit: `feat: implementasikan laporan keuangan publik dan filter periode`.

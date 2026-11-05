@@ -101,17 +101,54 @@ Profil memakai `getPublicContent({ signal })` yang sudah tersedia, melalui konte
 
 Implementasi saat ini hanya frontend. `reportService.checkReportPassword(password, { signal })` mengembalikan `{ valid: boolean }` pada mode mock. Input kosong/bukan teks ditolak; mock `demo123` dibandingkan persis, termasuk kapital/spasi, dengan jeda 300 ms untuk memeriksa loading. Pembatalan melalui AbortSignal didukung. Sandi demo bukan rahasia atau kredensial produksi dan tidak digunakan untuk validasi mode API.
 
-Mode `VITE_DATA_SOURCE=api` sekarang memberikan error “Pemeriksaan sandi melalui API belum tersedia” tanpa melakukan permintaan HTTP. Tidak menambahkan endpoint atau mengubah Express. Pengambilan transaksi/ringkasan belum diimplementasikan.
+Mode `VITE_DATA_SOURCE=api` sekarang memberikan error “Pemeriksaan sandi melalui API belum tersedia” tanpa melakukan permintaan HTTP. Tidak menambahkan endpoint atau mengubah Express. Pengambilan transaksi/ringkasan ditambahkan melalui mock pada M1.5b; lihat bagian berikut.
 
 Usulan kontrak backend untuk integrasi berikutnya, **belum tersedia**:
 
 | Metode | Path | Permintaan | Hasil yang diusulkan |
 | --- | --- | --- | --- |
 | POST | `/api/public/report/check-password` | JSON `{ "password": "<sandi dari input>" }` | HTTP 200 `{ "success": true, "data": { "valid": true } }` atau `valid: false` |
-| GET | `/api/public/finance/report` | Parameter periode/filter dibahas pada M1.5b | Payload laporan belum ditetapkan |
+| GET | `/api/public/finance/report` | Usulan parameter `startDate`, `endDate` | Usulan payload M1.5b di bawah; endpoint belum tersedia |
 
 HTTP 200 pada POST berarti pemeriksaan berhasil dijalankan; valid/tidak valid adalah hasil pemeriksaan. Input kosong atau bentuk permintaan tidak valid diusulkan HTTP 400 dengan format error proyek. Sandi backend kelak berupa environment variable biasa, misalnya `REPORT_SHARED_PASSWORD`, tanpa awalan VITE dan tanpa nilai produksi di repository. Tidak perlu hashing, akun, login/logout, JWT, session, refresh token, kedaluwarsa atau penyimpanan browser.
 
 Akses berhasil hanya state React pada FinancialReportPage. Input dibersihkan, state dibuang saat halaman dilepas, dan refresh meminta sandi kembali. Tidak ada nilai sandi/status yang dimasukkan ke URL, localStorage, sessionStorage atau cookie oleh aplikasi.
 
 **Batasan:** pengecekan sandi hanya pembatas antarmuka. Respons `valid: true` bukan token/otorisasi dan tidak melindungi GET laporan. Endpoint laporan tanpa autentikasi tetap dapat diakses langsung tanpa melewati gate. Keputusan sederhana ini mengikuti kebutuhan tim; tidak mengklaim perlindungan data oleh gate.
+
+
+## Laporan publik — M1.5b (frontend mock)
+
+`reportService.getReport({ startDate, endDate, signal })` menyediakan hasil laporan. Bawaan 1–30 April 2026; mode mock tidak menghubungi backend, dengan jeda simulasi 150 ms. Signal diperiksa sebelum dan setelah menunggu; hasil request yang dibatalkan tidak diterapkan ke halaman. Mode API memberi error “Laporan keuangan melalui API belum tersedia”, tanpa membuat endpoint atau melakukan HTTP.
+
+Struktur sumber mock:
+
+- `name`, `coverage: { startDate, endDate }`, `months` berupa daftar opsi bulan dari referensi.
+- `categories`: `id`, `label`, `color`, `openingBalance` pada awal cakupan, berupa integer Rupiah.
+- `transactions`: `id` stabil, `date` dalam YYYY-MM-DD, `type` income/expense, `description`, `categoryId`, `amount` integer Rupiah. Ada 17 income dan 33 expense.
+- Sumber terbatas April 2026. Opsi bulan lain tidak berarti datanya tersedia. Semua transaksi merupakan data contoh pengembangan berdasarkan referensi, bukan laporan produksi terverifikasi.
+
+Hasil getReport: `name`, `coverage`, `months`, `range`, `status`, `transactions`, `summary`. Pada status ready, summary berisi rows per kategori (`id`, `label`, `color`, `openingBalance`, `income`, `expense`, `closingBalance`) dan totals empat nilai numerik. Pada status unavailable, transaksi kosong, summary null, dan message menjelaskan cakupan tidak lengkap. UI tidak menampilkan nol sebagai laporan periode yang tidak diketahui.
+
+Aturan kalkulasi:
+
+1. Validasi tanggal kalender, tanggal wajib diisi dan awal tidak melebihi akhir. Perbandingan batas tanggal ISO inklusif; tanggal kalender tidak digeser timezone.
+2. Saldo awal kategori pada tanggal pilihan = saldo awal 1 April + pemasukan sebelum tanggal awal − pengeluaran sebelum tanggal awal.
+3. Pemasukan/pengeluaran rentang dijumlahkan dari transaksi terpilih; saldo akhir = saldo awal rentang + pemasukan − pengeluaran. Totals berasal dari penjumlahan kategori. Jumlah transaksi dari panjang daftar.
+4. Nominal/saldo awal berupa safe integer Rupiah; pemformatan id-ID hanya pada presentasi. Data mock tidak diubah oleh filter atau perubahan hasil service.
+5. Rentang di luar cakupan ditandai unavailable; tidak mengasumsikan saldo awal atau transaksi bulan lain bernilai nol. Hari tanpa transaksi di dalam April tetap merupakan laporan lengkap dengan saldo terbawa.
+
+Rekonsiliasi April 2026, seluruh nominal di tabel ini Rupiah:
+
+| Kategori | Saldo awal | Pemasukan | Pengeluaran | Saldo akhir |
+| --- | ---: | ---: | ---: | ---: |
+| Kas Masjid | 15.256.700 | 8.657.500 | 5.791.500 | 18.122.700 |
+| Kotak Pembangunan & Pemeliharaan | 1.335.000 | 685.000 | 300.000 | 1.720.000 |
+| Kotak Jum’at Berkah | 1.999.000 | 1.323.000 | 2.680.000 | 642.000 |
+| TOTAL | 18.590.700 | 10.665.500 | 8.771.500 | 20.484.700 |
+
+Penjumlahan aktual cocok dengan audit. Resume Blade salah menuliskan pengeluaran Kas Masjid 6.791.500; baris transaksi dan desain final mendukung 5.791.500. Tidak mengubah transaksi agar cocok dengan angka ringkasan. Tanggal Beli Sapu dipilih 26 April sesuai final, menggantikan 25 April pada Blade; nominal tetap 22.000 dan total bulan tidak berubah.
+
+Preset mock menggunakan acuan 30 April 2026: 1w = 24–30 April; 1m = 1–30 April; 3m = 1 Februari–30 April (unavailable). Draft kustom berlaku setelah Terapkan. Pilihan bulan menggunakan awal/akhir bulan kalender. Tidak ada filter kategori atau sorting. Unduh masih nonaktif, tanpa berkas atau proses ekspor.
+
+Usulan GET `/api/public/finance/report?startDate=2026-04-01&endDate=2026-04-30` nantinya mengembalikan envelope proyek dengan data berbentuk hasil getReport di atas, termasuk saldo awal sesuai rentang dan ringkasan yang konsisten dengan transaksi. Skema HTTP final dan sumber saldo memerlukan kesepakatan backend; ini bukan endpoint yang sudah diimplementasikan. Gate sandi tetap hanya pembatas antarmuka dan tidak melindungi endpoint laporan tanpa autentikasi.

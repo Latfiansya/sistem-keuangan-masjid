@@ -59,6 +59,6 @@ test('route laporan selalu diawali gate tanpa layout publik atau klaim enkripsi'
     assert.match(html, /type="password"/)
     assert.match(html, /type="submit"/)
     assert.match(html, /Akses menggunakan sandi bersama/)
-    assert.doesNotMatch(html, /<nav|<footer|report-placeholder|aman.*terenkripsi|demo123/)
+    assert.doesNotMatch(html, /<nav|<footer|financial-report|aman.*terenkripsi|demo123/)
   }
 })
