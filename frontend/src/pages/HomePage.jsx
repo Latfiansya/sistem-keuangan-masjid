@@ -1,4 +1,4 @@
-import { CalendarDays, Expand, Users, Heart, HeartPulse, Coins, ImageOff } from 'lucide-react'
+import { CalendarDays, Expand, Users, Heart, HeartPulse, Coins } from 'lucide-react'
 import { useOutletContext } from 'react-router'
 import Button from '../components/Button.jsx'
 import VisionMission from '../components/VisionMission.jsx'
@@ -14,6 +14,7 @@ export default function HomePage() {
   return (
     <>
       <section className="hero" aria-labelledby="hero-heading">
+        <img className="hero-image" src="/assets/masjid-background.webp" width="1928" height="1089" alt="Masjid Al-Hidayah Sorolaten" fetchPriority="high" />
         <div className="hero-copy">
           <h1 id="hero-heading">MASJID<br />AL-HIDAYAH</h1>
           <p>{content.heroDescription}</p>
@@ -22,7 +23,6 @@ export default function HomePage() {
             <Button to="/profil" variant="glass">Profil Masjid</Button>
           </div>
         </div>
-        <div className="hero-image-placeholder"><ImageOff aria-hidden="true" /><span>Placeholder foto Masjid Al-Hidayah<br /><small>Foto asli belum tersedia</small></span></div>
       </section>
 
       <section className="statistics page-container" aria-label="Sekilas masjid">

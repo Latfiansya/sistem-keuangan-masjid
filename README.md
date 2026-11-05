@@ -1,6 +1,6 @@
 # Sistem Keuangan dan Profil Masjid Al-Hidayah
 
-Repository kolaborasi mahasiswa untuk frontend publik dan backend sistem keuangan masjid. M1.1 mengimplementasikan layout publik dan Beranda berdasarkan referensi final lokal, dengan placeholder foto/logo. Profil dan Laporan tetap placeholder; halaman berikutnya menunggu instruksi terpisah.
+Repository kolaborasi mahasiswa untuk frontend publik dan backend sistem keuangan masjid. M1.1a melengkapi layout publik dan Beranda dengan foto serta logo dari referensi Blade dan font Plus Jakarta Sans lokal, sambil mempertahankan refinement skala M1.1. Profil dan Laporan tetap placeholder; halaman berikutnya menunggu instruksi terpisah.
 
 ## Teknologi dan prasyarat
 

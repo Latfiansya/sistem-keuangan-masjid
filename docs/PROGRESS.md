@@ -109,3 +109,35 @@ Screenshot sebelum, iterasi pertama, dan hasil akhir (viewport serta halaman pen
 Foto masjid, latar foto buram, logo dan font asli tetap belum tersedia. Warna dan komposisi latar memakai placeholder/gradien; bentuk huruf dan pemenggalan teks belum identik dengan desain. Tinggi raster referensi 4121 px tidak disamakan secara paksa: hasil desktop dibuat lebih ringkas mengikuti koreksi skala pengguna. Belum merupakan kesamaan piksel dengan Figma, dan belum ada desain mobile resmi. Tidak ada perubahan backend/dependency, commit, push, atau pengerjaan M1.2.
 
 Usulan pesan commit khusus refinement setelah M1.1 dipisahkan pengguna: `style: rapatkan skala dan proporsi beranda publik`. Jika seluruh staging M1.1 di-commit sekaligus, gunakan `feat: implementasikan layout bersama dan beranda publik`.
+
+## M1.1a — Integrasi aset Blade ke Beranda React
+
+Status: selesai dan tervalidasi; siap ditinjau serta di-commit manual oleh pengguna. Branch `feature/frontend-publik`; M1.1 sebelumnya sudah di-commit, staging kosong saat pekerjaan dimulai. Hanya `design-references/` yang untracked pada awal pemeriksaan.
+
+### Implementasi dan sumber
+
+- Repository Blade di-clone terpisah di `/Users/nobody79/Project/referensi-ui-keu-masjid-m11a`, lalu diperiksa pada commit `12e0155f6a5aba59f4776403c711082f27fa2dce`. Tidak menggabungkan histori Git atau menjalankan Laravel.
+- `Background Pict.png` dan `Logo Masjid.png` sesuai secara visual dengan referensi final. Keduanya dikonversi menjadi WebP aplikasi; ukuran foto turun 93,2% dan logo 94,3%. Sumber, dimensi, ukuran, pengolahan, serta batasan lisensi dicatat di DESIGN_MAP.
+- Font Plus Jakarta Sans normal variabel 200–800 subset Latin dimuat lokal melalui @font-face dengan font-display swap. Salinan copyright/lisensi SIL OFL 1.1 disertakan. Tidak menambahkan dependency atau permintaan font eksternal saat runtime.
+- Placeholder foto/logo diganti aset asli. Foto hero memakai cover/tengah bawah, crop mobile 72%, serta overlay yang menjaga teks tetap terbaca. Foto yang sama menjadi latar buram Beranda.
+- Font dan latar baru dibatasi kelas Beranda, tanpa mengganti font/latar halaman placeholder lainnya. Logo dipakai pada Navbar bersama. Struktur React, services/mock, komponen reusable, tombol dan route dipertahankan.
+
+### Verifikasi
+
+| Viewport (zoom 100%) | Hasil visual dan ukuran aktual |
+| --- | --- |
+| 1728 × 1080 | PASS — Navbar 60 px, logo 155 px, hero 899 px; bangunan di kanan dan teks di kiri |
+| 1366 × 768 | PASS — Navbar 60 px, logo 155 px, hero 710 px; tipografi dan kartu tetap proporsional |
+| 390 × 844 | PASS — Navbar 97 px, logo 125 px, hero 500 px; menu ringkas, fasad terlihat melalui crop mobile, kartu bertumpuk |
+
+- Screenshot viewport dan halaman penuh diperiksa terhadap referensi lokal, tersimpan di `tmp/m11a-qa/` dan tidak di-stage.
+- Pemeriksaan browser sementara menggunakan Chrome headless lokal pada server development dan preview hasil build: PASS untuk dimensi viewport, skala 1/zoom 100%, tanpa overflow horizontal atau tumpang tindih Navbar–judul, dua gambar berhasil decode, font benar-benar loaded, serta background lokal terpasang.
+- Tidak ditemukan error runtime atau pemuatan aset dalam pemeriksaan browser. Navigasi ke `/profil` dan `/laporan-keuangan` tetap berfungsi; font khusus Beranda tidak bocor ke halaman tersebut.
+- `npm run lint`: PASS. `npm test`: PASS (tiga test backend yang sudah ada). `npm run build`: PASS. Tidak menambah suite/dependency untuk perubahan visual ini; skrip QA sementara tidak masuk Git.
+- Git status, diff, daftar file, staged diff, whitespace, dan lingkup aset diperiksa. Hanya kode, dokumentasi, foto/logo WebP, font dan lisensinya yang relevan disiapkan. Referensi besar, profil browser, screenshot, skrip sementara, log, `.env`, dan hasil build tetap di luar staging.
+
+### Batasan dan penghentian
+
+Crop, overlay dan pemenggalan teks masih pendekatan dari referensi raster, bukan token Figma; resolusi/fokus asli foto dan efek bayangan logo membatasi ketajaman. Tidak ada desain mobile resmi. Lisensi khusus foto/logo tidak ditemukan pada sumber; penggunaan mengikuti instruksi pengguna untuk proyek ini, tanpa mengklaim izin redistribusi umum. Font berlisensi SIL OFL 1.1. Tidak menambahkan QRIS atau fitur bisnis, tidak mengubah backend/dependency, tidak memanggil Figma MCP, dan tidak menjalankan commit/push/merge/rebase. Pekerjaan berhenti sebelum milestone berikutnya.
+
+Usulan pesan commit: `feat: integrasikan aset masjid dan font lokal pada beranda`.

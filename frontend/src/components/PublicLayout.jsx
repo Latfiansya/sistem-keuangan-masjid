@@ -18,7 +18,7 @@ export default function PublicLayout() {
   }, [])
 
   return (
-    <div className="public-layout">
+    <div className={`public-layout${pathname === '/' ? ' public-layout--home' : ''}`}>
       <a className="skip-link" href="#konten">Lewati navigasi</a>
       <Navbar />
       <main id="konten" tabIndex={-1} className={pathname === '/' ? 'home-main' : 'placeholder-page page-container'}>
