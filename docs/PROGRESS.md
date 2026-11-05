@@ -253,3 +253,42 @@ Placeholder serta panel peta kosong berlabel sengaja menggantikan data/lokasi ya
 README, DESIGN_MAP dan kebutuhan mock pada API_CONTRACT diperbarui. Git status, diff, daftar file, whitespace serta staged diff diperiksa. Hanya kode/test/dokumentasi M1.4 disiapkan; tidak menyertakan referensi desain, gambar QRIS sumber, screenshot QA, temporary files, `.env`, credential atau build. Tidak memanggil Figma MCP dan tidak melakukan commit, push, merge, rebase atau pekerjaan M1.5.
 
 Usulan pesan commit: `feat: migrasikan kontak dan donasi dengan placeholder data belum dikonfirmasi`.
+
+## M1.5a — Gate sandi bersama laporan keuangan
+
+Status: implementasi selesai dan tervalidasi; siap ditinjau serta di-commit manual. Branch `feature/frontend-publik`; staging kosong pada awal pekerjaan, hanya `design-references/` untracked. Berhenti sebelum M1.5b dan M1.6.
+
+### Implementasi
+
+- Route `/laporan-keuangan` tetap memakai FinancialReportPage, dipisahkan dari PublicLayout sehingga gate dan placeholder laporan tidak memiliki Navbar/Footer publik. CTA transparansi Beranda dan tautan Footer seluruh halaman tetap menuju route yang sama.
+- `ReportAccessPanel` mengikuti panel `07-token.png`: hijau/lime/putih, perisai, badge, judul, deskripsi, input password dan tombol submit. CSS terisolasi `report-*`, memakai font lokal sebelumnya. Keterangan bawah menjadi “Akses menggunakan sandi bersama”, tanpa klaim enkripsi.
+- React state mengontrol input, loading, error dan akses berhasil. Ref mencegah submit ganda; Enter memakai form native. Sandi kosong/salah dan kegagalan service memiliki pesan jelas. Sandi benar membersihkan input lalu menampilkan placeholder lama, dengan fokus pada heading dan tautan kembali Beranda.
+- `reportService.checkReportPassword()` memakai mock `demo123` khusus pengembangan, dengan jeda 300 ms, pencocokan persis dan AbortSignal. Mock diakses melalui service saja. Mode API menolak dengan error integrasi belum tersedia, tanpa permintaan HTTP atau validasi memakai sandi demo.
+- Refresh maupun keluar–masuk route mengembalikan gate. Aplikasi tidak menyimpan sandi/status di URL, localStorage, sessionStorage atau cookie. Tidak membawa session/autentikasi Laravel, JWT, hashing, masa kedaluwarsa atau manajemen token.
+
+### Verifikasi
+
+- `npm run lint`: PASS, tanpa peringatan.
+- Seluruh test dengan konfigurasi Chrome QA: PASS — 29 hasil test frontend (18 unit/struktur, 10 skenario browser dan satu induk suite), serta 3 test HTTP backend. Tidak ada test dilewati pada pemeriksaan ini. Tanpa konfigurasi browser, `npm test` tetap menjalankan 18 test frontend dan menandai satu suite browser sebagai dilewati; cara mengaktifkan tercantum pada README.
+- Skenario browser permanen: gate langsung, input kosong, sandi salah dan loading, submit ganda, sandi benar melalui Enter, URL/storage/cookie, refresh, error mode API, CTA/Footer seluruh halaman dan keluar–masuk route. Suite juga dijalankan terhadap preview hasil build: PASS.
+- `npm run build`: PASS. Tidak mengubah backend, dependency atau konfigurasi environment lokal.
+
+| Viewport | Hasil QA Chrome development dan preview build, zoom 100% |
+| --- | --- |
+| 1728 × 1080 | PASS — panel 1640 × 584 px, judul satu baris, input 60 px, tombol 54 px |
+| 1366 × 768 | PASS — panel 1282 × 571 px, judul satu baris, input 60 px, tombol 54 px |
+| 390 × 844 | PASS — panel 358 × 544 px, judul dua baris, input 54 px, tombol 50 px |
+
+Kondisi awal/loading/error diperiksa tanpa overflow horizontal, error runtime atau gagal memuat aset aplikasi; favicon bawaan yang belum tersedia dikecualikan. Font lokal termuat; tidak ada Navbar/Footer pada gate. Iterasi pertama panel desktop 627 px; iterasi kedua merapatkan ruang bawah, teks dan form menjadi 584 px. Screenshot awal/final/error di `tmp/m15a-qa/`, diabaikan Git.
+
+Regresi Beranda/Agenda/Profil/Kontak: geometri identik pada tiga viewport dibanding baseline M1.4. Sembilan dari 12 PNG identik; Beranda mobile, Profil desktop dan Kontak laptop yang berbeda ditinjau visual tanpa perubahan komposisi.
+
+### Batasan dan Git
+
+Gate ini hanya pembatas antarmuka. Endpoint laporan tanpa autentikasi tetap dapat diakses langsung; hasil valid bukan token atau otorisasi API. Integrasi Express kelak cukup POST pengecekan sandi dan environment variable backend biasa, tanpa menyimpan sandi produksi pada frontend. Kedua endpoint yang dicatat pada API_CONTRACT masih usulan; tidak ada endpoint baru yang dibuat.
+
+Halo/shadow, ikon dan pemenggalan teks belum identik piksel dengan raster. Frame referensi berupa panel, bukan keseluruhan halaman, dan belum ada desain mobile resmi. Laporan setelah akses tetap placeholder; tidak membangun tabel/filter, transaksi, pemilihan format atau ekspor.
+
+README, DESIGN_MAP dan API_CONTRACT diperbarui. Status, daftar file, diff, whitespace, file sensitif serta staged diff diperiksa. Hanya kode/test/dokumentasi M1.5a disiapkan; tidak ada screenshot QA, temporary files, referensi desain, `.env`, credential produksi atau build di staging. Tidak memanggil Figma MCP dan tidak menjalankan commit, push, merge, rebase atau perubahan backend.
+
+Usulan pesan commit: `feat: tambahkan gate sandi bersama untuk akses laporan keuangan`.

@@ -95,3 +95,23 @@ Profil memakai `getPublicContent({ signal })` yang sudah tersedia, melalui konte
 - `contact.location`: false/null untuk `verified`/`url`, mencatat kebutuhan lokasi mendatang. Saat ini panel peta selalu placeholder dengan tombol nonaktif; tidak mengonsumsi tautan sumber yang belum dikonfirmasi. Aktivasi tautan/embed setelah konfirmasi merupakan pekerjaan lanjutan yang terpisah.
 - Flag verifikasi adalah metadata publikasi, bukan validasi transaksi, otorisasi atau sistem pembayaran. Penetapan siapa yang menyetujui, sumber resmi, tanggal konfirmasi, izin publikasi dan skema API final menunggu pengurus/tim backend. Jangan mengubah flag hanya karena data ditemukan dalam Blade.
 - Loading, error, tidak adanya objek Kontak, daftar informasi kosong dan data donasi belum tersedia memiliki pesan yang sesuai. Tidak ada fitur payment gateway, salin rekening atau unduhan QRIS.
+
+
+## Gate sandi bersama — M1.5a
+
+Implementasi saat ini hanya frontend. `reportService.checkReportPassword(password, { signal })` mengembalikan `{ valid: boolean }` pada mode mock. Input kosong/bukan teks ditolak; mock `demo123` dibandingkan persis, termasuk kapital/spasi, dengan jeda 300 ms untuk memeriksa loading. Pembatalan melalui AbortSignal didukung. Sandi demo bukan rahasia atau kredensial produksi dan tidak digunakan untuk validasi mode API.
+
+Mode `VITE_DATA_SOURCE=api` sekarang memberikan error “Pemeriksaan sandi melalui API belum tersedia” tanpa melakukan permintaan HTTP. Tidak menambahkan endpoint atau mengubah Express. Pengambilan transaksi/ringkasan belum diimplementasikan.
+
+Usulan kontrak backend untuk integrasi berikutnya, **belum tersedia**:
+
+| Metode | Path | Permintaan | Hasil yang diusulkan |
+| --- | --- | --- | --- |
+| POST | `/api/public/report/check-password` | JSON `{ "password": "<sandi dari input>" }` | HTTP 200 `{ "success": true, "data": { "valid": true } }` atau `valid: false` |
+| GET | `/api/public/finance/report` | Parameter periode/filter dibahas pada M1.5b | Payload laporan belum ditetapkan |
+
+HTTP 200 pada POST berarti pemeriksaan berhasil dijalankan; valid/tidak valid adalah hasil pemeriksaan. Input kosong atau bentuk permintaan tidak valid diusulkan HTTP 400 dengan format error proyek. Sandi backend kelak berupa environment variable biasa, misalnya `REPORT_SHARED_PASSWORD`, tanpa awalan VITE dan tanpa nilai produksi di repository. Tidak perlu hashing, akun, login/logout, JWT, session, refresh token, kedaluwarsa atau penyimpanan browser.
+
+Akses berhasil hanya state React pada FinancialReportPage. Input dibersihkan, state dibuang saat halaman dilepas, dan refresh meminta sandi kembali. Tidak ada nilai sandi/status yang dimasukkan ke URL, localStorage, sessionStorage atau cookie oleh aplikasi.
+
+**Batasan:** pengecekan sandi hanya pembatas antarmuka. Respons `valid: true` bukan token/otorisasi dan tidak melindungi GET laporan. Endpoint laporan tanpa autentikasi tetap dapat diakses langsung tanpa melewati gate. Keputusan sederhana ini mengikuti kebutuhan tim; tidak mengklaim perlindungan data oleh gate.

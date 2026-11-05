@@ -15,9 +15,9 @@ export default function App() {
         <Route path="agenda" element={<AgendaPage />} />
         <Route path="profil" element={<ProfilePage />} />
         <Route path="kontak" element={<ContactPage />} />
-        <Route path="laporan-keuangan" element={<FinancialReportPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
+      <Route path="laporan-keuangan" element={<FinancialReportPage />} />
     </Routes>
   )
 }

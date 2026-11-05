@@ -6,7 +6,7 @@ Sembilan tampilan user telah dinyatakan final oleh pengguna. Referensi implement
 | --- | --- | --- | --- |
 | Beranda (`HomePage`) | `/` | `01-beranda.png` | HTML/CSS dan mock melalui service; foto/logo Blade serta Plus Jakarta Sans lokal terintegrasi pada M1.1a |
 | Profil Masjid (`ProfilePage`) | `/profil` | `03-profil.png` | M1.3: header, statistik bersama, visi-misi, linimasa, tujuh pengurus, CTA Kontak |
-| Laporan Keuangan (`FinancialReportPage`) | `/laporan-keuangan` | `05-laporan.png`, `07-token.png` | Tetap placeholder; di luar M1.1 |
+| Laporan Keuangan (`FinancialReportPage`) | `/laporan-keuangan` | `05-laporan.png`, `07-token.png` | M1.5a: gate sandi bersama; laporan setelah akses masih placeholder M1.5b |
 | Agenda (`AgendaPage`) | `/agenda` | `02-agenda.png` | M1.2: banner dan kelompok 5/2/5, mock/service bersama Beranda, responsive |
 | Kontak (`ContactPage`) | `/kontak` | `04-kontak.png` | M1.4: Donasi, informasi takmir dan placeholder lokasi; data transaksi/kontak menunggu konfirmasi |
 | Pilihan format/pratinjau | Belum diterapkan | `06-format-unduhan.png`, `08-preview-pdf.png`, `09-preview-png.png` | Di luar M1.1 |
@@ -98,3 +98,20 @@ Referensi final `design-references/user/04-kontak.png` (1728 × 3090 px). Konten
 QA Chrome headless development dan preview build pada 1728 × 1080, 1366 × 768, 390 × 844, zoom 100%: PASS. Screenshot iterasi/final di `tmp/m14-qa/`, diabaikan Git. Tinggi akhir Kontak sekitar 3105/2670/2454 px; Navbar 60/60/97 px; tidak ada overflow horizontal. Desktop panel Donasi mulai pada 516 px, dibanding sekitar 515 px pada raster final. Geometri Beranda/Agenda/Profil identik dengan baseline M1.3; PNG identik kecuali Agenda mobile, yang ditinjau visual tanpa perubahan komposisi.
 
 Perbedaan tersisa: placeholder menggantikan data belum terverifikasi, panel peta belum menampilkan jalan/lokasi nyata, crop/blur foto dan pemenggalan teks masih pendekatan raster. Navbar/Footer mempertahankan refinement sebelumnya. Belum ada desain mobile resmi; layout mobile merupakan adaptasi responsive desktop.
+
+
+## M1.5a — Gate sandi laporan
+
+Referensi final `design-references/user/07-token.png` (3632 × 1380 px) berupa panel akses. Struktur form dan CSS akses dalam `resources/views/layouts/app.blade.php` serta `public/css/app.css` diperiksa pada commit Blade `12e0155f6a5aba59f4776403c711082f27fa2dce`. Sumber tidak diubah; tidak menggunakan Figma MCP, stylesheet Laravel utuh, atau screenshot sebagai halaman.
+
+- `/laporan-keuangan` dipindahkan keluar dari PublicLayout, tetap memakai FinancialReportPage yang sama. Gate menjadi halaman khusus tanpa Navbar/Footer; empat halaman publik sebelumnya tidak berubah. CTA transparansi Beranda serta tautan Footer tetap menuju route tersebut.
+- `ReportAccessPanel` menggunakan ikon perisai Lucide, badge, judul lime/putih, input password, tombol lime dan keterangan bawah. Panel HTML/CSS berada di tengah latar gelap; font Plus Jakarta Sans lokal. Semua CSS dibatasi `report-*`.
+- Teks “Kode Akses” mengikuti desain tetapi mekanismenya sandi bersama. Teks bawah diganti menjadi “Akses menggunakan sandi bersama” sesuai instruksi; tidak mengklaim enkripsi atau perlindungan API. Tidak menambahkan tombol tampilkan sandi/tutup modal dari Blade karena tidak terlihat pada frame final. Setelah berhasil tersedia tautan kembali Beranda di placeholder laporan.
+- State React mengatur input, pemeriksaan, error dan akses berhasil. Form native mendukung Enter; ref menahan submit berulang sebelum render state berikutnya. Pemeriksaan dibatalkan saat panel dilepas. Sandi benar membersihkan input dan membuka placeholder lama; fokus dipindahkan ke heading laporan.
+- `checkReportPassword()` melalui service memakai mock `demo123`, khusus pengembangan, dengan jeda simulasi 300 ms. Pencocokan persis memperhatikan kapital/spasi. Refresh dan keluar–masuk route meminta sandi kembali. Tidak ada URL akses, storage, cookie, session Laravel, JWT atau proses backend.
+
+QA Chrome headless development dan preview build pada 1728 × 1080, 1366 × 768 dan 390 × 844, zoom 100%: PASS. Iterasi pertama panel desktop 627 px; iterasi kedua merapatkan ruang bawah, deskripsi, label dan form menjadi sekitar 584 px. Panel laptop sekitar 571 px, mobile 544 px; input 60/60/54 px dan tombol 54/54/50 px. Kondisi awal, loading dan error diperiksa tanpa overflow. Screenshot iterasi/final serta error ada di `tmp/m15a-qa/`, tidak di-stage.
+
+Regresi empat halaman publik: geometri identik dengan baseline M1.4 pada ketiga viewport. Sembilan dari 12 PNG identik; Beranda mobile, Profil desktop dan Kontak laptop yang berbeda ditinjau visual tanpa perubahan komposisi. Belum merupakan kesamaan piksel dengan raster akses: halo/shadow, bentuk ikon dan pemenggalan teks masih pendekatan CSS. Frame akses tidak menunjukkan seluruh tinggi viewport dan belum tersedia desain mobile resmi.
+
+Laporan tetap placeholder; tabel/filter M1.5b dan ekspor M1.6 belum dibuat. Gate hanya pembatas antarmuka; endpoint laporan tanpa autentikasi tetap dapat diakses langsung jika nanti tersedia.

@@ -1,6 +1,6 @@
 # Sistem Keuangan dan Profil Masjid Al-Hidayah
 
-Repository kolaborasi mahasiswa untuk frontend publik dan backend sistem keuangan masjid. M1.1a melengkapi layout publik dan Beranda dengan foto serta logo dari referensi Blade dan font Plus Jakarta Sans lokal, sambil mempertahankan refinement skala M1.1. M1.2 menambahkan halaman Agenda beserta navigasi dan data mock bersama Beranda. M1.3 melengkapi Profil Masjid memakai data bersama Beranda, linimasa, dan tujuh pengurus. M1.4 menambahkan Kontak dan Donasi dengan placeholder data yang belum dikonfirmasi. Laporan tetap placeholder.
+Repository kolaborasi mahasiswa untuk frontend publik dan backend sistem keuangan masjid. M1.1a melengkapi layout publik dan Beranda dengan foto serta logo dari referensi Blade dan font Plus Jakarta Sans lokal, sambil mempertahankan refinement skala M1.1. M1.2 menambahkan halaman Agenda beserta navigasi dan data mock bersama Beranda. M1.3 melengkapi Profil Masjid memakai data bersama Beranda, linimasa, dan tujuh pengurus. M1.4 menambahkan Kontak dan Donasi dengan placeholder data yang belum dikonfirmasi. M1.5a menambahkan gate sandi bersama sebelum placeholder laporan.
 
 ## Teknologi dan prasyarat
 
@@ -33,7 +33,7 @@ Terminal pertama, frontend mandiri:
 npm run dev:frontend
 ```
 
-Buka `http://localhost:5173`. Route publik: `/`, `/agenda`, `/profil`, `/kontak`, `/laporan-keuangan`. Navbar dan Footer dipakai bersama melalui `PublicLayout`. Menu Kontak dan CTA Hubungi Takmir pada Profil menuju `/kontak`. Masuk Pengurus belum aktif. Halaman tidak dikenal menampilkan placeholder 404.
+Buka `http://localhost:5173`. Route publik: `/`, `/agenda`, `/profil`, `/kontak`, `/laporan-keuangan`. Navbar dan Footer halaman publik dipakai bersama melalui `PublicLayout`. Route laporan memakai halaman khusus tanpa Navbar/Footer. Menu Kontak dan CTA Hubungi Takmir pada Profil menuju `/kontak`. Masuk Pengurus belum aktif. Halaman tidak dikenal menampilkan placeholder 404.
 
 Terminal kedua, backend mandiri:
 
@@ -72,6 +72,7 @@ VITE_API_BASE_URL=/api
 - `VITE_DATA_SOURCE=api` tersedia pada service health. Konten publik belum memiliki endpoint bisnis; halaman publik menampilkan pesan integrasi belum tersedia pada mode ini. Restart Vite setelah mengubah `.env`.
 - `PublicLayout` memuat konten melalui `src/services/publicContentService.js` lalu membagikannya kepada Beranda, Agenda, Profil, dan Kontak. Ringkasan serta daftar kegiatan berasal dari satu `agendaService` dan mock agenda; statistik dihitung dari daftar. Service health tetap tersedia; komponen tidak memanggil API langsung.
 - Kontak dan Donasi memakai placeholder “Data belum dikonfirmasi” untuk QRIS, rekening, alamat kontak, telepon, dan jam layanan. Aset QRIS sumber belum dipublikasikan; tombol Google Maps nonaktif sampai lokasi dikonfirmasi. Tidak ada pembayaran, unduhan QRIS, salin rekening, atau tautan WhatsApp.
+- Gate laporan memakai `reportService.checkReportPassword()`. Pada mode mock, sandi contoh **`demo123`** membuka placeholder laporan; nilai ini khusus pengembangan dan bukan sandi produksi. Refresh atau keluar dari halaman mengembalikan gate. Sandi/status tidak disimpan pada URL, storage, atau cookie. Mode API menampilkan error integrasi belum tersedia tanpa mengirim sandi ke endpoint. Gate hanya pembatas antarmuka dan tidak melindungi endpoint data laporan yang bersifat publik.
 - Proxy Vite meneruskan `/api` ke `http://127.0.0.1:3000`, sehingga integrasi lokal tidak memerlukan CORS. Jika port backend berubah, sesuaikan target di `frontend/vite.config.js`.
 - Semua variabel `VITE_*` tersedia pada browser: jangan mengisinya dengan rahasia. Nilainya ditanam saat build.
 - Proxy hanya berlaku pada server development Vite. Untuk integrasi di hosting kelak, tim perlu menyepakati routing `/api` atau URL API dan kebijakan CORS. Hosting dengan BrowserRouter juga perlu fallback ke `index.html` untuk route frontend. Belum ada konfigurasi deployment pada milestone ini.
@@ -86,9 +87,26 @@ npm run build
 npm audit
 ```
 
-`lint` menjalankan Oxlint frontend dan pemeriksaan sintaks backend. `test` menjalankan dua belas test frontend melalui Node.js/Vite SSR (Agenda/Profil/Kontak, konsistensi data bersama, loading/empty/error, mode API, perlindungan data belum dikonfirmasi) dan tiga test HTTP backend (health, 404, JSON tidak valid). Pemeriksaan visual dan navigasi browser tetap diperlukan. Build menghasilkan `frontend/dist`, yang diabaikan Git.
+`lint` menjalankan Oxlint frontend dan pemeriksaan sintaks backend. `test` menjalankan 18 test frontend melalui Node.js/Vite SSR (Agenda/Profil/Kontak, service dan struktur gate, konsistensi data, loading/empty/error, mode API, perlindungan data belum dikonfirmasi) dan tiga test HTTP backend (health, 404, JSON tidak valid). Satu suite browser gate dengan 10 skenario tersedia secara opsional; tanpa konfigurasi browser suite ditandai dilewati. Pemeriksaan visual tetap diperlukan. Build menghasilkan `frontend/dist`, yang diabaikan Git.
 
 Untuk memeriksa hasil build lokal: `npm run preview --workspace frontend`. Preview tidak menyediakan proxy API; gunakan mode mock untuk pemeriksaan mandiri.
+
+## Pengujian interaksi gate dengan Chrome lokal
+
+Tidak memerlukan dependency tambahan. Gunakan tiga terminal terpisah dari root repository: jalankan frontend mock dengan `npm run dev:frontend`, frontend mode API dengan `VITE_DATA_SOURCE=api npm run dev --workspace frontend -- --host 127.0.0.1 --port 5174`, dan instance Chrome QA terpisah. Contoh macOS:
+
+```sh
+mkdir -p tmp/m15a-qa
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --remote-debugging-port=9228 --remote-debugging-address=127.0.0.1 --user-data-dir="$PWD/tmp/m15a-qa/chrome-profile" --no-first-run --no-default-browser-check about:blank
+```
+
+Sesuaikan lokasi executable Chrome pada sistem lain. Gunakan profil QA terpisah, bukan profil browser pribadi. Server pertama harus memakai mode mock; `VITE_DATA_SOURCE=mock npm run dev:frontend` dapat dipakai jika konfigurasi lokal berbeda. Jalankan seluruh test dengan browser tersedia:
+
+```sh
+REPORT_BROWSER_QA_URL=http://127.0.0.1:5173 REPORT_BROWSER_API_QA_URL=http://127.0.0.1:5174 REPORT_BROWSER_CDP_URL=http://127.0.0.1:9228 npm test
+```
+
+Suite browser memakai tab pada instance QA tersebut. Cakupannya: akses langsung, sandi kosong/salah/benar melalui Enter, loading, pencegahan submit ganda, kegagalan mode API, refresh, pemeriksaan storage/URL/cookie, CTA Beranda/Footer, dan keluar–masuk halaman. Hentikan server serta Chrome QA setelah pengujian. Screenshot/profil sementara berada di `tmp/` yang diabaikan Git.
 
 ## Struktur repository
 
