@@ -5,7 +5,7 @@ Sembilan tampilan user telah dinyatakan final oleh pengguna. Referensi implement
 | Halaman React | Route | Referensi lokal | Status implementasi |
 | --- | --- | --- | --- |
 | Beranda (`HomePage`) | `/` | `01-beranda.png` | HTML/CSS dan mock melalui service; foto/logo Blade serta Plus Jakarta Sans lokal terintegrasi pada M1.1a |
-| Profil Masjid (`ProfilePage`) | `/profil` | `03-profil.png` | Tetap placeholder; di luar M1.1 |
+| Profil Masjid (`ProfilePage`) | `/profil` | `03-profil.png` | M1.3: header, statistik bersama, visi-misi, linimasa, tujuh pengurus, CTA Kontak |
 | Laporan Keuangan (`FinancialReportPage`) | `/laporan-keuangan` | `05-laporan.png`, `07-token.png` | Tetap placeholder; di luar M1.1 |
 | Agenda (`AgendaPage`) | `/agenda` | `02-agenda.png` | M1.2: banner dan kelompok 5/2/5, mock/service bersama Beranda, responsive |
 | Kontak | Belum ditambahkan | `04-kontak.png` | Navigasi dinonaktifkan sampai tahap berikutnya |
@@ -23,7 +23,7 @@ Urutan Beranda: hero, tiga statistik, visi-misi, ringkasan agenda, tiga kartu ke
 - Hero memakai foto masjid asli dengan crop `cover` posisi tengah bawah; mobile memakai titik horizontal 72%. Overlay biru menjaga keterbacaan teks.
 - Navbar memakai logo asli transparan, lebar 155 px desktop, 140 px tablet dan 125 px mobile.
 - Foto yang sama dipakai pada lapisan latar Beranda dengan blur 10 px serta overlay pucat. Tidak memakai screenshot halaman atau foto masjid lain.
-- Plus Jakarta Sans variabel dimuat lokal, bobot 200–800, khusus kelas `public-layout--home`. Halaman placeholder lain mempertahankan font/latar sebelumnya. Warna, spacing, radius, shadow dan kontainer tetap pendekatan dari raster.
+- Plus Jakarta Sans variabel dimuat lokal, bobot 200–800, pada Beranda, Agenda, dan Profil melalui kelas layout masing-masing. Halaman placeholder lain mempertahankan font/latar sebelumnya. Warna, spacing, radius, shadow dan kontainer tetap pendekatan dari raster.
 - Responsive menumpuk kartu dan membungkus navigasi; desain mobile resmi belum diberikan.
 - Konten mock mengikuti referensi dan bukan hasil verifikasi informasi produksi. Tidak ada data transaksi keuangan dalam M1.1.
 
@@ -65,3 +65,20 @@ Referensi final `design-references/user/02-agenda.png` (1728 × 2895 px); strukt
 QA browser development dan hasil build mencakup 1728 × 1080, 1366 × 768, 390 × 844, zoom 100%. Dua iterasi merapikan banner, panjang baris deskripsi, jarak/tinggi kegiatan dan latar. Screenshot di `tmp/m12-qa/final-*.png` dan regresi Beranda di `tmp/m12-qa/home-*.png`, tidak di-stage. Tinggi halaman desktop sekitar 2923 px, dibanding raster 2895 px. Proporsi mendekati referensi, tetapi crop/blur latar, border, bayangan dan pemenggalan teks belum identik piksel. Tidak tersedia frame mobile resmi; nama dan jadwal ditumpuk agar tetap terbaca tanpa overflow.
 
 Geometri Beranda M1.1a tetap sama pada tiga viewport; screenshot desktop/laptop identik dengan baseline lokal, mobile ditinjau visual tanpa regresi komposisi. Perubahan Beranda hanya mengaktifkan tautan Agenda dan mengambil ringkasan dari sumber data bersama.
+
+
+## M1.3 — Profil Masjid
+
+Referensi final `design-references/user/03-profil.png` (1728 × 3905 px), dengan konten dari `resources/views/pages/users/profil.blade.php` pada commit `12e0155f6a5aba59f4776403c711082f27fa2dce`. Layout/CSS Blade dan aset sebelumnya dipakai sebagai referensi tanpa mengubah repository sumber atau mengimpor stylesheet Laravel.
+
+- Mengembangkan `ProfilePage` pada route `/profil` yang sudah ada; tidak membuat halaman/route duplikat.
+- Header identitas, luas/kapasitas, VisionMission bersama, linimasa 1980/2000, pengurus 4+3 pada desktop dan CTA Hubungi Takmir menggunakan array konten dari publicContentService. Navbar, Footer, PublicLayout dan Button digunakan kembali; tidak menambah komponen untuk setiap kartu kecil.
+- Nilai luas 265 m², kapasitas 290 Jamaah dan tahun berdiri 1980 memakai konstanta mock yang sama dengan Beranda. Field amount/unit dipakai pada kartu Profil; value untuk Beranda diturunkan dari nilai yang sama. Visi/misi tetap satu sumber.
+- Periode **2023–2025** mengikuti desain final, menggantikan teks **2023–2026** yang tertulis pada Blade. Tujuh nama/jabatan serta catatan Kepala Dukuh/Ketua LPMD mengikuti sumber Blade. Tidak menyatakan periode tersebut sebagai pengurus terkini yang telah diverifikasi.
+- Navbar Profil serta tombol Profil Beranda tetap menuju `/profil`; CTA menuju `/kontak`. Karena M1.4 belum dikerjakan, `/kontak` masih ditangani 404 yang sudah ada; tidak menambahkan implementasi Kontak.
+- Font lokal, logo dan foto M1.1a digunakan kembali. Latar Profil serta foto buram pada sejarah diberi overlay dan transisi transparan. CSS khusus `profile-*`; ukuran bersama Beranda/Agenda tetap dipertahankan.
+- Mobile menumpuk statistik dan linimasa; pengurus memakai dua kolom dengan kartu terakhir di tengah. Loading/error/empty keseluruhan serta bagian data yang belum tersedia memiliki pesan jelas.
+
+QA browser development dan preview build dilakukan pada 1728 × 1080, 1366 × 768 dan 390 × 844, zoom 100%. Hasil setelah iterasi linimasa/latar tersimpan di `tmp/m13-qa/final-*.png`, tidak di-stage. Tinggi desktop sekitar 3741 px, laptop 3392 px, mobile 3800 px. Belum identik piksel dengan raster final: crop/blur foto, shadow, proporsi/pemenggalan teks dan ruang antarseksi masih pendekatan. Tidak tersedia desain mobile resmi.
+
+Regresi Beranda/Agenda diperiksa menggunakan screenshot dan geometri pada ketiga viewport. Geometri seluruhnya identik dengan baseline M1.2; PNG Beranda identik pada tiga viewport, PNG Agenda identik pada desktop/laptop; mobile Agenda ditinjau visual tanpa perubahan komposisi. Perubahan pemetaan kelas PublicLayout tetap menjaga font/latar halaman placeholder lain.

@@ -19,13 +19,15 @@ export default function PublicLayout() {
 
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
 
-  const isAgenda = pathname.replace(/\/$/, '') === '/agenda'
+  const route = pathname.replace(/\/$/, '') || '/'
+  const layoutClass = { '/': 'home', '/agenda': 'agenda', '/profil': 'profile' }[route]
+  const mainClass = layoutClass ? (layoutClass === 'agenda' ? 'agenda-page' : `${layoutClass}-main`) : 'placeholder-page page-container'
 
   return (
-    <div className={`public-layout${pathname === '/' ? ' public-layout--home' : isAgenda ? ' public-layout--agenda' : ''}`}>
+    <div className={`public-layout${layoutClass ? ` public-layout--${layoutClass}` : ''}`}>
       <a className="skip-link" href="#konten">Lewati navigasi</a>
       <Navbar />
-      <main id="konten" tabIndex={-1} className={pathname === '/' ? 'home-main' : isAgenda ? 'agenda-page' : 'placeholder-page page-container'}>
+      <main id="konten" tabIndex={-1} className={mainClass}>
         <Outlet context={{ content, error }} />
       </main>
       <Footer content={content} />

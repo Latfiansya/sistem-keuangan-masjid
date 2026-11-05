@@ -177,3 +177,39 @@ Belum ada desain mobile resmi atau token Figma terukur. Crop/blur latar, garis p
 Git status, diff, daftar file dan staged diff serta whitespace diperiksa. Hanya file implementasi, test dan dokumentasi M1.2 disiapkan; `.env`, credential, screenshot, temporary files, build dan gambar referensi tidak di-stage. Tidak melakukan commit, push, merge atau rebase.
 
 Usulan pesan commit: `feat: tambahkan halaman agenda dengan data dan navigasi bersama`.
+
+## M1.3 — Migrasi Profil Masjid dari Blade ke React
+
+Status: implementasi dan verifikasi selesai; siap ditinjau untuk commit manual. Branch `feature/frontend-publik`; M1.1/M1.1a/M1.2 sudah di-commit dan staging kosong saat mulai. Hanya `design-references/` yang untracked pada awal pemeriksaan.
+
+### Implementasi
+
+- Mengembangkan ProfilePage pada `/profil` yang sudah tersedia: header, dua statistik, visi-misi, sejarah/linimasa, tujuh pengurus dan CTA Hubungi Takmir. Tidak menambah halaman atau komponen kartu duplikat.
+- Memakai Navbar, Footer, PublicLayout, Button, VisionMission, foto/logo/font lokal M1.1a. Kartu statistik, peristiwa dan pengurus dirender dari array.
+- Mock diperluas di publicContent; publicContentService tetap menjadi penyedia data tanpa API langsung dari JSX. Konstanta bersama mempertahankan kesamaan 265 m², 290 Jamaah, tahun 1980 dan visi/misi dengan Beranda. Teks/value Beranda tidak berubah.
+- Sumber Blade diperiksa pada commit `12e0155f6a5aba59f4776403c711082f27fa2dce`, tanpa mengubah repository sumber. Periode pengurus dipilih **2023–2025** dari desain final, bukan 2023–2026 pada Blade. Tujuh nama/jabatan diambil dari sumber, tanpa mengarang kontak/foto pengurus.
+- Kelas PublicLayout memisahkan Profil dari placeholder. CSS profile-* menjaga proporsi, latar, linimasa bergantian dan susunan pengurus 4+3 desktop; mobile menumpuk statistik/linimasa dan memakai dua kolom kartu.
+- CTA Profil menuju `/kontak` sesuai instruksi. Route tersebut sementara tetap 404 sampai M1.4; tidak mengimplementasikan Kontak. Menu Profil, CTA Beranda, kembali Beranda/Agenda dan reset scroll tetap berfungsi.
+
+### Verifikasi
+
+- `npm run lint`: PASS.
+- `npm test`: PASS — delapan test frontend (empat test Profil baru dan empat Agenda), serta tiga test HTTP backend. Cakupan Profil: tujuh nama/periode final, linimasa 1980/2000, satu h1, CTA Kontak, konsistensi statistik/visi-misi, isolasi salinan mock, loading/error/empty, bagian belum tersedia, AbortSignal dan mode API.
+- `npm run build`: PASS.
+- Chrome headless lokal pada development dan preview hasil build: PASS untuk route langsung `/profil` dan `/profil/`, menu aktif, CTA, navigasi Beranda/Agenda, font/logo lokal, jumlah/statistik/linimasa, zoom 100%, tanpa horizontal overflow atau error runtime/HTTP selain favicon bawaan.
+
+| Viewport | Hasil QA visual |
+| --- | --- |
+| 1728 × 1080 | PASS — Navbar 60 px; dua statistik 323 px; tujuh kartu 4+3; panjang halaman 3741 px |
+| 1366 × 768 | PASS — ukuran menyesuaikan tanpa memperbesar elemen bersama; panjang halaman 3392 px |
+| 390 × 844 | PASS — Navbar 97 px; statistik dan sejarah bertumpuk; pengurus 2+2+2+1; panjang halaman 3800 px |
+
+Iterasi pertama dibandingkan dengan `03-profil.png`; iterasi berikutnya merapatkan teks/kartu sejarah dan menyesuaikan foto buram dengan transisi transparan agar tidak membentuk batas latar keras. Screenshot final di `tmp/m13-qa/final-*.png`, diabaikan Git. Regresi Beranda/Agenda pada tiga viewport: geometri identik dengan M1.2; PNG Beranda identik semua ukuran, Agenda identik desktop/laptop dan mobile ditinjau visual tanpa perubahan komposisi.
+
+### Batasan dan Git
+
+Crop/blur latar, shadow dan pemenggalan teks masih pendekatan raster, bukan hasil pembacaan token Figma. Belum ada frame mobile resmi. Periode/nama pengurus mengikuti referensi, bukan verifikasi pengurus terkini. Kontak tetap belum diimplementasikan; CTA sementara menuju 404 pada `/kontak`.
+
+README, peta desain dan kebutuhan data mock diperbarui. Git status, diff, daftar file dan staged diff serta whitespace diperiksa. Hanya kode, test dan dokumentasi M1.3 disiapkan; tidak memasukkan gambar referensi, screenshot, temporary files, credential, `.env` atau hasil build. Tidak mengubah backend, dependency atau aset; tidak memanggil Figma MCP dan tidak menjalankan commit/push/merge/rebase. Pekerjaan berhenti sebelum M1.4.
+
+Usulan pesan commit: `feat: implementasikan profil masjid dengan data bersama dan linimasa`.
