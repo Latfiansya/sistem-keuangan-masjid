@@ -213,3 +213,43 @@ Crop/blur latar, shadow dan pemenggalan teks masih pendekatan raster, bukan hasi
 README, peta desain dan kebutuhan data mock diperbarui. Git status, diff, daftar file dan staged diff serta whitespace diperiksa. Hanya kode, test dan dokumentasi M1.3 disiapkan; tidak memasukkan gambar referensi, screenshot, temporary files, credential, `.env` atau hasil build. Tidak mengubah backend, dependency atau aset; tidak memanggil Figma MCP dan tidak menjalankan commit/push/merge/rebase. Pekerjaan berhenti sebelum M1.4.
 
 Usulan pesan commit: `feat: implementasikan profil masjid dengan data bersama dan linimasa`.
+
+## M1.4 — Kontak dan Donasi
+
+Status: implementasi selesai dan tervalidasi; siap ditinjau serta di-commit manual oleh pengguna. Branch `feature/frontend-publik`; staging kosong pada awal pekerjaan, hanya `design-references/` untracked. M1.1–M1.3 dipertahankan; pekerjaan berhenti sebelum M1.5.
+
+### Implementasi
+
+- Menambahkan `ContactPage` dan route `/kontak` dengan header, Donasi QRIS/rekening, tiga informasi takmir, panel lokasi, serta Footer bersama. `DonationSection` membantu keterbacaan tanpa membuat komponen untuk tiap kartu kecil.
+- Navbar, PublicLayout, Button, Footer, foto/logo dan Plus Jakarta Sans lokal digunakan kembali. Kontak pada Navbar aktif sesuai route; CTA Hubungi Takmir dari Profil kini membuka Kontak. Beranda/Agenda/Profil tetap berfungsi.
+- Memperluas mock yang disalurkan `publicContentService`; tidak mengimpor mock dari JSX. Loading/error/empty serta data belum dikonfirmasi ditangani. Mode API tetap memberi error integrasi belum tersedia, tanpa endpoint karangan.
+- Sumber Blade dibaca pada commit `12e0155f6a5aba59f4776403c711082f27fa2dce`; final `04-kontak.png` menjadi acuan komposisi. CSS dibatasi halaman Kontak; tidak mengimpor CSS Laravel atau mengubah backend/dependency.
+
+### Data dan aset yang menunggu konfirmasi
+
+Kedua aset `qris-donasi.png`/`.jpg` sudah diperiksa: keduanya JPEG 1024 × 1024 dengan hash identik. Materi berlabel nama masjid, tetapi belum membuktikan validitas transaksi, kepemilikan atau izin publikasi. Tidak disalin ke aplikasi atau staging. Jika nanti dikonfirmasi, ekstensi yang benar `.jpg`; sumber dan hash dicatat pada DESIGN_MAP.
+
+Rekening/nama penerima, QRIS, telepon, jam layanan, alamat kontak dan tujuan peta belum dikonfirmasi pengurus. UI menampilkan “Data belum dikonfirmasi”; nilai/note kontak serta data donasi yang belum terverifikasi tidak dipublikasikan. Tidak menyimpan nomor rekening/telepon contoh ke mock. Tombol Google Maps nonaktif; tidak ada iframe, koordinat/tautan karangan, WhatsApp, salin rekening, unduhan QRIS, atau pemrosesan pembayaran. Footer mempertahankan alamat mock referensi dari milestone sebelumnya. Konfirmasi data resmi, lokasi dan izin aset menjadi tindak lanjut sebelum publikasi produksi.
+
+### Verifikasi
+
+- `npm run lint`: PASS, frontend dan pemeriksaan sintaks backend.
+- `npm test`: PASS — 12 test frontend dan 3 test HTTP backend. Empat test Kontak baru mencakup route/menu aktif, komposisi, placeholder aman, penolakan nilai QRIS/rekening/kontak/note belum dikonfirmasi, isolasi data, loading/error/empty, pembatalan dan mode API.
+- `npm run build`: PASS.
+- Chrome headless lokal terpisah, development dan preview hasil build: route langsung `/kontak` serta `/kontak/`, navigasi empat halaman, menu aktif, CTA Profil–Kontak, reset scroll, font/logo dan pemuatan aset: PASS. Tidak ada error runtime/HTTP aplikasi selain favicon bawaan yang belum tersedia.
+
+| Viewport | QA visual setelah iterasi |
+| --- | --- |
+| 1728 × 1080 | PASS — zoom 100%, Navbar 60 px, panel Donasi dua kolom mulai sekitar 516 px, peta 783 px, tinggi halaman 3105 px, tanpa overflow |
+| 1366 × 768 | PASS — zoom 100%, Navbar 60 px, kartu dan judul menyesuaikan, peta 619 px, tinggi halaman 2670 px, tanpa overflow |
+| 390 × 844 | PASS — zoom 100%, Navbar 97 px, Donasi bertumpuk, informasi terbaca, peta 350 px, tinggi halaman 2454 px, tanpa overflow |
+
+Screenshot viewport/halaman penuh dibandingkan dengan referensi lokal. Iterasi kedua merapatkan jarak heading/Donasi serta memperbaiki posisi foto buram agar tidak mengikuti crop seluruh panjang halaman. Hasil final di `tmp/m14-qa/final-*.png`, tidak di-stage. Regresi tiga halaman sebelumnya: geometri identik pada semua viewport; PNG Beranda dan Profil identik seluruh ukuran, Agenda identik desktop/laptop dan mobile ditinjau visual tanpa perubahan komposisi.
+
+### Batasan dan Git
+
+Placeholder serta panel peta kosong berlabel sengaja menggantikan data/lokasi yang belum disetujui. Crop/blur foto, detail warna, shadow dan pemenggalan teks masih pendekatan raster; belum identik piksel. Navbar/Footer mempertahankan refinement bersama, dan belum tersedia frame mobile resmi.
+
+README, DESIGN_MAP dan kebutuhan mock pada API_CONTRACT diperbarui. Git status, diff, daftar file, whitespace serta staged diff diperiksa. Hanya kode/test/dokumentasi M1.4 disiapkan; tidak menyertakan referensi desain, gambar QRIS sumber, screenshot QA, temporary files, `.env`, credential atau build. Tidak memanggil Figma MCP dan tidak melakukan commit, push, merge, rebase atau pekerjaan M1.5.
+
+Usulan pesan commit: `feat: migrasikan kontak dan donasi dengan placeholder data belum dikonfirmasi`.

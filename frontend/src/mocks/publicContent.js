@@ -6,6 +6,19 @@ export const mockPublicContent = {
   name: 'Masjid Al-Hidayah',
   address: 'Dusun Sorolaten RT 04 RW 15, Sidokarto, Godean, Sleman, Yogyakarta.',
   copyrightYear: 2026,
+  contact: {
+    introduction: 'Sampaikan pertanyaan, usulan kegiatan, atau permohonan kerja sama kepada pengurus takmir Masjid Al-Hidayah.',
+    information: [
+      { id: 'address', label: 'Alamat', verified: false, value: null },
+      { id: 'phone', label: 'Telepon', verified: false, value: null, note: null },
+      { id: 'hours', label: 'Jam operasional', verified: false, value: null },
+    ],
+    location: { verified: false, url: null },
+    donation: {
+      qris: { verified: false, imageSrc: null },
+      bank: { verified: false, name: null, number: null, recipient: null },
+    },
+  },
   heroDescription: `Pusat ibadah, pembinaan umat, dan pemberdayaan masyarakat Dusun Sorolaten sejak ${foundingYear}.`,
   statistics: [
     { id: 'founded', label: 'Berdiri Sejak', value: String(foundingYear), icon: 'calendar' },

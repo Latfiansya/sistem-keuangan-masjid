@@ -8,7 +8,7 @@ Sembilan tampilan user telah dinyatakan final oleh pengguna. Referensi implement
 | Profil Masjid (`ProfilePage`) | `/profil` | `03-profil.png` | M1.3: header, statistik bersama, visi-misi, linimasa, tujuh pengurus, CTA Kontak |
 | Laporan Keuangan (`FinancialReportPage`) | `/laporan-keuangan` | `05-laporan.png`, `07-token.png` | Tetap placeholder; di luar M1.1 |
 | Agenda (`AgendaPage`) | `/agenda` | `02-agenda.png` | M1.2: banner dan kelompok 5/2/5, mock/service bersama Beranda, responsive |
-| Kontak | Belum ditambahkan | `04-kontak.png` | Navigasi dinonaktifkan sampai tahap berikutnya |
+| Kontak (`ContactPage`) | `/kontak` | `04-kontak.png` | M1.4: Donasi, informasi takmir dan placeholder lokasi; data transaksi/kontak menunggu konfirmasi |
 | Pilihan format/pratinjau | Belum diterapkan | `06-format-unduhan.png`, `08-preview-pdf.png`, `09-preview-png.png` | Di luar M1.1 |
 | Halaman tidak ditemukan (`NotFoundPage`) | `*` | Belum ditentukan | Placeholder fungsional |
 
@@ -23,7 +23,7 @@ Urutan Beranda: hero, tiga statistik, visi-misi, ringkasan agenda, tiga kartu ke
 - Hero memakai foto masjid asli dengan crop `cover` posisi tengah bawah; mobile memakai titik horizontal 72%. Overlay biru menjaga keterbacaan teks.
 - Navbar memakai logo asli transparan, lebar 155 px desktop, 140 px tablet dan 125 px mobile.
 - Foto yang sama dipakai pada lapisan latar Beranda dengan blur 10 px serta overlay pucat. Tidak memakai screenshot halaman atau foto masjid lain.
-- Plus Jakarta Sans variabel dimuat lokal, bobot 200–800, pada Beranda, Agenda, dan Profil melalui kelas layout masing-masing. Halaman placeholder lain mempertahankan font/latar sebelumnya. Warna, spacing, radius, shadow dan kontainer tetap pendekatan dari raster.
+- Plus Jakarta Sans variabel dimuat lokal, bobot 200–800, pada Beranda, Agenda, Profil, dan Kontak melalui kelas layout masing-masing. Halaman placeholder lain mempertahankan font/latar sebelumnya. Warna, spacing, radius, shadow dan kontainer tetap pendekatan dari raster.
 - Responsive menumpuk kartu dan membungkus navigasi; desain mobile resmi belum diberikan.
 - Konten mock mengikuti referensi dan bukan hasil verifikasi informasi produksi. Tidak ada data transaksi keuangan dalam M1.1.
 
@@ -82,3 +82,19 @@ Referensi final `design-references/user/03-profil.png` (1728 × 3905 px), dengan
 QA browser development dan preview build dilakukan pada 1728 × 1080, 1366 × 768 dan 390 × 844, zoom 100%. Hasil setelah iterasi linimasa/latar tersimpan di `tmp/m13-qa/final-*.png`, tidak di-stage. Tinggi desktop sekitar 3741 px, laptop 3392 px, mobile 3800 px. Belum identik piksel dengan raster final: crop/blur foto, shadow, proporsi/pemenggalan teks dan ruang antarseksi masih pendekatan. Tidak tersedia desain mobile resmi.
 
 Regresi Beranda/Agenda diperiksa menggunakan screenshot dan geometri pada ketiga viewport. Geometri seluruhnya identik dengan baseline M1.2; PNG Beranda identik pada tiga viewport, PNG Agenda identik pada desktop/laptop; mobile Agenda ditinjau visual tanpa perubahan komposisi. Perubahan pemetaan kelas PublicLayout tetap menjaga font/latar halaman placeholder lain.
+
+
+## M1.4 — Kontak dan Donasi
+
+Referensi final `design-references/user/04-kontak.png` (1728 × 3090 px). Konten, layout, CSS `kt-*` dan kedua aset QRIS diperiksa pada repository Blade commit `12e0155f6a5aba59f4776403c711082f27fa2dce`, tanpa mengubah sumber. Tidak memakai Figma MCP atau menyalin stylesheet Laravel.
+
+- `ContactPage` pada `/kontak` memakai Navbar, Footer, PublicLayout, Button, font lokal, foto dan logo M1.1a. Header Kontak, panel Donasi, tiga kartu informasi takmir dan panel lokasi mengikuti susunan desain. `DonationSection` mengelompokkan dua kartu QRIS/rekening tanpa abstraksi kartu generik.
+- CSS dibatasi `contact-*` dan kelas layout Kontak; tidak mengubah ukuran komponen bersama. Donasi desktop memakai dua kolom dengan rasio 0,6:1; mobile ditumpuk. Iterasi kedua merapatkan jarak panel, mengoreksi posisi heading dan mengatur foto buram khusus Kontak agar tidak terpotong oleh tinggi seluruh halaman.
+- Menu Kontak aktif menuju `/kontak`; CTA Hubungi Takmir dari Profil kini membuka halaman tersebut. Route langsung `/kontak/` juga berfungsi.
+- Final desain menampilkan placeholder QRIS/rekening, sedangkan Blade menampilkan gambar QRIS, detail bank dan unduhan. Mengikuti final desain dan ketentuan verifikasi pengguna, tidak menambahkan unduhan, salin rekening, WhatsApp atau iframe peta.
+- `qris-donasi.png` dan `.jpg` ternyata **JPEG identik, 1024 × 1024 px**, SHA-256 `3f5f4418efc39a1e2e4addb3bd3fc7069ade9b61d243d6c4c8c649cee65ace85`. Gambar menampilkan materi QRIS berlabel nama masjid; tampilan tersebut bukan bukti validitas transaksi atau kepemilikan. Tidak disalin ke aset aplikasi/staging dan tidak digunakan sebagai QR yang dapat dipindai. Jika kelak disetujui, gunakan ekstensi `.jpg` sesuai format sebenarnya. Lisensi khusus materi QRIS belum ditemukan; izin publikasi perlu dikonfirmasi bersama pengurus.
+- QRIS, bank, penerima, telepon, jam layanan, alamat kontak dan tujuan peta belum dikonfirmasi. Placeholder terlihat jelas; badge tidak menyatakan “Resmi”. Peta mempertahankan ukuran/warna/posisi tombol, memakai placeholder tanpa geometri jalan atau koordinat karangan; tombol Google Maps nonaktif. Footer bersama mempertahankan alamat mock referensi sebelumnya, bukan hasil verifikasi baru.
+
+QA Chrome headless development dan preview build pada 1728 × 1080, 1366 × 768, 390 × 844, zoom 100%: PASS. Screenshot iterasi/final di `tmp/m14-qa/`, diabaikan Git. Tinggi akhir Kontak sekitar 3105/2670/2454 px; Navbar 60/60/97 px; tidak ada overflow horizontal. Desktop panel Donasi mulai pada 516 px, dibanding sekitar 515 px pada raster final. Geometri Beranda/Agenda/Profil identik dengan baseline M1.3; PNG identik kecuali Agenda mobile, yang ditinjau visual tanpa perubahan komposisi.
+
+Perbedaan tersisa: placeholder menggantikan data belum terverifikasi, panel peta belum menampilkan jalan/lokasi nyata, crop/blur foto dan pemenggalan teks masih pendekatan raster. Navbar/Footer mempertahankan refinement sebelumnya. Belum ada desain mobile resmi; layout mobile merupakan adaptasi responsive desktop.

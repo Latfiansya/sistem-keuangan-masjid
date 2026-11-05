@@ -83,3 +83,15 @@ Profil memakai `getPublicContent({ signal })` yang sudah tersedia, melalui konte
 - `profile` berisi `foundedYear`, `location`, `introduction`, `timeline`, `managementPeriod`, `members`, `contactTitle`, dan `contactDescription`. Item linimasa: tahun, era, nama masjid saat itu, judul, uraian. Pengurus: inisial, jabatan, nama dan catatan opsional.
 - Fixture mengikuti konten referensi; periode pengurus 2023–2025 dipilih sesuai desain final meskipun Blade menuliskan 2023–2026. Belum menjadi bukti data pengurus terkini atau kontrak publikasi produksi.
 - State loading/error/empty ditangani UI; mode API tetap memberi pesan integrasi konten publik belum tersedia tanpa mengarang endpoint. Penetapan endpoint, skema final dan pengelola konten menunggu kesepakatan backend.
+
+
+## Kebutuhan data Kontak dan Donasi — M1.4 (frontend mock)
+
+`getPublicContent({ signal })` yang sudah ada menyediakan `contact` melalui PublicLayout; komponen tidak mengakses mock/API langsung. Tidak ada endpoint baru atau perubahan backend. Mode mock mandiri, salinan data terisolasi, pembatalan dan error mode API tetap berlaku.
+
+- `contact.introduction`: uraian header; `information`: daftar `id`, `label`, `verified`, `value`, serta `note` opsional. Tiga id sekarang: `address`, `phone`, `hours`. Nilai `null` dan `verified: false` menunjukkan data belum dikonfirmasi, bukan nilai produksi. Catatan telepon saat ini hanya menyatakan jam layanan belum dikonfirmasi.
+- `contact.donation.qris`: `verified` dan `imageSrc`. UI hanya dapat menampilkan gambar jika flag benar dan sumber tersedia; mock sekarang false/null. Gambar QRIS sumber belum menjadi aset publik.
+- `contact.donation.bank`: `verified`, `name`, `number`, `recipient`. Ketiga nilai harus tersedia dan flag benar sebelum ditampilkan. Semua nilai mock null; tidak menyimpan nomor rekening contoh atau penerima yang belum terverifikasi.
+- `contact.location`: false/null untuk `verified`/`url`, mencatat kebutuhan lokasi mendatang. Saat ini panel peta selalu placeholder dengan tombol nonaktif; tidak mengonsumsi tautan sumber yang belum dikonfirmasi. Aktivasi tautan/embed setelah konfirmasi merupakan pekerjaan lanjutan yang terpisah.
+- Flag verifikasi adalah metadata publikasi, bukan validasi transaksi, otorisasi atau sistem pembayaran. Penetapan siapa yang menyetujui, sumber resmi, tanggal konfirmasi, izin publikasi dan skema API final menunggu pengurus/tim backend. Jangan mengubah flag hanya karena data ditemukan dalam Blade.
+- Loading, error, tidak adanya objek Kontak, daftar informasi kosong dan data donasi belum tersedia memiliki pesan yang sesuai. Tidak ada fitur payment gateway, salin rekening atau unduhan QRIS.

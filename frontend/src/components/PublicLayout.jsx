@@ -20,7 +20,7 @@ export default function PublicLayout() {
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
 
   const route = pathname.replace(/\/$/, '') || '/'
-  const layoutClass = { '/': 'home', '/agenda': 'agenda', '/profil': 'profile' }[route]
+  const layoutClass = { '/': 'home', '/agenda': 'agenda', '/profil': 'profile', '/kontak': 'contact' }[route]
   const mainClass = layoutClass ? (layoutClass === 'agenda' ? 'agenda-page' : `${layoutClass}-main`) : 'placeholder-page page-container'
 
   return (
