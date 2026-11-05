@@ -1,6 +1,6 @@
 # Sistem Keuangan dan Profil Masjid Al-Hidayah
 
-Repository kolaborasi mahasiswa untuk frontend publik dan backend sistem keuangan masjid. M1.1a melengkapi layout publik dan Beranda dengan foto serta logo dari referensi Blade dan font Plus Jakarta Sans lokal, sambil mempertahankan refinement skala M1.1. Profil dan Laporan tetap placeholder; halaman berikutnya menunggu instruksi terpisah.
+Repository kolaborasi mahasiswa untuk frontend publik dan backend sistem keuangan masjid. M1.1a melengkapi layout publik dan Beranda dengan foto serta logo dari referensi Blade dan font Plus Jakarta Sans lokal, sambil mempertahankan refinement skala M1.1. M1.2 menambahkan halaman Agenda beserta navigasi dan data mock bersama Beranda. Profil dan Laporan tetap placeholder; halaman berikutnya menunggu instruksi terpisah.
 
 ## Teknologi dan prasyarat
 
@@ -33,7 +33,7 @@ Terminal pertama, frontend mandiri:
 npm run dev:frontend
 ```
 
-Buka `http://localhost:5173`. Route awal: `/`, `/profil`, `/laporan-keuangan`. Navbar dan Footer dipakai bersama melalui `PublicLayout`. Agenda, Kontak, dan Masuk Pengurus belum aktif. Halaman tidak dikenal menampilkan placeholder 404.
+Buka `http://localhost:5173`. Route publik: `/`, `/agenda`, `/profil`, `/laporan-keuangan`. Navbar dan Footer dipakai bersama melalui `PublicLayout`. Kontak dan Masuk Pengurus belum aktif. Halaman tidak dikenal menampilkan placeholder 404.
 
 Terminal kedua, backend mandiri:
 
@@ -68,9 +68,9 @@ VITE_DATA_SOURCE=mock
 VITE_API_BASE_URL=/api
 ```
 
-- `mock` adalah bawaan, tidak menghubungi backend. Beranda dan Footer memakai konten referensi dari `publicContentService`; konten ini belum menjadi data produksi terverifikasi.
+- `mock` adalah bawaan, tidak menghubungi backend. Beranda, Agenda, dan Footer memakai konten referensi dari `publicContentService`; konten ini belum menjadi data produksi terverifikasi.
 - `VITE_DATA_SOURCE=api` tersedia pada service health. Konten publik belum memiliki endpoint bisnis; Beranda menampilkan pesan integrasi belum tersedia pada mode ini. Restart Vite setelah mengubah `.env`.
-- `PublicLayout` memuat konten melalui `src/services/publicContentService.js` lalu membagikannya kepada Beranda. Service health tetap tersedia; komponen tidak memanggil API langsung.
+- `PublicLayout` memuat konten melalui `src/services/publicContentService.js` lalu membagikannya kepada Beranda dan Agenda. Ringkasan serta daftar kegiatan berasal dari satu `agendaService` dan mock agenda; statistik dihitung dari daftar. Service health tetap tersedia; komponen tidak memanggil API langsung.
 - Proxy Vite meneruskan `/api` ke `http://127.0.0.1:3000`, sehingga integrasi lokal tidak memerlukan CORS. Jika port backend berubah, sesuaikan target di `frontend/vite.config.js`.
 - Semua variabel `VITE_*` tersedia pada browser: jangan mengisinya dengan rahasia. Nilainya ditanam saat build.
 - Proxy hanya berlaku pada server development Vite. Untuk integrasi di hosting kelak, tim perlu menyepakati routing `/api` atau URL API dan kebijakan CORS. Hosting dengan BrowserRouter juga perlu fallback ke `index.html` untuk route frontend. Belum ada konfigurasi deployment pada milestone ini.
@@ -85,7 +85,7 @@ npm run build
 npm audit
 ```
 
-`lint` menjalankan Oxlint frontend dan pemeriksaan sintaks backend. `test` menjalankan pengujian HTTP backend menggunakan test runner Node.js (health, 404, JSON tidak valid). Belum ada suite pengujian frontend otomatis; periksa routing, status mock/API, dan pesan gagal koneksi di browser. Build menghasilkan `frontend/dist`, yang diabaikan Git.
+`lint` menjalankan Oxlint frontend dan pemeriksaan sintaks backend. `test` menjalankan empat test frontend melalui Node.js/Vite SSR (data agenda, konsistensi ringkasan, loading/empty/error, mode API) dan tiga test HTTP backend (health, 404, JSON tidak valid). Pemeriksaan visual dan navigasi browser tetap diperlukan. Build menghasilkan `frontend/dist`, yang diabaikan Git.
 
 Untuk memeriksa hasil build lokal: `npm run preview --workspace frontend`. Preview tidak menyediakan proxy API; gunakan mode mock untuk pemeriksaan mandiri.
 
@@ -95,7 +95,7 @@ Untuk memeriksa hasil build lokal: `npm run preview --workspace frontend`. Previ
 frontend/
   src/
     components/  # PublicLayout, Navbar, Footer
-    pages/       # Beranda; placeholder Profil, Laporan, dan 404
+    pages/       # Beranda, Agenda; placeholder Profil, Laporan, dan 404
     services/    # Pengambilan data melalui mock atau HTTP
     mocks/       # Data contoh teknis
     utils/       # Pembacaan konfigurasi frontend

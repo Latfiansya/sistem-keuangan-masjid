@@ -19,7 +19,7 @@ export default function HomePage() {
           <h1 id="hero-heading">MASJID<br />AL-HIDAYAH</h1>
           <p>{content.heroDescription}</p>
           <div className="hero-actions">
-            <Button disabled title="Halaman Agenda belum tersedia">Lihat Agenda</Button>
+            <Button to="/agenda">Lihat Agenda</Button>
             <Button to="/profil" variant="glass">Profil Masjid</Button>
           </div>
         </div>

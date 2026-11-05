@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router'
 import PublicLayout from './components/PublicLayout.jsx'
+import AgendaPage from './pages/AgendaPage.jsx'
 import HomePage from './pages/HomePage.jsx'
 import ProfilePage from './pages/ProfilePage.jsx'
 import FinancialReportPage from './pages/FinancialReportPage.jsx'
@@ -10,6 +11,7 @@ export default function App() {
     <Routes>
       <Route element={<PublicLayout />}>
         <Route index element={<HomePage />} />
+        <Route path="agenda" element={<AgendaPage />} />
         <Route path="profil" element={<ProfilePage />} />
         <Route path="laporan-keuangan" element={<FinancialReportPage />} />
         <Route path="*" element={<NotFoundPage />} />

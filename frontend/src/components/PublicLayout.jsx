@@ -17,11 +17,15 @@ export default function PublicLayout() {
     return () => controller.abort()
   }, [])
 
+  useEffect(() => { window.scrollTo(0, 0) }, [pathname])
+
+  const isAgenda = pathname.replace(/\/$/, '') === '/agenda'
+
   return (
-    <div className={`public-layout${pathname === '/' ? ' public-layout--home' : ''}`}>
+    <div className={`public-layout${pathname === '/' ? ' public-layout--home' : isAgenda ? ' public-layout--agenda' : ''}`}>
       <a className="skip-link" href="#konten">Lewati navigasi</a>
       <Navbar />
-      <main id="konten" tabIndex={-1} className={pathname === '/' ? 'home-main' : 'placeholder-page page-container'}>
+      <main id="konten" tabIndex={-1} className={pathname === '/' ? 'home-main' : isAgenda ? 'agenda-page' : 'placeholder-page page-container'}>
         <Outlet context={{ content, error }} />
       </main>
       <Footer content={content} />

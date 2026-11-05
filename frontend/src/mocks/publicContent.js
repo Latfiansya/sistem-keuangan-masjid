@@ -15,14 +15,6 @@ export const mockPublicContent = {
     'Mempersiapkan generasi muda sebagai generasi Qur’ani yang tangguh.',
     'Berperan serta meningkatkan kesejahteraan masyarakat.',
   ],
-  agenda: {
-    description: 'Seluruh kegiatan pengajian rutin Masjid Al-Hidayah Sorolaten, dikelompokkan berdasarkan frekuensi pelaksanaan.',
-    counts: [
-      { label: 'Total Kegiatan', value: 12 },
-      { label: 'Rutin Mingguan', value: 5 },
-      { label: 'PHBI / Tahunan', value: 5 },
-    ],
-  },
   programs: [
     { title: 'Masjid Inklusi', icon: 'heart', description: 'Lingkungan ibadah yang ramah anak, difabel, dan lansia, terintegrasi dengan fasilitas PAUD dan TPA.' },
     { title: 'Usaha Kesehatan', icon: 'health', description: 'Layanan pemeriksaan kesehatan rutin dan gratis bagi jamaah (tensi, gula darah, kolesterol) bersama tenaga medis.' },

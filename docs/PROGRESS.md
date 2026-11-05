@@ -141,3 +141,39 @@ Status: selesai dan tervalidasi; siap ditinjau serta di-commit manual oleh pengg
 Crop, overlay dan pemenggalan teks masih pendekatan dari referensi raster, bukan token Figma; resolusi/fokus asli foto dan efek bayangan logo membatasi ketajaman. Tidak ada desain mobile resmi. Lisensi khusus foto/logo tidak ditemukan pada sumber; penggunaan mengikuti instruksi pengguna untuk proyek ini, tanpa mengklaim izin redistribusi umum. Font berlisensi SIL OFL 1.1. Tidak menambahkan QRIS atau fitur bisnis, tidak mengubah backend/dependency, tidak memanggil Figma MCP, dan tidak menjalankan commit/push/merge/rebase. Pekerjaan berhenti sebelum milestone berikutnya.
 
 Usulan pesan commit: `feat: integrasikan aset masjid dan font lokal pada beranda`.
+
+## M1.2 — Migrasi Agenda dari Blade ke React
+
+Status: implementasi dan verifikasi selesai; menunggu commit manual pengguna. Branch `feature/frontend-publik`, staging kosong saat mulai; `design-references/` tetap untracked. Milestone berhenti pada Agenda.
+
+### Perubahan
+
+- Menambahkan route `/agenda`, `AgendaPage` dan satu `AgendaGroup` reusable. `AgendaSummary` mendukung banner h1 tanpa CTA pada halaman Agenda, sementara versi Beranda tetap h2 dengan CTA.
+- Memakai Navbar, Footer, PublicLayout, Button, logo/foto WebP dan Plus Jakarta Sans lokal yang sudah tersedia. CSS halaman Agenda terpisah dari placeholder; struktur dan refinement Beranda dipertahankan.
+- Konten tiga kelompok mengikuti Blade pada commit `12e0155f6a5aba59f4776403c711082f27fa2dce` dan referensi final `02-agenda.png`: 5 mingguan, 2 bulanan, 5 tahunan/PHBI. Sumber Blade hanya dibaca, tidak diubah.
+- Satu mock agenda dipasok `agendaService` ke `publicContentService`; daftar dan ringkasan Beranda/Agenda tidak lagi menduplikasi angka. Statistik 12/5/5 dihitung dari item. Mendukung loading, error, daftar kosong, kelompok kosong dan AbortSignal.
+- Mode API tetap melaporkan integrasi belum tersedia; tidak menambah endpoint/backend. Kebutuhan data jadwal berulang dicatat di API_CONTRACT sebagai kebutuhan UI, bukan kontrak HTTP final.
+- Navbar Agenda dan kedua CTA Beranda aktif menuju `/agenda`; kembali melalui logo/Beranda tersedia. Scroll kembali ke atas saat pathname berubah. `/agenda` dan `/agenda/` dapat dibuka langsung.
+
+### Verifikasi
+
+- `npm run lint`: PASS.
+- `npm test`: PASS — empat test frontend permanen baru (Node/Vite SSR) dan tiga test HTTP backend yang sudah ada. Pengujian mencakup jumlah/jadwal, kesamaan data Beranda, isolasi salinan, pembatalan, state loading/empty/error dan mode API. Tanpa dependency baru.
+- `npm run build`: PASS.
+- Browser Chrome headless lokal, server development dan preview build: PASS untuk route langsung, menu aktif, navigasi pulang-pergi melalui kedua CTA, reset scroll, data 5/2/5, font/logo lokal, zoom 100%, tanpa overflow atau error runtime/HTTP selain favicon bawaan.
+
+| Viewport | Hasil visual |
+| --- | --- |
+| 1728 × 1080 | PASS — banner sekitar 418 px, kartu mingguan 647 px, panjang halaman 2923 px; dibanding raster final 2895 px |
+| 1366 × 768 | PASS — iterasi kedua merapatkan banner 386 → 337 px dan baris 80 → 64 px; panjang halaman 2461 px |
+| 390 × 844 | PASS — banner 401 px, menu ringkas, nama/jadwal ditumpuk tanpa terpotong; panjang halaman 2582 px |
+
+Dua iterasi screenshot dilakukan, hasil di `tmp/m12-qa/final-*.png`. Regresi Beranda diperiksa pada tiga viewport: geometri identik dengan M1.1a; PNG desktop/laptop identik dengan baseline; mobile ditinjau visual tanpa regresi komposisi. Screenshot dan skrip QA sementara tetap diabaikan Git.
+
+### Batasan dan Git
+
+Belum ada desain mobile resmi atau token Figma terukur. Crop/blur latar, garis pemisah, shadow, dan pemenggalan teks masih pendekatan dari gambar final. Data agenda mengikuti referensi, belum menjadi integrasi produksi. Tidak mengubah backend Express, dependency, aset, atau fitur Profil/Kontak/Laporan/Admin; tidak memanggil Figma MCP.
+
+Git status, diff, daftar file dan staged diff serta whitespace diperiksa. Hanya file implementasi, test dan dokumentasi M1.2 disiapkan; `.env`, credential, screenshot, temporary files, build dan gambar referensi tidak di-stage. Tidak melakukan commit, push, merge atau rebase.
+
+Usulan pesan commit: `feat: tambahkan halaman agenda dengan data dan navigasi bersama`.
