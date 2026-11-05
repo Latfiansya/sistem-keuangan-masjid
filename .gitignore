@@ -1,0 +1,27 @@
+# Dependency dan hasil build
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+
+# Environment lokal; contoh tanpa rahasia boleh dilacak
+.env
+.env.*
+!.env.example
+
+# Kredensial dan kunci privat
+credentials*.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Log, berkas sementara, dan pengaturan editor lokal
+*.log
+*.tsbuildinfo
+.DS_Store
+.idea/
+.vscode/
+*.local
+tmp/
