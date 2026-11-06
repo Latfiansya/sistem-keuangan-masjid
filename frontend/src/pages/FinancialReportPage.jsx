@@ -1,15 +1,20 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowLeft, CalendarDays, Download } from 'lucide-react'
 import { Link } from 'react-router'
 import FinancialTable from '../components/FinancialTable.jsx'
 import BalanceSummary from '../components/BalanceSummary.jsx'
 import ReportAccessPanel from '../components/ReportAccessPanel.jsx'
+import ReportFormatPicker from '../components/ReportFormatPicker.jsx'
+import ReportPreview from '../components/ReportPreview.jsx'
 import { getReport } from '../services/reportService.js'
 import { DEFAULT_REPORT_RANGE, getMonthRange, getPresetRange, validateReportRange } from '../utils/reportCalculations.js'
-import { formatReportMonth, formatReportPeriod } from '../utils/reportFormatters.js'
+import { formatReportMonth, formatReportPeriod, formatReportYear } from '../utils/reportFormatters.js'
+import { paginateReport } from '../utils/reportPagination.js'
 
 export default function FinancialReportPage() {
   const [hasAccess, setHasAccess] = useState(false)
+  const [view, setView] = useState('report')
+  const [format, setFormat] = useState('pdf')
   const [range, setRange] = useState({ ...DEFAULT_REPORT_RANGE })
   const [draft, setDraft] = useState({ ...DEFAULT_REPORT_RANGE })
   const [activePreset, setActivePreset] = useState('custom')
@@ -20,7 +25,7 @@ export default function FinancialReportPage() {
   useEffect(() => {
     window.scrollTo(0, 0)
     if (hasAccess) heading.current?.focus()
-  }, [hasAccess])
+  }, [hasAccess, view])
 
   useEffect(() => {
     if (!hasAccess) return
@@ -44,8 +49,14 @@ export default function FinancialReportPage() {
   }
 
   const { report, loading, error } = reportState
+  const pages = useMemo(() => paginateReport(report), [report])
+  const canPreview = !loading && !error && pages.length > 0
   const period = formatReportPeriod(range)
-  const year = range.startDate.slice(0, 4) === range.endDate.slice(0, 4) ? range.startDate.slice(0, 4) : `${range.startDate.slice(0, 4)}–${range.endDate.slice(0, 4)}`
+  const year = formatReportYear(range)
+
+  if (hasAccess && canPreview && view !== 'report') {
+    return <main className="report-page report-page--opened">{view === 'format' ? <ReportFormatPicker report={report} pages={pages} format={format} onFormatChange={setFormat} onBack={() => setView('report')} onNext={() => setView('preview')} headingRef={heading} /> : <ReportPreview report={report} pages={pages} format={format} onFormatChange={setFormat} onBack={() => setView('format')} headingRef={heading} />}</main>
+  }
 
   return (
     <main className={`report-page${hasAccess ? ' report-page--opened' : ''}`}>
@@ -53,7 +64,7 @@ export default function FinancialReportPage() {
         <header className="financial-header">
           <Link to="/" className="financial-navigation"><ArrowLeft aria-hidden="true" />Beranda</Link>
           <div className="financial-header-identity"><h1 ref={heading} tabIndex={-1}>Laporan Keuangan {year}</h1><p>{report?.name ?? 'Masjid Al-Hidayah'}</p><small>Data contoh pengembangan · bukan laporan produksi</small></div>
-          <div className="financial-export"><button type="button" className="financial-navigation" disabled aria-describedby="financial-export-status"><Download aria-hidden="true" />Unduh</button><small id="financial-export-status">Unduhan belum tersedia.</small></div>
+          <div className="financial-export"><button type="button" className="financial-navigation" disabled={!canPreview} onClick={() => { if (canPreview) setView('format') }} aria-describedby="financial-export-status"><Download aria-hidden="true" />Unduh</button><small id="financial-export-status">{canPreview ? 'Pilih format laporan.' : 'Pratinjau belum tersedia.'}</small></div>
         </header>
 
         <section className="financial-filters" aria-labelledby="financial-detail-heading">

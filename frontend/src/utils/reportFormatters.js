@@ -6,6 +6,13 @@ export const formatReportNumber = (amount) => numberFormat.format(amount)
 export const formatRupiah = (amount) => `Rp ${formatReportNumber(amount)}`
 export const formatReportDate = (date) => dateFormat.format(new Date(`${date}T00:00:00Z`))
 export const formatReportMonth = (month) => monthFormat.format(new Date(`${month}-01T00:00:00Z`))
+export const formatReportYear = ({ startDate, endDate }) => startDate.slice(0, 4) === endDate.slice(0, 4) ? startDate.slice(0, 4) : `${startDate.slice(0, 4)}–${endDate.slice(0, 4)}`
+
+export function formatReportRange({ startDate, endDate }) {
+  if (startDate === endDate) return formatReportDate(startDate)
+  if (startDate.slice(0, 7) === endDate.slice(0, 7)) return `${Number(startDate.slice(8))}–${formatReportDate(endDate)}`
+  return `${formatReportDate(startDate)} – ${formatReportDate(endDate)}`
+}
 
 export function formatReportPeriod({ startDate, endDate }) {
   const end = new Date(`${endDate}T00:00:00Z`)

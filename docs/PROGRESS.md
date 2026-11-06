@@ -343,3 +343,47 @@ Input tanggal memakai format/kontrol native browser; pemenggalan teks, ellipsis 
 README, DESIGN_MAP dan API_CONTRACT diperbarui. Status, diff, daftar file, whitespace dan staged diff diperiksa; hanya file kode/test/dokumentasi M1.5b disiapkan. Tidak menyertakan referensi, screenshot QA, temporary files, `.env`, credential, dependency atau build. Tidak memanggil Figma MCP; tidak melakukan commit, push, merge, rebase, perubahan backend atau pekerjaan M1.6.
 
 Usulan pesan commit: `feat: implementasikan laporan keuangan publik dan filter periode`.
+
+
+## M1.6a — Pilihan format dan pratinjau laporan
+
+Status: implementasi selesai dan tervalidasi pada branch `feature/frontend-publik`; siap ditinjau dan di-commit manual. Awal pekerjaan bersih selain `design-references/` untracked. Hanya M1.6a; tidak membuat ekspor M1.6b.
+
+### Implementasi dan konsistensi data
+
+- Tombol Unduh laporan membuka ReportFormatPicker: PDF/PNG dengan status aktif, periode terfilter, jumlah transaksi dan lembar aktual, kembali serta lanjut pratinjau. Semua tetap state pada `/laporan-keuangan`; gate M1.5a dan filter M1.5b dipertahankan.
+- ReportExportLayout menyatukan header/tahapan. ReportPreview menggunakan ReportSheet yang sama untuk kedua format: A4 lanskap, pemasukan kiri, pengeluaran kanan, ringkasan BalanceSummary pada lembar terakhir dan footer berlabel contoh pengembangan. FinancialTable tetap digunakan pada laporan utama.
+- getReport, mock dan kalkulasi M1.5b tidak diubah. Formatters bersama diperluas untuk rentang singkat/tahun. Tidak ada sumber transaksi pratinjau atau penghitungan uang terpisah. Total tetap: saldo awal Rp18.590.700, pemasukan Rp10.665.500, pengeluaran Rp8.771.500, saldo akhir Rp20.484.700.
+- reportPagination menghitung ruang baris dari geometri lembar dan ruang ringkasan, lalu membagi seluruh transaksi tanpa memotong baris atau memutasi sumber. Untuk April hasilnya dua lembar: 17 pemasukan/21 pengeluaran, lalu 12 pengeluaran dan resume. Jumlah halaman berubah menurut jumlah data; tidak mengambil hardcoded dua lembar/slice indeks tetap dari Blade.
+- Kembali dari pratinjau mempertahankan format; kembali ke laporan mempertahankan rentang, draft dan preset. Header Beranda tetap menuju `/`; refresh pratinjau mengembalikan gate/input kosong tanpa URL akses, localStorage, sessionStorage atau cookie.
+- Rentang unavailable tidak dapat membuka pilihan format/pratinjau valid. Hari kosong di dalam cakupan tetap menampilkan saldo terbawa. Unduh pratinjau nonaktif dengan keterangan ekspor belum tersedia; nama berkas hanya rencana. Tidak membuat file nyata, library ekspor, toast keberhasilan semu atau endpoint baru.
+
+### Pengujian
+
+- `npm run lint`: PASS, frontend dan pemeriksaan sintaks backend.
+- Seluruh test dengan Chrome QA: PASS — 55 hasil frontend (32 unit/struktur, 22 skenario browser dan satu induk suite) serta 3 test backend; tidak ada test dilewati.
+- Enam test unit/SSR baru mencakup kapasitas A4, nol/batas/banyak transaksi, seluruh ID tepat sekali/berurutan, mutasi sumber, kesamaan lembar PDF/PNG, total keuangan, periode kustom/kosong/tidak lengkap dan status radio/jumlah lembar.
+- Enam skenario browser baru mencakup membuka pemilih, PDF/PNG/status aktif, lanjut, kesamaan isi, kembali dengan format tetap, serta filter 3–5 April sepanjang alur. Sembilan transaksi, saldo awal Rp15.445.700 dan saldo akhir Rp16.602.700 tetap konsisten. Refresh, storage, error API, loading, gate dan navigasi publik tetap diuji.
+- `npm run build`: PASS. Seluruh 22 skenario browser juga PASS pada preview hasil build. Pemeriksaan tambahan ketiga viewport memastikan semua baris berada di dalam lembar, ringkasan tidak bertabrakan dengan footer, rasio A4, font termuat, dua tombol unduh nonaktif, PDF/PNG identik, serta mobile dapat scroll lokal dan menyesuaikan lebar.
+
+### Visual QA
+
+Chrome headless lokal terpisah, development dan preview build, browser zoom 100%. Referensi: 06-format-unduhan.png, 08-preview-pdf.png dan 09-preview-png.png. Dilakukan iterasi setelah screenshot: merapatkan header/spacing, menyelaraskan tinggi pilihan format, mengoreksi tinggi header lembar, dan meningkatkan skala baca lembar mobile. Tidak memakai screenshot sebagai isi aplikasi.
+
+| Viewport | Hasil QA |
+| --- | --- |
+| 1728 × 1080 | PASS — kontainer 1528 px; dua kartu sejajar; lembar sekitar 1486 × 1051 px. Tinggi pilihan format 1201 px, pratinjau 3081 px, dibanding raster 1200/3056 px |
+| 1366 × 768 | PASS — kontainer 1209 px; kartu sejajar; lembar sekitar 1167 × 825 px. Tinggi pilihan format 1083 px dan pratinjau 2611 px |
+| 390 × 844 | PASS — kontainer 358 px; kartu/kontrol ditumpuk, lembar tetap landscape dengan scroll lokal, skala baca 1,25 dan opsi Lebar halaman. Tinggi pilihan format 1284 px dan pratinjau 3321 px |
+
+Tidak ada overflow horizontal halaman, baris terpotong, ringkasan keluar lembar, atau error runtime/aset aplikasi selain favicon bawaan. Screenshot viewport/panjang penuh/lembar/resume dan metrik ada di `tmp/m16a-qa/`, diabaikan Git. Geometri empat halaman publik dan gate identik dengan baseline M1.5b pada semua viewport; 12 dari 15 PNG identik, tiga halaman desktop lainnya ditinjau visual tanpa perubahan komposisi. Laporan utama tetap setinggi 3239/2952/5104 px.
+
+### Batasan, dokumentasi dan Git
+
+Belum identik piksel dengan raster: penanda data mock/status ekspor diperlukan, detail tipografi, border, pemenggalan teks dan ellipsis masih pendekatan. Uraian panjang mengikuti pemotongan visual referensi dan tetap tersedia pada title; tidak mengarang kelanjutan uraian sumber. Belum ada desain mobile resmi. Gate tetap pembatas antarmuka dan bukan perlindungan endpoint; cakupan mock hanya April 2026.
+
+README dan DESIGN_MAP diperbarui termasuk pendekatan M1.6b: gunakan ReportSheet/pagination/data yang sama, tanpa transform pratinjau, tunggu font dan render tiap lembar sebagai PNG atau rangkai sebagai PDF A4. Pemilihan adaptor/library serta validasi berkas dikerjakan pada M1.6b. API_CONTRACT hanya memperjelas status pratinjau/tombol; tidak mengubah payload, service atau endpoint.
+
+Status, daftar file, diff, whitespace, file sensitif dan staged diff diperiksa. Hanya perubahan kode/test/dokumentasi M1.6a yang disiapkan; tidak menyertakan referensi, screenshot QA, temporary files, `.env`, credential, dependency atau build. Tidak mengubah backend, gate, transaksi atau perhitungan keuangan. Tidak menggunakan Figma MCP atau menjalankan commit, push, merge maupun rebase. Pekerjaan berhenti pada M1.6a.
+
+Usulan pesan commit: `feat: tambahkan pilihan format dan pratinjau laporan A4`.
