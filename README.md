@@ -98,7 +98,7 @@ npm run build
 npm audit
 ```
 
-`lint` menjalankan Oxlint frontend dan pemeriksaan sintaks backend. `test` menjalankan 36 test frontend melalui Node.js/Vite SSR (Agenda/Profil/Kontak, service/panel gate dan route laporan langsung, rekonsiliasi laporan/filter, konsistensi data, pembagian lembar dan pratinjau, loading/empty/error, mode API, perlindungan data belum dikonfirmasi) dan tiga test HTTP backend (health, 404, JSON tidak valid). Satu suite browser gate/laporan/pratinjau dengan 32 skenario tersedia secara opsional; tanpa konfigurasi browser suite ditandai dilewati. Pemeriksaan visual tetap diperlukan. Build menghasilkan `frontend/dist`, yang diabaikan Git.
+`lint` menjalankan Oxlint frontend dan pemeriksaan sintaks backend. `test` menjalankan 36 test frontend melalui Node.js/Vite SSR (Agenda/Profil/Kontak, service/panel gate dan route laporan langsung, rekonsiliasi laporan/filter, konsistensi data, pembagian lembar dan pratinjau, loading/empty/error, mode API, perlindungan data belum dikonfirmasi) dan tiga test HTTP backend (health, 404, JSON tidak valid). Satu suite browser gate/laporan/pratinjau dengan 35 skenario tersedia secara opsional; tanpa konfigurasi browser suite ditandai dilewati. Pemeriksaan visual tetap diperlukan. Build menghasilkan `frontend/dist`, yang diabaikan Git.
 
 Untuk memeriksa hasil build lokal: `npm run preview --workspace frontend`. Preview tidak menyediakan proxy API; gunakan mode mock untuk pemeriksaan mandiri.
 

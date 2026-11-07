@@ -72,6 +72,11 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
     await send('Input.insertText', { text: value })
   }
   const submit = () => evaluate('document.querySelector(".report-access-form").requestSubmit()')
+  const clickVisible = async (selector) => {
+    const point = await evaluate(`(() => { const e=document.querySelector(${JSON.stringify(selector)}); e.scrollIntoView({block:'center'}); const r=e.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2,visible:r.width>0&&r.height>0&&e.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2))} })()`)
+    assert.equal(point.visible, true, selector)
+    for (const type of ['mousePressed', 'mouseReleased']) await send('Input.dispatchMouseEvent', { type, x: point.x, y: point.y, button: 'left', clickCount: 1 })
+  }
   const setDates = async (startDate, endDate) => {
     await evaluate(`(() => {
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set
@@ -495,6 +500,72 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
         assert.equal(await evaluate('!!document.querySelector(".report-preview-scroll-hint")'), width >= 768)
       }
     })
+    await t.test('menu mobile dapat dibuka, dinavigasi, ditutup dengan Escape dan ditinggalkan melalui Tab', async () => {
+      for (const width of [360, 390]) {
+        await send('Emulation.setDeviceMetricsOverride', { width, height: 844, deviceScaleFactor: 1, mobile: false })
+        await send('Page.navigate', { url: `${baseUrl}/?qa=mobile-${++sequence}` })
+        await waitFor('!!document.querySelector(".hero")')
+        assert.equal(await evaluate('getComputedStyle(document.querySelector(".nav-links")).display'), 'none')
+        assert.ok(await evaluate('document.querySelector(".navbar").getBoundingClientRect().height < 70'))
+        await clickVisible('.nav-toggle')
+        assert.equal(await evaluate('document.querySelector(".nav-toggle").getAttribute("aria-expanded")'), 'true')
+        assert.equal(await evaluate('[...document.querySelectorAll(".nav-link")].every(e=>e.getBoundingClientRect().height>=44)'), true)
+        await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
+        await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
+        await waitFor('document.querySelector(".nav-toggle").getAttribute("aria-expanded") === "false"')
+        assert.equal(await evaluate('document.activeElement.matches(".nav-toggle")'), true)
+        await clickVisible('.nav-toggle')
+        await evaluate('document.querySelector(".nav-link:last-child").focus()')
+        await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 })
+        await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 })
+        await waitFor('document.querySelector(".nav-toggle").getAttribute("aria-expanded") === "false"')
+        for (const route of ['/agenda', '/profil', '/kontak', '/']) {
+          await clickVisible('.nav-toggle')
+          await clickVisible(`.nav-links a[href="${route}"]`)
+          await waitFor(`location.pathname === ${JSON.stringify(route)} && document.querySelector('.nav-toggle').getAttribute('aria-expanded') === 'false' && document.querySelector('.nav-link.is-active').getAttribute('href') === ${JSON.stringify(route)}`)
+          assert.equal(await evaluate('document.querySelector(".nav-link.is-active").getAttribute("href")'), route)
+        }
+      }
+    })
+    await t.test('modal mobile mengikuti area layar yang menyusut, dapat digulir dan tetap dapat disubmit', async () => {
+      await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: false })
+      await openGate()
+      await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 360, deviceScaleFactor: 1, mobile: false })
+      await waitFor('parseFloat(document.querySelector("dialog").style.getPropertyValue("--dialog-viewport-height")) <= 360')
+      const bounds = await evaluate('(()=>{const e=document.querySelector("dialog"),r=e.getBoundingClientRect();return {top:r.top,bottom:r.bottom,scrollable:e.scrollHeight>e.clientHeight}})()')
+      assert.ok(bounds.top >= 0 && bounds.bottom <= 360)
+      assert.equal(bounds.scrollable, true)
+      await evaluate('document.querySelector(".report-access-form button").scrollIntoView({block:"center"})')
+      assert.equal(await evaluate('(()=>{const e=document.querySelector(".report-access-close"),r=e.getBoundingClientRect();return r.top>=0&&r.bottom<=innerHeight&&e.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2))})()'), true)
+      await fillPassword('salah')
+      await clickVisible('.report-access-form button')
+      await waitFor('document.querySelector("#report-access-error")?.textContent.includes("tidak cocok")')
+      assert.equal(await evaluate('document.body.style.overflow'), 'hidden')
+      await fillPassword('demo123')
+      await clickVisible('.report-access-form button')
+      await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 50')
+      await send('Page.reload')
+      await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 50')
+      assert.equal(await evaluate('!!document.querySelector("dialog")'), false)
+    })
+    await t.test('ekspor mobile memakai dua lembar yang sama dan menghasilkan PDF serta ZIP PNG nyata', async () => {
+      for (const width of [360, 390]) {
+        await send('Emulation.setDeviceMetricsOverride', { width, height: 844, deviceScaleFactor: 1, mobile: false })
+        await send('Page.navigate', { url: `${baseUrl}/laporan-keuangan?qa=export-mobile-${width}` })
+        await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 50')
+        await clickVisible('.financial-export button')
+        await clickVisible('.report-export-actions .export-button--primary')
+        await waitFor('document.querySelectorAll(".report-sheet").length === 2')
+        assert.equal(await evaluate('new Set([...document.querySelectorAll("[data-transaction-id]")].map(e=>e.dataset.transactionId)).size'), 50)
+        assert.match(await evaluate('document.querySelector(".report-sheet .financial-summary-table tfoot td:last-child").textContent'), /20\.484\.700/)
+        const pdf = await exportCurrent()
+        checkPdf(pdf, 2)
+        await clickVisible('.report-preview-format button:nth-child(2)')
+        const zip = await JSZip.loadAsync((await exportCurrent()).bytes, { checkCRC32: true })
+        assert.deepEqual(Object.keys(zip.files), ['halaman-01.png', 'halaman-02.png'])
+        for (const file of Object.values(zip.files)) checkPng(await file.async('nodebuffer'))
+      }
+    })
     await t.test('Navbar publik tetap terlihat dan dapat dipakai saat scroll tanpa masuk ke layout laporan', async () => {
       for (const [width, height] of [[1728, 1080], [1366, 768], [390, 844]]) {
         await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false })
@@ -502,6 +573,7 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
           const url = `${baseUrl}${route}?qa=${++sequence}`
           await send('Page.navigate', { url })
           await waitFor(`location.href === ${JSON.stringify(url)} && !!document.querySelector('.copyright')`)
+          if (width < 768) await clickVisible('.nav-toggle')
           for (const fraction of [0, .5, 1]) {
             await evaluate(`scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * ${fraction})`)
             const result = await evaluate(`(()=>{

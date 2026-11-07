@@ -48,6 +48,7 @@ button:disabled { cursor: not-allowed; }
 .nav-link { padding: 5px 16px; border-radius: 8px; background: #dcecff; color: var(--color-mosque); font-weight: 700; font-size: clamp(16px, 1.25vw, 21px); line-height: 1.15; white-space: nowrap; }
 .nav-link.is-active { color: white; background: var(--color-mosque); }
 .nav-link:not(:disabled):hover { box-shadow: inset 0 0 0 2px #006b0060; }
+.nav-toggle { display: none; }
 @media (min-width: 1024px) {
   .navbar { width: clamp(720px, 63vw, 1088px); max-width: 1088px; min-height: clamp(54px, 3.7vw, 64px); display: grid; grid-template-columns: clamp(170px, 13vw, 224px) minmax(0, 1fr); gap: clamp(32px, 4.17vw, 72px); padding: 7px clamp(42px, 4.4vw, 76px) 7px clamp(36px, 3.7vw, 64px); }
   .brand img { width: 100%; height: clamp(38px, 2.78vw, 48px); object-fit: cover; object-position: center; }
@@ -145,6 +146,7 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .report-access-dialog::backdrop { background: #07110bbb; }
 .report-access-dialog .report-access-panel { padding: clamp(24px, 3vw, 40px) clamp(24px, 3vw, 40px) 24px; box-shadow: 0 20px 60px #00000059; }
 .report-access-dialog .report-access-panel h1 { font-size: clamp(30px, 2.8vw, 48px); }
+.report-access-controls { display: contents; }
 .report-access-close { position: absolute; top: 14px; right: 14px; display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid #ffffff40; border-radius: 10px; color: white; background: #ffffff14; cursor: pointer; }
 .report-access-close svg { width: 20px; height: 20px; }
 .report-access-close:hover { background: #ffffff26; }
@@ -871,4 +873,70 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
   .report-preview-page-label { display: block; }
   .report-preview-page-label h3 { font-size: 13px; }
   .report-preview-page-label p { margin-top: 4px; text-align: left; font-size: 10px; }
+}
+
+/* Adaptasi tablet/mobile tidak mengubah geometri desktop atau lembar cetak. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .page-container, .agenda-section, .agenda-page, .profile-wide-container { width: calc(100% - 64px); }
+  .nav-link { display: flex; align-items: center; justify-content: center; min-height: 44px; }
+  .prosperity-section, .contact-donation { width: calc(100% - 48px); padding: 28px; border-radius: 28px; }
+  .program-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .program-card:last-child { grid-column: 1 / -1; }
+  .agenda-page .agenda-panel { padding: 32px; gap: 24px; }
+  .agenda-page .agenda-copy > p { max-width: 100%; font-size: 16px; line-height: 1.45; }
+  .profile-statistics { gap: 24px; }
+  .profile-statistic-top h2 { letter-spacing: 1px; }
+  .profile-contact-panel { padding: 48px 32px; border-radius: 40px; }
+  .financial-report .financial-filters-bottom { gap: 16px; }
+  .report-export-introduction { flex-wrap: wrap; }
+  .report-export-actions, .report-export-actions > div { flex-wrap: wrap; }
+}
+
+@media (max-width: 767px) {
+  .navbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0; padding: 8px 12px; }
+  .brand { min-height: 44px; }
+  .brand img { width: 132px; }
+  .nav-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 8px 12px; border: 1px solid #ffffff55; border-radius: 8px; background: #dcecff; color: var(--color-mosque); font-size: 14px; font-weight: 700; }
+  .nav-toggle svg { width: 20px; height: 20px; }
+  .nav-links { display: none; }
+  .nav-links.is-open { display: grid; grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding-top: 12px; }
+  .nav-link { display: flex; align-items: center; justify-content: center; min-height: 44px; font-size: 14px; padding: 10px; }
+  .public-layout main { scroll-margin-top: 96px; }
+  .public-layout :is(h1, h2, a, button, input, [tabindex]) { scroll-margin-top: 100px; }
+  .hero { padding-top: 118px; }
+  .hero h1 { line-height: 1; }
+  .action-button { min-height: 44px; }
+  .statistics { gap: 12px; }
+  .stat-card { display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; column-gap: 14px; padding: 18px 20px; }
+  .stat-card svg { grid-row: 1 / 3; margin: 0; }
+  .stat-card strong { font-size: 26px; }
+  .agenda-page, .profile-main, .contact-main { padding-top: 124px; }
+  .agenda-row-name { font-size: 15px; }
+  .agenda-row-time { white-space: normal; line-height: 1.4; }
+  .profile-member h3 { font-size: 14px; line-height: 1.4; }
+  .profile-member-role { font-size: 11px; line-height: 1.4; }
+  .contact-information-row { align-items: flex-start; }
+  .contact-information-row p { line-height: 1.4; }
+  .report-access-dialog { top: calc(var(--dialog-viewport-top, 0px) + var(--dialog-viewport-height, 100dvh) / 2); bottom: auto; max-height: calc(var(--dialog-viewport-height, 100dvh) - 24px); margin-block: 0; transform: translateY(-50%); overscroll-behavior: contain; scroll-padding-block: 16px; }
+  .report-access-dialog { background: var(--color-mosque); }
+  .report-access-dialog .report-access-panel { padding: 16px 20px 20px; border-top: 0; border-radius: 0 0 20px 20px; }
+  .report-access-dialog .report-access-icon { width: 40px; height: 40px; margin-bottom: 16px; }
+  .report-access-dialog .report-access-panel h1 { font-size: clamp(28px, 7.5vw, 32px); }
+  .report-access-dialog .report-access-note { margin-top: 24px; }
+  .report-access-controls { position: sticky; top: 0; z-index: 1; display: flex; justify-content: flex-end; padding: 6px 10px; background: var(--color-mosque); box-shadow: 0 1px 0 #ffffff26; }
+  .report-access-close { position: static; width: 44px; height: 44px; }
+  .financial-report .financial-navigation, .financial-report .financial-presets button, .financial-report .financial-apply { min-height: 44px; }
+  .financial-report .financial-date-control > span { flex: 1; }
+  .financial-report .financial-date-control input { width: 100%; min-height: 28px; font-size: 16px; }
+  .financial-report .financial-transaction-description { white-space: normal; overflow-wrap: anywhere; }
+  .financial-report .financial-category { white-space: normal; overflow-wrap: anywhere; line-height: 1.35; }
+  .financial-report .financial-month select { min-height: 28px; }
+  .report-preview-format button, .report-preview-workspace-header button { min-height: 44px; }
+  .report-preview-toolbar-actions { flex-direction: column; }
+  .report-preview-workspace-header > span { margin-left: auto; }
+}
+
+@media (max-width: 479px) {
+  .financial-report .financial-custom-range { grid-template-columns: minmax(0, 1fr); }
+  .financial-report .financial-date-control { padding: 10px 12px; gap: 12px; }
 }

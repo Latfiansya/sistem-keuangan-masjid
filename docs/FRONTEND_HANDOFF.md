@@ -1,4 +1,4 @@
-# Handoff frontend publik — diperbarui M1.8b
+# Handoff frontend publik — diperbarui M1.8c
 
 Frontend publik selesai untuk **mode mock**, dengan gate dan ekspor lokal. Backend bisnis belum terhubung; ini bukan pernyataan siap produksi. Hasil audit/QA terperinci ada di [PROGRESS](PROGRESS.md), pemetaan visual di [DESIGN_MAP](DESIGN_MAP.md), dan field/payload di [API_CONTRACT](API_CONTRACT.md).
 
@@ -52,6 +52,14 @@ Saat ini mode itu hanya mengaktifkan HTTP health; service bisnis menampilkan err
 - Filter inklusif; draft berlaku setelah Terapkan. Periode di luar cakupan berstatus unavailable, bukan nol. Hari kosong di dalam cakupan membawa saldo sebelumnya. Default/preset masih memakai acuan 30 April 2026; label contoh masih statis. Sepakati metadata data resmi dan periode produksi pada pekerjaan integrasi.
 - Format/kembali mempertahankan filter. PDF/PNG memakai report/pages/ReportSheet yang sama. PDF A4 landscape berbasis gambar 2×; PNG satu lembar langsung, lebih dari satu lembar menjadi ZIP berurutan. Ekspor tidak membutuhkan endpoint atau upload; tombol dikunci selama proses dan error dapat dicoba lagi.
 - Kategori transaksi pada ReportSheet berupa teks berwarna tanpa capsule; CSS yang sama ikut dirender ke PDF/PNG. Tinggi baris dan pagination tetap, jangan membuat versi kategori atau data kedua khusus ekspor.
+
+## Responsive — M1.8c
+
+- Di bawah 768 px, Navbar fixed memakai tombol Menu dengan empat tautan dalam grid dua kolom. Area klik minimal 44 px; Escape mengembalikan fokus ke pemicu, Tab keluar/klik luar/pemilihan tautan menutup menu. Desktop ≥1024 px mempertahankan geometri/glass baseline.
+- Kartu statistik Beranda lebih ringkas; ukuran teks agenda/pengurus ditingkatkan. Tablet 768–1023 px mendapat gutter lebih lega dan program Beranda dua kolom; QRIS/rekening tetap bertumpuk di bawah 768 px. Konten/placeholder tidak berubah.
+- Modal mengikuti tinggi dan offset `visualViewport` agar area yang tersisa saat keyboard muncul dapat digulir. Toolbar tutup mobile tetap terlihat selama scroll. Fokus/scroll lock tetap dikelola ReportAccessModal; tidak ada penyimpanan sandi/status. QA layar pendek merupakan simulasi, bukan verifikasi keyboard pada perangkat fisik.
+- Filter tanggal bertumpuk di bawah 480 px, uraian/kategori transaksi mobile dapat membungkus. Scroll horizontal tetap lokal pada resume dan lembar A4. Tombol pratinjau mobile bertumpuk; dokumen cetak/pagination/layanan ekspor tidak berubah.
+- Bukti enam viewport, regresi desktop dan pemeriksaan berkas ada pada PROGRESS. Belum tersedia frame mobile resmi; keputusan responsive perlu review manual tim, kemudian smoke test perangkat fisik/lintas browser.
 
 ## Verifikasi dan pekerjaan tertunda
 

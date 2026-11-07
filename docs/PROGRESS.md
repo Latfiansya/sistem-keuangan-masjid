@@ -672,3 +672,39 @@ Surface solid badge header Profil/Kontak diganti satu aturan bersama: gradient p
 QA screenshot sebelum/sesudah Chrome zoom 100% pada 1728 × 1080, 1366 × 768 dan smoke 390 × 844: kapsul lebih transparan, outline sama tipis, teks tetap jelas. Pengukuran seluruh elemen pada 12 kombinasi empat halaman publik menunjukkan geometri/tinggi halaman tetap sama; enam screenshot Beranda/Agenda identik piksel dengan baseline. Tidak ada overflow, aset gagal atau exception runtime. Surface kedua badge sama pada seluruh viewport; font, radius dan posisi tetap. Bukti lokal di tmp/m18b-badge-qa/ tidak di-stage.
 
 Lint, 69 hasil test frontend (termasuk browser gate/filter/ekspor nyata) dan 3 test backend tanpa skip, build production serta whitespace check: PASS. Tidak menambah dependency atau mengubah backend/fitur. Staging M1.8b sebelumnya dipertahankan; tambahan hanya CSS badge dan dokumentasi progres/peta desain. Belum diuji ulang lintas browser atau pada layar fisik. Tidak melakukan commit/push/merge/rebase atau memulai M1.8c.
+
+## M1.8c — Responsive refinement dan regression QA (7 November 2026)
+
+### Perubahan terverifikasi
+
+- Navbar <768 px menjadi satu baris sekitar 62 px, dengan tombol Menu dan empat tautan collapsible dua kolom. Target klik minimal 44 px, aria-expanded/controls, Escape kembali ke pemicu, Tab keluar/klik luar/pemilihan tautan menutup menu. Fixed/glass tetap; desktop tidak berubah.
+- Beranda mobile: jarak teks hero menyesuaikan Navbar ringkas; kartu statistik memakai ikon di samping dan angka 26 px tanpa mengurangi konten. Tablet memakai gutter lebih lega serta dua kolom program, kartu terakhir selebar baris. Tinggi/crop/fade hero desktop tetap.
+- Agenda mobile: header lebih ringkas, nama kegiatan 15 px dan label waktu dapat membungkus. Tablet: panel pengantar lebih lega. Data 5/2/5 tetap.
+- Profil: nama/jabatan pengurus mobile 14/11 px, tujuh kartu tetap. Tablet: gap statistik/CTA lebih proporsional. Kontak mempertahankan QRIS/rekening bertumpuk pada mobile; informasi rata atas dan padding tablet lebih lega. Seluruh data belum dikonfirmasi tetap placeholder.
+- Modal mengikuti tinggi/offset visualViewport, dengan scroll lokal. Iterasi screenshot layar pendek menemukan tombol tutup ikut tergulir; diperbaiki dengan toolbar sticky mobile agar tidak menutupi teks/input. Fokus/scroll lock dan sandi benar/salah/loading/error tetap. Simulasi area 390×360 memastikan input, submit dan tutup tetap dapat digunakan; keyboard perangkat fisik belum diuji.
+- Laporan: tanggal satu kolom di bawah 480 px, input 16 px, tombol ≥44 px, uraian/kategori dapat membungkus pada mobile. Resume tetap scroll lokal. Format/pratinjau: tombol unduh mobile bertumpuk, kontrol lebar halaman ≥44 px, pembungkusan pengantar/tombol tablet. ReportSheet A4, skala baca lokal, pagination, service/data dan perhitungan tidak diubah.
+
+### Hasil QA dan ekspor
+
+| Viewport Chrome, zoom 100% | Hasil |
+| --- | --- |
+| 360 × 800 | PASS — sembilan tampilan, menu/scroll lokal/overflow |
+| 390 × 844 | PASS — sembilan tampilan, modal/menu/scroll lokal |
+| 768 × 1024 | PASS — sembilan tampilan, susunan tablet |
+| 1024 × 768 | PASS — sembilan tampilan, baseline desktop |
+| 1366 × 768 | PASS — sembilan tampilan, baseline desktop |
+| 1728 × 1080 | PASS — sembilan tampilan, baseline desktop |
+
+Baseline/iterasi dan production diperiksa melalui screenshot. QA final production memeriksa 54 kombinasi tampilan dan 120 posisi scroll: tanpa overflow halaman, tabrakan header/subtotal, font/aset gagal atau exception runtime. Navbar tetap terlihat/dapat diklik saat scroll; tombol ekspor bawah tetap terjangkau. Dua puluh tujuh pengukuran geometri/style/tinggi desktop ≥1024 px identik dengan baseline. Screenshot yang berbeda hanya menunjukkan selisih raster kecil pada blur/teks tanpa perubahan komposisi; tidak mengklaim seluruh screenshot identik piksel.
+
+Alur publik, CTA Beranda/Footer → modal → laporan → format → pratinjau → ekspor, akses langsung/refresh tanpa gate, filter inklusif/kustom/tanggal terbalik/periode tidak lengkap, kembali dengan filter tetap, fokus/Escape/loading/error/submit ganda dan mode API: PASS. Test menu memakai klik melalui koordinat elemen, bukan hanya memanggil handler. April tetap 17 pemasukan/33 pengeluaran; saldo awal 18.590.700 + pemasukan 10.665.500 − pengeluaran 8.771.500 = saldo akhir 20.484.700.
+
+Ekspor production nyata pada keenam viewport menghasilkan 24 berkas: tiap viewport April penuh (PDF dua halaman + ZIP dua PNG) dan 3–5 April (PDF satu halaman + PNG tunggal). Seluruh 18 halaman PDF dirender/dibuka dan 18 PNG diperiksa; A4 297×210 mm, PNG asli 2245×1587, ZIP lolos CRC, bukan gambar kosong, tanpa baris melewati footer. Gambar yang tertanam pada setiap halaman PDF identik piksel dengan PNG pasangannya serta konsisten lintas viewport. Pratinjau memakai 50 ID April unik, tanpa transaksi hilang/berulang; DOM lembar tidak berubah selama ekspor. Penanda data pengembangan, font, warna, periode dan resume tetap. PDF masih berbasis gambar; uraian yang sudah disingkat pada sumber tetap demikian.
+
+### Quality gate, staging dan batasan
+
+Lint: PASS. Seluruh test: 72 hasil frontend (36 test dasar, 35 skenario browser dan suite induk) serta 3 test backend, tanpa skip/fail. Build production dan whitespace check: PASS. Tiga skenario browser baru memeriksa menu mobile, modal pada layar pendek, serta ekspor PDF/ZIP mobile. README, peta desain dan handoff diperbarui; tidak ada dependency, backend atau kontrak bisnis baru.
+
+Bukti screenshot/berkas/metrics di tmp/m18c-qa/ diabaikan Git. Perubahan manual pengguna pada shadow badge (blur 12 → 32 px) yang sudah ada saat mulai dipertahankan di working tree dan tidak dicampur ke staging M1.8c. Hanya Navbar, ReportAccessModal, CSS responsive, test browser serta empat dokumen terkait disiapkan untuk commit manual; referensi desain, credential, build output dan artefak QA tidak di-stage. Tidak melakukan commit, push, merge atau rebase.
+
+Frontend mode mock siap untuk review manual sebelum pertimbangan merge; belum berarti siap produksi. Belum ada desain mobile resmi atau pengujian perangkat fisik/Safari/Firefox pada tahap ini. Data resmi Kontak/Donasi, izin aset dan integrasi endpoint Express tetap mengikuti handoff; tidak dikerjakan pada M1.8c. Tidak melanjutkan milestone lain/admin atau melakukan merge.

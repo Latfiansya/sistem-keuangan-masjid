@@ -242,3 +242,20 @@ Baseline, dua iterasi dan hasil production diperiksa pada 1728 × 1080, 1366 × 
 ### Koreksi final surface badge header
 
 Badge header Profil/Kontak kini memakai satu aturan frosted glass yang menggantikan surface solid di atas: gradient rgba(255,255,255,.76) → rgba(255,246,234,.62), backdrop blur 12 px/saturasi 115%, border putih transparan 1 px/55%, highlight inset putih 65% dan shadow kecil rgba(20,55,45,.12). Tidak ada override surface per halaman. Teks/ikon oranye, tipografi, radius dan ukuran tetap; padding Profil mengompensasi tambahan border 1 px agar geometri tidak berubah. Badge era linimasa dan badge lainnya tidak terkena aturan ini. Screenshot sebelum/sesudah serta pengukuran pada 1728, 1366 dan 390 px berada di tmp/m18b-badge-qa/ (tidak di-stage); Beranda/Agenda identik dengan baseline pada ketiga viewport.
+
+## M1.8c — adaptasi responsive tanpa frame mobile resmi
+
+Desktop ≥1024 px tetap memakai baseline M1.8a/M1.8b. Aturan baru dibatasi breakpoint mobile/tablet, tanpa mengubah foto/crop hero desktop, background bersama atau ukuran lembar cetak.
+
+| Tampilan | Adaptasi |
+| --- | --- |
+| Layout publik | <768 px: Navbar satu baris dengan Menu collapsible dua kolom, target klik 44 px. Tablet: tinggi klik menu 44 px dan gutter 32 px. |
+| Beranda | Mobile: jarak hero di bawah Navbar ringkas dan statistik dengan ikon di samping. Tablet: program dua kolom, kartu terakhir selebar baris. |
+| Agenda | Mobile: header mengikuti Navbar ringkas, nama kegiatan 15 px dan waktu dapat membungkus. Tablet: panel pengantar lebih lega. |
+| Profil | Mobile: nama/jabatan pengurus 14/11 px; tujuh pengurus dan grid tetap. Tablet: jarak statistik/CTA disesuaikan. |
+| Kontak/Donasi | Mobile mempertahankan satu kolom, header mengikuti Navbar dan informasi kontak rata atas; tablet mendapat gutter/padding lebih lega. Placeholder tetap. |
+| Gate modal | Mobile: tinggi/posisi mengikuti visualViewport, scrolling lokal dan toolbar sticky dengan tombol tutup 44 px. Gate tetap hanya dari CTA. |
+| Laporan | <480 px: tanggal satu kolom; mobile: input 16 px, tombol ≥44 px, uraian/kategori membungkus. Resume tetap scroll lokal. |
+| Format/PDF/PNG | Mobile: tombol pratinjau bertumpuk dan kontrol lebar halaman ≥44 px. Tablet: pengantar/tombol dapat membungkus. ReportSheet A4, skala baca lokal, pagination dan ekspor tetap. |
+
+Screenshot sebelum/iterasi/final pada 360×800, 390×844, 768×1024, 1024×768, 1366×768 dan 1728×1080 berada di tmp/m18c-qa/ (diabaikan Git). Adaptasi ini belum menjadi desain mobile resmi/pixel-perfect.
