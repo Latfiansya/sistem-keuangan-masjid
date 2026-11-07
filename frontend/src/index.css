@@ -569,7 +569,7 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
   background: linear-gradient(135deg, rgba(255, 255, 255, .76), rgba(255, 246, 234, .62));
   border: 1px solid rgba(255, 255, 255, .55);
   backdrop-filter: blur(12px) saturate(115%);
-  box-shadow: 0 4px 12px rgba(20, 55, 45, .12), inset 0 1px 0 rgba(255, 255, 255, .65);
+  box-shadow: 0 4px 32px rgba(20, 55, 45, .12), inset 0 1px 0 rgba(255, 255, 255, .65);
 }
 /* Kompensasi border baru agar ukuran badge Profil tetap sama. */
 .profile-header .profile-badge { padding: 3px 23px; }
