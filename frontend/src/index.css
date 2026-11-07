@@ -221,6 +221,15 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
   .financial-summary-table thead { font-size: 12px; }
 }
 
+@media (min-width: 768px) and (max-width: 1023px) {
+  .financial-filters-top > div:first-child { flex-basis: 100%; }
+  .financial-presets { width: 100%; }
+  .financial-filters-bottom { flex-wrap: wrap; }
+  .financial-custom-range { flex-basis: 100%; gap: 12px; }
+  .financial-month { margin-left: auto; }
+  .financial-transactions-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
 @media (max-width: 767px) {
   .financial-report { width: calc(100% - 32px); padding-block: 24px 32px; }
   .financial-header { grid-template-columns: 1fr 1fr; gap: 18px 12px; margin-bottom: 30px; }
@@ -248,13 +257,13 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
   .financial-results { margin-top: 24px; }
   .financial-transactions-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .financial-table { border-radius: 12px; }
-  .financial-table-header { min-height: 80px; padding: 14px 12px; gap: 8px; }
+  .financial-table-header { min-height: 80px; padding: 14px 12px; gap: 8px; flex-wrap: wrap; }
   .financial-table-icon { width: 36px; height: 36px; border-radius: 9px; }
   .financial-table-icon svg { width: 22px; height: 22px; }
   .financial-table-header h3 { font-size: 20px; }
   .financial-table-identity p { font-size: 12px; }
   .financial-table-identity { gap: 8px; }
-  .financial-subtotal { font-size: 23px; }
+  .financial-subtotal { font-size: 23px; margin-left: auto; }
   .financial-transactions-table tr { height: 78px; }
   .financial-transactions-table td { padding: 10px 12px; }
   .financial-transaction-description { font-size: 14px; }

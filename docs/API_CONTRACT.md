@@ -56,12 +56,43 @@ Base URL lokal backend: `http://127.0.0.1:3000/api`. Frontend development menggu
 | Kebutuhan | Keputusan yang diperlukan | Status |
 | --- | --- | --- |
 | Profil masjid | Field, sumber konten, pengelola konten, data yang boleh dipublikasikan | Belum disepakati |
-| Laporan publik | Definisi pemasukan, pengeluaran, saldo, periode, dan akses publik | Belum disepakati |
+| Laporan publik | Rumus/rentang dan gate sederhana sudah dipakai frontend; sumber resmi, payload HTTP final dan publikasi data perlu disepakati | Frontend mock selesai; API belum tersedia |
 | Daftar data laporan | Filter, urutan, pagination, kebutuhan ekspor | Belum disepakati |
 | Konsistensi kontrak | Nama endpoint, skema data, metadata, kode validasi | Belum disepakati |
 | Infrastruktur | Database, autentikasi bila diperlukan, CORS, URL tiap lingkungan | Belum disepakati |
 
 Jangan membuat endpoint bisnis, database, migrasi, atau autentikasi berdasarkan tabel kebutuhan ini saja. Catat persetujuan tim dan contoh payload sebelum implementasi. Saat kontrak disepakati, buat service dan mock dengan bentuk data yang sama.
+
+## Pemetaan service ke HTTP — handoff M1.7
+
+**Hanya GET /api/health sudah tersedia.** Dua nama endpoint konten di bawah adalah usulan untuk ditinjau tim, bukan endpoint yang sudah disepakati/diimplementasikan. POST sandi dan GET laporan tetap usulan sebelumnya. Tidak perlu endpoint ekspor karena ekspor berjalan lokal pada snapshot laporan.
+
+| Service frontend | Request HTTP yang diusulkan | Respons sukses HTTP 200 |
+| --- | --- | --- |
+| getPublicContent({ signal }) | GET /api/public/content, tanpa body/query | Envelope proyek; data berisi field konten bersama, profile dan contact pada tabel berikut, tanpa agenda |
+| getAgenda({ signal }) | GET /api/public/agenda, tanpa body/query | Envelope proyek; data berisi description dan groups. Service menghitung counts dari items |
+| checkReportPassword(password, { signal }) | POST /api/public/report/check-password; JSON password string | { success: true, data: { valid: boolean } }, bukan token/session |
+| getReport({ startDate, endDate, signal }) | GET /api/public/finance/report?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD | Envelope proyek; data berbentuk hasil getReport pada bagian laporan, termasuk status/coverage/range/transactions/summary |
+
+Field konten publik yang diperlukan implementasi aktual:
+
+| Field dalam data konten | Tipe dan kebutuhan |
+| --- | --- |
+| name, address, heroDescription, vision | String. address Footer adalah konten referensi yang perlu verifikasi publikasi; jangan mengambil alamat kosong/tidak terverifikasi pada kartu Kontak |
+| copyrightYear | Integer tahun |
+| statistics | Array: id founded/area/capacity, label/value string, icon calendar/expand/users; statistik area/capacity juga amount integer, unit, profileLabel, description string. Tahun/luas/kapasitas dan value tampilan harus satu sumber |
+| missions | Array string |
+| programs | Array: title, description, icon string; icon yang digunakan heart/health/economy |
+| profile | Objek: foundedYear integer, location/introduction/managementPeriod/contactTitle/contactDescription string, timeline dan members array. Bentuk item mengikuti bagian Profil dan mocks/publicContent.js |
+| contact | Objek introduction, information array, donation, location. Bentuk dan aturan verified/null mengikuti bagian Kontak; jangan mengaktifkan data pembayaran tanpa konfirmasi |
+
+getPublicContent tetap menjadi agregator: adapter API mendatang menggabungkan data konten dengan hasil getAgenda menjadi objek content.agenda yang sama untuk Beranda dan Agenda. Komponen memakai konteks PublicLayout; jangan memanggil HTTP dari JSX atau membuat hubungan service melingkar. groups Agenda memakai id weekly/monthly/yearly; item name/schedule adalah string jadwal berulang, bukan timestamp.
+
+Saat menambahkan adapter, terapkan pembacaan envelope/error proyek, validasi field wajib/jenis nilai, serta AbortSignal pada fetch dan pembaruan state. Array kosong adalah keadaan kosong yang sah; objek wajib yang hilang/format tidak cocok harus menjadi error integrasi yang jelas. Service mengembalikan objek hasil yang dapat dipakai komponen dan menjaga data sumber tidak termutasi. Nilai color kategori laporan saat ini green/orange/blue, id kategori harus stabil dan cocok dengan categoryId transaksi. Seluruh nominal termasuk hasil penjumlahan harus safe integer Rupiah. Urutan transaksi dari respons dipertahankan; backend perlu mengirim urutan stabil tanpa menambah kontrol sorting pada UI.
+
+Pergantian VITE_DATA_SOURCE=api saat ini **belum mengaktifkan request bisnis**: cabang API konten, agenda, sandi dan laporan sengaja melempar error integrasi. Setelah endpoint dibuat dan payload disepakati, implementasikan cabang tersebut di services beserta test kontrak. VITE_API_BASE_URL dipakai healthService sekarang; adapter bisnis mendatang perlu menggunakannya juga. Jangan memakai mock sebagai fallback diam-diam pada kegagalan API.
+
+Label contoh laporan dan tanggal acuan/default April 2026 masih merupakan keputusan prototipe, bukan metadata produksi. Integrasi data resmi nantinya perlu menyepakati penanda data contoh, periode default/acuan preset, daftar bulan dan cakupan data. Perubahan label/periode itu adalah pekerjaan integrasi terpisah; jangan menghapus penanda contoh sebelum sumber data dikonfirmasi. Kontrak ini tidak menambah akun, JWT, session, hashing atau autentikasi tambahan.
 
 ## Kebutuhan data Agenda — M1.2 (frontend mock)
 

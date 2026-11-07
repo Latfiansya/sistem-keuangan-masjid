@@ -1,6 +1,6 @@
 # Sistem Keuangan dan Profil Masjid Al-Hidayah
 
-Repository kolaborasi mahasiswa untuk frontend publik dan backend sistem keuangan masjid. M1.1a melengkapi layout publik dan Beranda dengan foto serta logo dari referensi Blade dan font Plus Jakarta Sans lokal, sambil mempertahankan refinement skala M1.1. M1.2 menambahkan halaman Agenda beserta navigasi dan data mock bersama Beranda. M1.3 melengkapi Profil Masjid memakai data bersama Beranda, linimasa, dan tujuh pengurus. M1.4 menambahkan Kontak dan Donasi dengan placeholder data yang belum dikonfirmasi. M1.5a menambahkan gate sandi bersama; M1.5b melengkapi laporan mock April 2026, rentang tanggal, dua tabel transaksi dan resume saldo. M1.6a menambahkan pilihan format PDF/PNG serta pratinjau lembar A4 lanskap. M1.6b mengaktifkan unduhan PDF, PNG tunggal, atau ZIP berisi PNG tiap lembar.
+Repository kolaborasi mahasiswa untuk frontend publik dan backend sistem keuangan masjid. M1.1a melengkapi layout publik dan Beranda dengan foto serta logo dari referensi Blade dan font Plus Jakarta Sans lokal, sambil mempertahankan refinement skala M1.1. M1.2 menambahkan halaman Agenda beserta navigasi dan data mock bersama Beranda. M1.3 melengkapi Profil Masjid memakai data bersama Beranda, linimasa, dan tujuh pengurus. M1.4 menambahkan Kontak dan Donasi dengan placeholder data yang belum dikonfirmasi. M1.5a menambahkan gate sandi bersama; M1.5b melengkapi laporan mock April 2026, rentang tanggal, dua tabel transaksi dan resume saldo. M1.6a menambahkan pilihan format PDF/PNG serta pratinjau lembar A4 lanskap. M1.6b mengaktifkan unduhan PDF, PNG tunggal, atau ZIP berisi PNG tiap lembar. M1.7 menuntaskan audit frontend publik dan menyediakan panduan handoff backend.
 
 ## Teknologi dan prasyarat
 
@@ -98,7 +98,7 @@ npm run build
 npm audit
 ```
 
-`lint` menjalankan Oxlint frontend dan pemeriksaan sintaks backend. `test` menjalankan 35 test frontend melalui Node.js/Vite SSR (Agenda/Profil/Kontak, service dan struktur gate, rekonsiliasi laporan/filter, konsistensi data, pembagian lembar dan pratinjau, loading/empty/error, mode API, perlindungan data belum dikonfirmasi) dan tiga test HTTP backend (health, 404, JSON tidak valid). Satu suite browser gate/laporan/pratinjau dengan 26 skenario tersedia secara opsional; tanpa konfigurasi browser suite ditandai dilewati. Pemeriksaan visual tetap diperlukan. Build menghasilkan `frontend/dist`, yang diabaikan Git.
+`lint` menjalankan Oxlint frontend dan pemeriksaan sintaks backend. `test` menjalankan 35 test frontend melalui Node.js/Vite SSR (Agenda/Profil/Kontak, service dan struktur gate, rekonsiliasi laporan/filter, konsistensi data, pembagian lembar dan pratinjau, loading/empty/error, mode API, perlindungan data belum dikonfirmasi) dan tiga test HTTP backend (health, 404, JSON tidak valid). Satu suite browser gate/laporan/pratinjau dengan 29 skenario tersedia secara opsional; tanpa konfigurasi browser suite ditandai dilewati. Pemeriksaan visual tetap diperlukan. Build menghasilkan `frontend/dist`, yang diabaikan Git.
 
 Untuk memeriksa hasil build lokal: `npm run preview --workspace frontend`. Preview tidak menyediakan proxy API; gunakan mode mock untuk pemeriksaan mandiri.
 
@@ -107,8 +107,8 @@ Untuk memeriksa hasil build lokal: `npm run preview --workspace frontend`. Previ
 Tidak memerlukan dependency tambahan. Gunakan tiga terminal terpisah dari root repository: jalankan frontend mock dengan `npm run dev:frontend`, frontend mode API dengan `VITE_DATA_SOURCE=api npm run dev --workspace frontend -- --host 127.0.0.1 --port 5174`, dan instance Chrome QA terpisah. Contoh macOS:
 
 ```sh
-mkdir -p tmp/m15a-qa
-"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --remote-debugging-port=9228 --remote-debugging-address=127.0.0.1 --user-data-dir="$PWD/tmp/m15a-qa/chrome-profile" --no-first-run --no-default-browser-check about:blank
+mkdir -p tmp/browser-qa
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --remote-debugging-port=9228 --remote-debugging-address=127.0.0.1 --user-data-dir="$PWD/tmp/browser-qa/chrome-profile" --no-first-run --no-default-browser-check about:blank
 ```
 
 Sesuaikan lokasi executable Chrome pada sistem lain. Gunakan profil QA terpisah, bukan profil browser pribadi. Server pertama harus memakai mode mock; `VITE_DATA_SOURCE=mock npm run dev:frontend` dapat dipakai jika konfigurasi lokal berbeda. Jalankan seluruh test dengan browser tersedia:
@@ -117,7 +117,7 @@ Sesuaikan lokasi executable Chrome pada sistem lain. Gunakan profil QA terpisah,
 REPORT_BROWSER_QA_URL=http://127.0.0.1:5173 REPORT_BROWSER_API_QA_URL=http://127.0.0.1:5174 REPORT_BROWSER_CDP_URL=http://127.0.0.1:9228 npm test
 ```
 
-Suite browser memakai tab pada instance QA tersebut. Cakupannya: akses langsung, sandi kosong/salah/benar melalui Enter, loading, pencegahan submit ganda, kegagalan mode API, refresh, pemeriksaan storage/URL/cookie, CTA Beranda/Footer, keluar–masuk halaman, konsistensi laporan, rentang inklusif, saldo awal kustom, tanggal terbalik, hari tanpa transaksi dan periode tidak lengkap. Alur format/pratinjau memeriksa pemilihan PDF/PNG, isi lembar yang identik, jumlah baris/total, navigasi kembali dengan filter tetap dan refresh dari pratinjau. Pengujian ekspor menerima berkas nyata dari Chrome, memeriksa signature/jumlah halaman/ukuran A4 PDF, CRC serta dimensi setiap PNG dalam ZIP, PNG tunggal terfilter, pencegahan ekspor ganda, render kosong dan kegagalan unduhan. Hasil sementara disimpan dalam `tmp/report-export-tests/`. Hentikan server serta Chrome QA setelah pengujian. Screenshot/profil sementara berada di `tmp/` yang diabaikan Git.
+Suite browser memakai tab pada instance QA tersebut. Cakupannya: akses langsung, sandi kosong/salah/benar melalui Enter, loading, pencegahan submit ganda, kegagalan mode API, refresh, pemeriksaan storage/URL/cookie, CTA Beranda/Footer, keluar–masuk halaman, konsistensi laporan, rentang inklusif, saldo awal kustom, tanggal terbalik, hari tanpa transaksi dan periode tidak lengkap. Alur format/pratinjau memeriksa pemilihan PDF/PNG, isi lembar yang identik, jumlah baris/total, navigasi kembali dengan filter tetap dan refresh dari pratinjau. Pengujian ekspor menerima berkas nyata dari Chrome, memeriksa signature/jumlah halaman/ukuran A4 PDF, CRC serta dimensi setiap PNG dalam ZIP, PNG tunggal terfilter, pencegahan ekspor ganda, render kosong dan kegagalan unduhan. Audit M1.7 menambahkan alur publik berurutan, skip link/fokus/scroll lokal melalui keyboard, error API empat halaman dan enam viewport termasuk subtotal yang tetap utuh. Request aset/HTTP yang gagal ikut menggagalkan suite. Hasil sementara disimpan dalam `tmp/report-export-tests/`. Hentikan server serta Chrome QA setelah pengujian. Screenshot/profil sementara berada di `tmp/` yang diabaikan Git.
 
 ## Struktur repository
 
@@ -156,6 +156,7 @@ Repository GitHub private: [Latfiansya/sistem-keuangan-masjid](https://github.co
 - [Kontrak API](docs/API_CONTRACT.md)
 - [Peta desain Figma](docs/DESIGN_MAP.md)
 - [Perkembangan milestone](docs/PROGRESS.md)
+- [Handoff frontend publik ke backend](docs/FRONTEND_HANDOFF.md)
 - [Integrasi Tailwind v4 dengan plugin Vite](https://tailwindcss.com/docs/installation/using-vite)
 - [Inisialisasi React melalui Vite](https://vite.dev/guide/)
 - [React Router mode deklaratif](https://reactrouter.com/start/declarative/installation)

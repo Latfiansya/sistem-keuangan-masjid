@@ -430,3 +430,80 @@ PDF berbasis gambar belum mendukung seleksi/cari teks; resolusi 2× sekitar 192 
 README, DESIGN_MAP dan PROGRESS diperbarui; API_CONTRACT hanya memperjelas status ekspor frontend tanpa perubahan payload/endpoint. Status, daftar file, diff, whitespace, dependency, file sensitif dan staged diff diperiksa. Hanya kode/test/dokumentasi serta manifest/lockfile M1.6b disiapkan. Tidak menyertakan artefak QA, referensi desain, build, environment atau kredensial. Tidak mengubah backend, menggunakan Figma MCP, menjalankan commit/push/merge/rebase atau mengerjakan M1.7.
 
 Usulan pesan commit: `feat: aktifkan ekspor PDF dan PNG laporan keuangan`.
+
+
+## M1.7 — Final QA dan handoff frontend publik (7 November 2026)
+
+Status: audit frontend publik selesai untuk baseline Chrome/mode mock, siap ditinjau dan di-commit manual. Branch feature/frontend-publik; awal kerja bersih selain design-references/ untracked. Tidak melakukan merge atau integrasi bisnis Express.
+
+### Audit sembilan tampilan
+
+| Tampilan | Hasil audit |
+| --- | --- |
+| Beranda | Hero/aset/logo/font, statistik, visi-misi, agenda, kartu kemakmuran dan CTA lengkap; refinement M1.1 dipertahankan. Klaim realtime diganti teks netral |
+| Agenda | Kelompok 5/2/5 dan 12 kegiatan, ringkasan satu sumber dengan Beranda, Navbar/Footer dan menu aktif konsisten |
+| Profil | Statistik/visi bersama, sejarah 1980/2000, tujuh pengurus dan CTA Kontak; periode/konten referensi belum diverifikasi sebagai produksi |
+| Kontak/Donasi | Komposisi QRIS/rekening, kontak/jam layanan dan lokasi tersedia sebagai placeholder yang jelas. Tidak ada pembayaran/tautan fiktif |
+| Gate sandi | Halaman khusus tanpa Navbar/Footer, input password, error/loading/Enter dan pencegahan submit ganda; sandi bersama tetap hanya gate antarmuka |
+| Laporan | 17/33 transaksi, filter/periode, subtotal/resume konsisten. Perbaikan clipping subtotal pada 360/768 px; tidak mengubah angka atau kalkulasi |
+| Pilihan format | PDF/PNG, periode/jumlah lembar aktual, pilihan aktif dan kembali mempertahankan filter |
+| Pratinjau PDF | A4 landscape, seluruh ID tepat sekali, resume terakhir, ekspor PDF sesuai lembar |
+| Pratinjau PNG | Isi sama dengan PDF; satu PNG langsung atau beberapa PNG dalam ZIP. Petunjuk scroll mengikuti mode baca |
+
+Sembilan pasangan raster/render desktop ditinjau visual; 54 screenshot/geometri dicatat per lingkungan. Crop/blur foto, wrapping, spacing dan panjang Beranda/Profil tetap pendekatan dari raster sesuai refinement sebelumnya; tidak diklaim identik piksel. Placeholder Kontak, teks netral gate, penanda contoh dan informasi ZIP mengikuti keputusan pengguna. Tidak melakukan redesign atau mengembalikan skala komponen yang terlalu besar.
+
+### Temuan dan perbaikan
+
+1. Nominal header kartu laporan terpotong pada 360/768 px meski dokumen tidak overflow. Mobile kini membungkus subtotal jika ruang kurang; tablet 768–1023 menumpuk tabel dan memberi ruang penuh pada kontrol. Desktop ≥1024 tetap dua kolom. Screenshot dan test batas nominal terhadap kartu memastikan angka utuh.
+2. Petunjuk menggeser lembar tetap muncul ketika Lebar halaman aktif; kondisi render disesuaikan tanpa mengubah lembar cetak.
+3. Browser meminta favicon.ico yang tidak tersedia. HTML kini menunjuk logo WebP asli yang sudah ada; tidak membuat aset/dependency baru.
+4. CTA Beranda menyebut realtime padahal data snapshot mock; teks dibuat netral tentang sandi akses bersama.
+5. Kontrak sebelumnya belum merinci kebutuhan seluruh field Beranda/agregasi konten. API_CONTRACT kini memetakan service, request/respons, field konten dan enum, serta menandai endpoint konten/agenda sebagai usulan. Cabang API tetap belum diimplementasikan.
+
+### Responsive dan browser
+
+| Viewport Chrome, zoom 100% | Hasil akhir |
+| --- | --- |
+| 360 × 800 | PASS — navigasi utuh, subtotal dapat membungkus tanpa terpotong, filter ringkas, preview scroll lokal |
+| 390 × 844 | PASS — kartu/kontrol ditumpuk, tabel/resume terbaca dengan scroll lokal, tanpa overflow halaman |
+| 768 × 1024 | PASS — tabel satu kolom dan kontrol berbaris, nominal lengkap, A4 tetap landscape |
+| 1024 × 768 | PASS — dua tabel sesuai ruang, Navbar dan kartu tidak bertabrakan |
+| 1366 × 768 | PASS — komposisi laptop dan refinement sebelumnya dipertahankan |
+| 1728 × 1080 | PASS — sembilan komposisi desktop dibandingkan raster final dan refinement sebelumnya |
+
+Development dan production preview masing-masing memeriksa 54 kombinasi. Font/aset termuat; tidak ada horizontal overflow dokumen, subtotal terpotong, tabrakan header, HTTP gagal atau exception runtime aplikasi. Fokus keyboard terlihat, skip link mencapai main, Enter mengaktifkan CTA, dan tombol panah menggeser resume/lembar lokal. Ini pemeriksaan accessibility dasar, bukan audit WCAG lengkap.
+
+Safari tersedia tetapi POST pembuatan sesi safaridriver tidak merespons dalam 20 detik; driver dihentikan dan smoke test belum terlaksana. Firefox tidak ditemukan pada /Applications, /System/Applications atau ~/Applications. Tidak memasang browser tambahan, mengubah izin otomatisasi atau mengklaim PASS lintas browser/perangkat fisik.
+
+### Data, alur end-to-end dan ekspor
+
+Alur Beranda–Agenda–Profil–Kontak–Beranda, menu aktif, 404/kembali, CTA/Footer ke gate, sandi benar/salah, Enter, refresh, filter, kembali, pemilihan format dan unduhan nyata: PASS. Mode API menampilkan error integrasi yang jelas pada empat halaman publik/gate; tidak memakai mock diam-diam atau membuat request endpoint bisnis yang belum ada.
+
+Rekonsiliasi tetap 17 pemasukan/33 pengeluaran: saldo awal Rp18.590.700 + pemasukan Rp10.665.500 − pengeluaran Rp8.771.500 = saldo akhir Rp20.484.700. Total/kategori berasal dari transaksi; tanggal inklusif dan saldo awal khusus, penolakan rentang terbalik/di luar cakupan, hari kosong, serta isolasi mock diuji. Tidak mengubah mock, nilai transaksi, rumus, service laporan atau pembagian halaman.
+
+Ekspor diuji pada enam viewport: April menghasilkan PDF dua halaman dan ZIP dua PNG; 3–5 April menghasilkan PDF satu halaman dan PNG langsung. Fixture QA 60 transaksi menghasilkan tiga lembar; tidak ditambahkan ke mock aplikasi. Development menghasilkan 26 berkas, production preview 24 berkas. Semua 39 halaman PDF dan 39 gambar PNG diperiksa menggunakan pembaca PDF/dekoder ZIP/PNG; jumlah, A4 297 × 210 mm, CRC, urutan, dimensi 2245 × 1587 dan isi tidak kosong: PASS. Halaman pertama/terakhir dirender serta ditinjau. Gambar di PDF identik dengan PNG pasangannya, lintas viewport dan development/build. Penanda data pengembangan tetap tercetak; baris/resume tidak hilang. PDF tetap raster tanpa seleksi/cari teks.
+
+### Kualitas kode, dependency dan verifikasi akhir
+
+- Seluruh data dinamis melalui services; komponen tidak mengimpor mock, database atau Laravel. HTTP aplikasi hanya ada di healthService, cabang bisnis masih error integrasi. Tidak menemukan kebutuhan refactor besar, dependency baru atau komponen duplikat; tabel layar dan lembar cetak berbeda struktur dengan satu logika data/kalkulasi.
+- Tidak ada penggunaan storage/cookie untuk sandi/akses, sandi produksi atau klaim perlindungan endpoint. demo123 khusus mock dan terdokumentasi. QRIS/rekening/kontak tidak terverifikasi tidak ditampilkan sebagai data resmi.
+- npm run lint: PASS. Seluruh test dengan Chrome: 65 hasil frontend (35 unit/struktur, 29 skenario browser dan satu induk) serta 3 test backend, tanpa dilewati. Tiga skenario tambahan mencakup navigasi/keyboard, mode API publik dan enam viewport. Suite browser yang sama juga PASS pada production preview.
+- npm run build: PASS. Entry aplikasi sekitar 328,38 kB / 102,29 kB gzip, sama skala dengan M1.6b; library ekspor tetap dimuat dinamis. Tidak ada masalah performa terukur yang membutuhkan perubahan arsitektur.
+- npm audit: 0 kerentanan yang dilaporkan. Tidak mengubah manifest/lockfile atau menambah dependency. Pemeriksaan diff/whitespace, file sensitif dan staging diselesaikan.
+
+### Handoff dan penilaian kesiapan
+
+FRONTEND_HANDOFF memuat route/status, komponen/service, sumber mock, langkah adapter API, gate, filter/ekspor dan batasan. API_CONTRACT membedakan health tersedia dari empat endpoint bisnis yang masih usulan, merinci field/request/respons dan aturan agregasi. Mengubah VITE_DATA_SOURCE saja belum mengaktifkan request bisnis. Label contoh dan periode April tetap prototipe; metadata/periode produksi perlu keputusan integrasi.
+
+| Aspek | Penilaian |
+| --- | --- |
+| Fungsional frontend publik | Siap untuk mode mock di Chrome; seluruh alur dan ekspor nyata tervalidasi |
+| Visual | Struktur/identitas/refinement konsisten, mendekati referensi; bukan kesamaan piksel dan belum ada frame mobile resmi |
+| Integrasi backend | Siap handoff kontrak/mock; endpoint, adapter HTTP dan verifikasi sumber resmi belum dibuat |
+| Merge ke main | Layak review manual sebagai frontend mock. main lokal ancestor HEAD, selisih 0/9 commit; status remote tidak diperbarui dan merge tidak dilakukan. Bukan kesiapan sistem produksi |
+
+Tertunda sebelum publikasi produksi: persetujuan kontrak/adapter API, data/sandi/periode resmi, konfirmasi QRIS/rekening/kontak/lokasi/pengurus, izin aset, serta pengujian lintas browser/perangkat fisik. Maps dan Masuk Pengurus tetap nonaktif. Bukti QA hanya di tmp/m17-qa/ atau tmp/report-export-tests/, diabaikan Git.
+
+README, DESIGN_MAP, API_CONTRACT dan PROGRESS diperbarui; FRONTEND_HANDOFF dibuat. Hanya perubahan M1.7 yang diverifikasi disiapkan untuk staging. Tidak menyertakan backend, environment, credential, referensi desain, screenshot, ekspor, temporary files atau build. Tidak menggunakan Figma MCP, menjalankan commit/push/merge/rebase, atau melanjutkan admin/milestone lain.
+
+Usulan pesan commit: `chore: finalisasi QA frontend publik dan dokumentasi handoff backend`.

@@ -36,6 +36,7 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
       else request.resolve(message.result)
     }
     if (message.method === 'Runtime.exceptionThrown') failures.push(message.params.exceptionDetails.text)
+    if (message.method === 'Network.responseReceived' && message.params.response.status >= 400) failures.push(message.params.response.url)
     if (message.method === 'Browser.downloadWillBegin') downloads.push(message.params)
     if (message.method === 'Browser.downloadProgress') {
       const file = downloads.find((item) => item.guid === message.params.guid)
@@ -80,6 +81,12 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
     })()`)
   }
   const applyDates = () => evaluate('document.querySelector(".financial-custom-range").requestSubmit()')
+  const panRight = async (selector) => {
+    await evaluate(`document.querySelector(${JSON.stringify(selector)}).focus()`)
+    await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowRight', code: 'ArrowRight', windowsVirtualKeyCode: 39 })
+    await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowRight', code: 'ArrowRight', windowsVirtualKeyCode: 39 })
+    await waitFor(`document.querySelector(${JSON.stringify(selector)}).scrollLeft > 0`)
+  }
   const readDownload = async (index) => {
     for (let attempt = 0; attempt < 500; attempt++) {
       const file = downloads[index]
@@ -119,6 +126,8 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
   try {
     await send('Page.enable')
     await send('Runtime.enable')
+    await send('Network.enable')
+    await send('Page.bringToFront')
     await send('Browser.setDownloadBehavior', { behavior: 'allowAndName', downloadPath, eventsEnabled: true })
     await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false })
     await send('Emulation.setPageScaleFactor', { pageScaleFactor: 1 })
@@ -360,6 +369,67 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
       await waitFor('location.pathname === "/" && !!document.querySelector(".hero")')
       await evaluate('document.querySelector(".finance-cta a").click()')
       await waitFor('!!document.querySelector("#report-password")')
+    })
+    await t.test('navigasi publik berurutan, menu aktif dan skip link dapat digunakan melalui keyboard', async () => {
+      const url = `${baseUrl}/?qa=${++sequence}`
+      await send('Page.navigate', { url })
+      await waitFor(`location.href === ${JSON.stringify(url)} && !!document.querySelector('.hero')`)
+      async function key(key, code, number, text) {
+        await send('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: number, ...(text ? { text } : {}) })
+        await send('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: number })
+      }
+      await key('Tab', 'Tab', 9)
+      assert.equal(await evaluate('document.activeElement.matches(".skip-link")'), true)
+      assert.ok(await evaluate('document.activeElement.getBoundingClientRect().top >= 0'))
+      assert.notEqual(await evaluate('getComputedStyle(document.activeElement).outlineStyle'), 'none')
+      await key('Enter', 'Enter', 13, '\r')
+      await waitFor('document.activeElement.id === "konten"')
+      await key('Tab', 'Tab', 9)
+      assert.equal(await evaluate('document.activeElement.getAttribute("href")'), '/agenda')
+      await key('Enter', 'Enter', 13, '\r')
+      await waitFor('location.pathname === "/agenda" && !!document.querySelector(".agenda-group")')
+      for (const route of ['/agenda', '/profil', '/kontak', '/']) {
+        if (route !== '/agenda') await evaluate(`document.querySelector('.nav-links a[href="${route}"]').click()`)
+        await waitFor(`location.pathname === ${JSON.stringify(route)} && !!document.querySelector('.nav-links a[aria-current="page"]')`)
+        assert.equal(await evaluate('document.querySelectorAll(".nav-links a[aria-current=page]").length'), 1)
+        assert.equal(await evaluate('document.querySelector(".nav-links a[aria-current=page]").getAttribute("href")'), route)
+      }
+      await send('Page.navigate', { url: `${baseUrl}/halaman-tidak-ada` })
+      await waitFor('document.querySelector("h1")?.textContent.includes("tidak ditemukan")')
+      await evaluate('document.querySelector("main a").click()')
+      await waitFor('location.pathname === "/" && !!document.querySelector(".hero")')
+    })
+    await t.test('mode API menampilkan error integrasi pada empat halaman publik tanpa route rusak', async () => {
+      for (const route of ['/', '/agenda', '/profil', '/kontak']) {
+        const url = `${apiUrl}${route}?qa=${++sequence}`
+        await send('Page.navigate', { url })
+        await waitFor(`location.href === ${JSON.stringify(url)} && document.querySelector('[role=alert]')?.textContent.includes('Konten publik melalui API belum tersedia')`)
+        assert.equal(await evaluate('document.querySelector(".nav-links a[aria-current=page]").getAttribute("href")'), route)
+      }
+    })
+    await t.test('enam viewport menjaga subtotal utuh, filter terbaca dan lembar pratinjau tidak meluap', async () => {
+      for (const [width, height] of [[360, 800], [390, 844], [768, 1024], [1024, 768], [1366, 768], [1728, 1080]]) {
+        await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false })
+        await openGate()
+        await fillPassword('demo123')
+        await submit()
+        await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 50')
+        assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false, `Overflow laporan ${width}`)
+        assert.equal(await evaluate(`[...document.querySelectorAll('.financial-table-header')].every(e => { const r=e.getBoundingClientRect(), a=e.querySelector('.financial-subtotal').getBoundingClientRect(); return a.left >= r.left && a.right <= r.right-8 })`), true, `Subtotal terpotong ${width}`)
+        assert.equal(await evaluate(`document.querySelector('.financial-table--expense').getBoundingClientRect().top >= document.querySelector('.financial-table--income').getBoundingClientRect().bottom`), width < 1024)
+        if (width < 1024) await panRight('.financial-summary-scroll')
+        await evaluate('document.querySelector(".financial-export button").click()')
+        await waitFor('!!document.querySelector(".report-format-options")')
+        assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
+        await evaluate('document.querySelector(".report-export-actions .export-button--primary").click()')
+        await waitFor('document.querySelectorAll(".report-sheet").length === 2')
+        assert.equal(await evaluate('document.querySelectorAll(".report-sheet [data-transaction-id]").length'), 50)
+        assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
+        if (width < 768) await panRight('.report-sheet-scroll')
+        await evaluate('document.querySelector(".report-preview-workspace-header button").click()')
+        await waitFor(`document.querySelector('.report-preview-workspace-header button').getAttribute('aria-pressed') === '${width < 768}'`)
+        assert.equal(await evaluate('!!document.querySelector(".report-preview-scroll-hint")'), width >= 768)
+      }
     })
     assert.deepEqual(failures, [])
   } finally {

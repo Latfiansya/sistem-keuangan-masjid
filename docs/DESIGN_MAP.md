@@ -175,3 +175,20 @@ Pemeriksaan berkas memakai pembaca/render PDF PyMuPDF dan dekoder PNG/ZIP pada a
 Regresi Beranda/Agenda/Profil/Kontak dan gate: geometri identik dengan baseline M1.6a pada tiga viewport, tanpa overflow. Sebanyak 12 dari 15 PNG identik; tiga halaman desktop berbeda tipis dalam raster dan ditinjau visual tanpa perubahan komposisi. Tidak ada perubahan desain atau kode halaman tersebut.
 
 Batasan: resolusi raster 2× sekitar 192 dpi; ukuran teks kecil mengikuti komposisi cetak final. PDF belum menyediakan teks/cari atau aksesibilitas dokumen berbasis teks. Browser lain dan perangkat mobile fisik belum diuji. Waktu/memori ekspor mengikuti panjang laporan dan kemampuan perangkat. Status unduhan berarti berkas sudah dibuat dan pemicu browser dijalankan, bukan konfirmasi penyimpanan akhir pada disk. Gate tetap hanya pembatas antarmuka, bukan perlindungan endpoint laporan.
+
+
+## M1.7 — Audit final frontend publik
+
+Seluruh sembilan raster lokal dibandingkan dengan render React melalui pasangan screenshot desktop. Audit geometri/aset, screenshot panjang penuh dan pemeriksaan responsive mencakup 360 × 800, 390 × 844, 768 × 1024, 1024 × 768, 1366 × 768 dan 1728 × 1080 pada zoom 100%, masing-masing sembilan tampilan, baik development maupun preview build. Tidak menggunakan Figma MCP atau mengganti UI dengan gambar referensi.
+
+Perbaikan yang dibuktikan screenshot/browser:
+
+- Subtotal laporan terpotong di dalam header kartu pada 360/768 px, walaupun document tidak overflow. Header mobile sekarang membungkus nominal jika perlu; pada 768–1023 px pemasukan/pengeluaran ditumpuk dan filter mendapat ruang penuh. Dua kolom desktop mulai 1024 px tetap dipertahankan. Test membandingkan batas nominal dengan kartu, bukan hanya lebar dokumen.
+- Petunjuk scroll pratinjau hanya dirender saat mode baca, bukan ketika Lebar halaman aktif. Susunan cetak A4 dan skala ekspor tetap sama.
+- Favicon 404 diperbaiki dengan menunjuk logo asli yang sudah tersedia; tidak menambah aset baru. CTA Beranda memakai keterangan netral sandi bersama dan menghapus klaim realtime yang belum didukung sumber mock.
+
+Struktur/warna/font/komponen mengikuti referensi dan refinement yang disetujui sebelumnya. Tidak memperbesar kembali seluruh halaman: perbedaan crop/blur foto, wrapping, spacing/panjang Beranda dan Profil terhadap raster tetap dicatat sebagai pendekatan visual sebelumnya, bukan kesamaan piksel. Placeholder Kontak, catatan data contoh dan informasi ZIP merupakan perbedaan yang diperlukan oleh keputusan milestone terdahulu. Desain mobile resmi belum tersedia.
+
+Setelah perbaikan, 54 kombinasi development dan 54 kombinasi production preview tidak menunjukkan overflow halaman, tabrakan navigasi atau subtotal terpotong; font/aset termuat dan tidak ada HTTP gagal/exception runtime aplikasi. Keyboard mencakup skip link, fokus terlihat, aktivasi CTA dan scroll lokal resume/lembar. Semua komponen cetak dan perhitungan dipertahankan; PNG/PDF tetap sama pada enam viewport. Bukti lokal ada di tmp/m17-qa/ dan tidak di-stage. Audit ini bukan sertifikasi WCAG menyeluruh.
+
+Safari ditemukan tetapi sesi WebDriver tidak dapat dibuat dalam batas 20 detik; smoke test Safari belum terlaksana. Firefox tidak ditemukan pada lokasi aplikasi standar. Tidak memasang browser tambahan atau mengubah pengaturan otomatisasi sistem. Kesesuaian visual dinilai mendekati desain dengan batasan yang dicatat; review PIC terhadap raster tetap diperlukan sebelum publikasi produksi.

@@ -53,7 +53,7 @@ export default function HomePage() {
       <section className="finance-cta" aria-labelledby="finance-heading">
         <div>
           <h2 id="finance-heading">Transparansi &amp; Akuntabilitas Keuangan</h2>
-          <p>Lihat ringkasan pemasukan dan pengeluaran dana Masjid Al-Hidayah secara realtime melalui kode akses yang dibagikan pengurus masjid.</p>
+          <p>Lihat ringkasan pemasukan dan pengeluaran dana Masjid Al-Hidayah menggunakan sandi akses bersama yang dibagikan pengurus masjid.</p>
           <Button to="/laporan-keuangan">Lihat Laporan Keuangan</Button>
         </div>
       </section>
