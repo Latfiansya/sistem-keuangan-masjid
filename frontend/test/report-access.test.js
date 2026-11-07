@@ -14,10 +14,12 @@ const createTestServer = (mode) => createServer({
 let server
 let checkReportPassword
 let App
+let ReportAccessPanel
 before(async () => {
   server = await createTestServer('mock')
   ;({ checkReportPassword } = await server.ssrLoadModule('/src/services/reportService.js'))
   ;({ default: App } = await server.ssrLoadModule('/src/App.jsx'))
+  ;({ default: ReportAccessPanel } = await server.ssrLoadModule('/src/components/ReportAccessPanel.jsx'))
 })
 after(async () => { await server?.close() })
 
@@ -51,14 +53,21 @@ test('mode API belum tersedia dan tidak memakai sandi mock sebagai validasi prod
   } finally { await apiServer.close() }
 })
 
-test('route laporan selalu diawali gate tanpa layout publik atau klaim enkripsi', () => {
+test('route laporan langsung merender laporan tanpa gate atau layout publik', () => {
   for (const route of ['/laporan-keuangan', '/laporan-keuangan/']) {
     const html = renderToStaticMarkup(h(MemoryRouter, { initialEntries: [route] }, h(App)))
     assert.equal((html.match(/<main\b/g) || []).length, 1)
     assert.equal((html.match(/<h1\b/g) || []).length, 1)
-    assert.match(html, /type="password"/)
-    assert.match(html, /type="submit"/)
-    assert.match(html, /Akses menggunakan sandi bersama/)
-    assert.doesNotMatch(html, /<nav|<footer|financial-report|aman.*terenkripsi|demo123/)
+    assert.match(html, /financial-report/)
+    assert.match(html, /Memuat laporan keuangan/)
+    assert.doesNotMatch(html, /<nav|<footer|type="password"|report-access-panel|demo123/)
   }
+})
+
+test('panel sandi reusable mempertahankan form dan keterangan netral', () => {
+  const html = renderToStaticMarkup(h(ReportAccessPanel, { onAccessGranted() {} }))
+  assert.match(html, /type="password"/)
+  assert.match(html, /type="submit"/)
+  assert.match(html, /Akses menggunakan sandi bersama/)
+  assert.doesNotMatch(html, /aman.*terenkripsi|demo123/)
 })

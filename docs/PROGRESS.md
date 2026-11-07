@@ -599,3 +599,76 @@ Baseline, iterasi dan screenshot akhir dibandingkan kembali pada zoom Chrome 100
 Lint, seluruh test (66 hasil frontend dan 3 backend, tanpa skip), build dan whitespace: PASS. Screenshot/log hanya di tmp/m18a-navbar-qa/, tidak di-stage. Staging diperbarui hanya untuk CSS dan catatan desain/progres; README serta test browser staged sebelumnya tetap utuh. Tidak mengubah backend/dependency atau melakukan commit, push, merge maupun melanjutkan M1.8b.
 
 Perbedaan tersisa terhadap raster lokal berupa detail raster logo dan selisih kecil tinggi/posisi vertikal panel; belum diklaim identik piksel atau diverifikasi terhadap lampiran yang tidak tersedia. Usulan commit tetap: `style: sempurnakan hero, navbar, dan tampilan desktop publik`.
+
+## M1.8b — Polishing Profil/Kontak, modal gate dan laporan (7 November 2026)
+
+Status: selesai untuk review/commit manual pada branch feature/frontend-publik. Baseline M1.8a cbe90ea sudah di-commit saat awal kerja; working tree tracked/staging bersih, hanya design-references/ untracked. Tidak mengubah backend, menambah dependency atau melanjutkan responsive QA final.
+
+### Implementasi
+
+- Profil: shadow lembut pada tujuh kartu Struktur Organisasi tanpa mengubah grid/konten. CTA kontribusi memakai tone hijau masjid dengan gradasi dan deskripsi yang tetap terbaca.
+- Kontak: surface/shadow halus serta border lebih lembut pada panel dan kartu QRIS/bank. Judul Donasi naik 8 px, margin bawah dikompensasi sehingga susunan dua kolom/posisi kartu tetap. Placeholder QRIS, rekening, kontak dan Maps tidak diganti atau diaktifkan.
+- ReportAccessModal baru memakai native dialog pada PublicLayout dan menggunakan kembali ReportAccessPanel/checkReportPassword. CTA Beranda/Footer mencegah navigasi langsung dan membuka modal di halaman asal. Backdrop gelap/top layer berada di atas Navbar fixed; body scroll dikunci, fokus awal/input serta siklus Tab/Shift+Tab dikelola. Tombol tutup/Escape memulihkan fokus dan scroll pemicu. Menutup saat loading membatalkan pemeriksaan; salah/error tetap di modal; benar membersihkan input, menutup modal dan menuju laporan.
+- FinancialReportPage tidak lagi memiliki hasAccess. Akses langsung/refresh route memuat laporan, termasuk refresh dari format/pratinjau yang kembali ke tampilan/periode default. Filter/format tetap dipertahankan ketika kembali selama halaman terbuka. Tidak ada sandi/status pada storage, cookie atau URL; gate adalah pembatas interaksi CTA saja, bukan proteksi route/endpoint.
+- Laporan/format: shadow tipis pada tabel/resume, kontrol periode dan kartu format; layout putih, warna, ukuran tabel dan kalkulasi tetap. ReportSheet memakai kategori teks berwarna tanpa capsule, font 7,5 px/line-height 10 px. Tinggi baris, nominal, kategori dana dan pagination tidak berubah.
+
+Inspeksi ekspor pertama menemukan kategori ringkasan masih mewarisi capsule breakpoint layar sehingga raster 1728 berbeda dari laptop. Scope kategori diperbaiki untuk seluruh ReportSheet (transaksi dan resume), lalu semua ekspor diulang. Ini perbaikan styling bersama pratinjau/ekspor, bukan data/perhitungan terpisah.
+
+### QA browser dan baseline
+
+| Chrome, zoom 100% | Hasil |
+| --- | --- |
+| 1728 × 1080 | PASS — polishing Profil/Donasi, modal proporsional maksimum 1120 px, overlay/close, laporan/format/dua pratinjau ditinjau |
+| 1366 × 768 | PASS — panel dan kartu tidak terpotong, fokus/navigation/scroll modal serta laporan terbaca |
+| 390 × 844 | PASS smoke — modal muat/scroll lokal bila diperlukan, navigasi/kontrol tidak rusak, tanpa overflow halaman |
+
+Development dan production preview masing-masing memeriksa 27 kombinasi (sembilan tampilan × tiga viewport) dan 36 posisi scroll publik; font/aset termuat, tanpa HTTP gagal/exception runtime. Gate diuji dari CTA serta Footer seluruh halaman, termasuk mempertahankan posisi scroll/fokus Footer. Tutup saat pending, sandi kosong/salah/benar, Enter, submit ganda, API error/retry, akses langsung dan refresh: PASS. Test lama refresh meminta sandi diganti; tidak menambah autentikasi/session.
+
+Baseline M1.8a dipertahankan: 163 aturan CSS Navbar/hero/background/Beranda/Agenda dibandingkan dan identik. Screenshot regression mempunyai geometri/panjang halaman yang sama; sebagian PNG identik, lainnya berbeda raster tipis dan ditinjau visual tanpa perubahan komposisi. Navbar, crop/tinggi/fade hero, glass tombol dan background tidak disentuh. Perubahan HomePage/Footer hanya callback pemicu modal.
+
+### Ekspor nyata dan data
+
+- April tetap 17 pemasukan/33 pengeluaran, total Rp10.665.500/Rp8.771.500, saldo awal Rp18.590.700 dan akhir Rp20.484.700. Semua ID tepat sekali; pratinjau PDF/PNG memakai lembar/data yang sama.
+- April: PDF dua halaman A4 landscape dan ZIP dua PNG. Rentang 3–5 April: PDF satu halaman/PNG langsung, sembilan transaksi. Fixture QA 60 transaksi: tiga halaman, tanpa menambah mock aplikasi. Tidak ada baris terbelah, ringkasan hilang atau kategori bertumpuk/terpotong.
+- Inspeksi development mencakup 14 berkas dengan 12 halaman/gambar; production 12 berkas dengan 9 halaman/gambar. Seluruh 26 berkas, 21 halaman PDF serta 21 PNG diperiksa format asli, A4 297 × 210 mm, CRC/urutan ZIP, dimensi 2245 × 1587 dan isi tidak kosong. PDF dibuka dan halaman pertama/terakhir dirender/ditinjau; semua PNG didekode. Gambar di PDF identik piksel dengan PNG pasangannya, termasuk lintas viewport/development/build. Isi dan layout menggunakan ReportSheet pratinjau yang sama.
+
+### Verifikasi, dokumentasi dan Git
+
+- npm run lint: PASS. Seluruh test: 69 hasil frontend (36 unit/struktur, 32 skenario browser dan satu induk), 3 backend, tanpa skip/failure. Suite browser juga PASS pada production preview (33 hasil termasuk induk).
+- npm run build: PASS. Tidak mengubah manifest/lockfile, service, mock, utils kalkulasi/pagination, backend atau kontrak autentikasi admin.
+- README, DESIGN_MAP, API_CONTRACT dan FRONTEND_HANDOFF diperbarui untuk alur modal/refresh/direct route. Endpoint bisnis tetap usulan; gate tidak melindungi GET laporan.
+- Review status/diff, whitespace dan file sensitif sebelum staging eksplisit. Hanya source/test/dokumentasi M1.8b yang diverifikasi disiapkan. Screenshot, PDF/PNG/ZIP, log dan alat QA berada di tmp/m18b-qa/ atau tmp/report-export-tests/. Referensi desain tetap untracked dan build di frontend/dist diabaikan Git; semuanya tidak di-stage.
+
+Batasan: mock dan data kontak/pembayaran belum menjadi data produksi; PDF tetap raster tanpa seleksi teks. Visual belum identik piksel; QA baru memakai Chrome, bukan klaim Safari/Firefox/perangkat fisik. Mobile menyeluruh tetap tahap berikutnya. Tidak melakukan commit, push, merge atau rebase.
+
+Usulan pesan commit: `feat: tampilkan gate laporan sebagai modal dan rapikan halaman publik`.
+
+### Refinement tambahan M1.8b — tipografi, kontras dan latar
+
+Staging 15 file M1.8b yang belum di-commit dipertahankan. Perubahan tambahan hanya index.css serta PROGRESS/DESIGN_MAP. Tidak mengubah JS, gate, data, filter, kalkulasi, pagination/ekspor, dependency atau backend; tidak memulai M1.8c.
+
+| H1 Profil dan Kontak | Sebelum | Sesudah |
+| --- | --- | --- |
+| Desktop 1728 × 1080 | 63,936 px | 69 px (+7,9%) |
+| Laptop 1366 × 768 | 50,542 px | 54,64 px (+8,1%) |
+| Mobile 390 × 844 | Profil 32 px, Kontak 34 px | Tetap |
+
+Warna hijau/oranye, font Plus Jakarta Sans dan weight 800 dipertahankan. Subtitle #779bdf (Profil)/#6388c6 (Kontak) serta italic Sorolaten diganti #385464, biru keabu-abuan yang lebih gelap dan tetap sekunder. Pengukuran sampel screenshot background aktual, dengan teks disembunyikan sementara tanpa mengubah layout, memperoleh minimum 5,14:1 untuk Sorolaten dan 5,29:1 untuk subtitle desktop; mobile minimum 5,51:1. Ini pemeriksaan kontras terarah, bukan audit WCAG keseluruhan.
+
+Badge header Profil/Kontak memakai aturan bersama: off-white #fffaf0f2, border hangat #dfc6a8 dan shadow kecil 0 2px 6px #5b452018. Oranye, ikon, radius dan padding ringkas tetap; tidak menambah hover/blur atau mengubah badge linimasa. Dua stat cards Profil mendapat shadow natural 0 6px 18px #2547351a dan highlight putih tipis; radius, ukuran, angka, ikon dan warna dasar tetap.
+
+Latar Profil sebelumnya cover/center, sedangkan Kontak 100% auto/center top. Keduanya kini menggunakan konfigurasi scene bersama: foto auto 120% tinggi lapisan, opacity .65 tetap, blur 10 → 8 px dan overlay putih tengah sedikit ditipiskan (#edf5fac9 → #edf5fab8). Crop Kontak 72% bottom; crop Profil 72% 65% pada desktop besar dan 72% 80% pada ≤1399 px untuk menempatkan siluet atap di belakang Sejarah. Foto kedua pada pseudo-element Sejarah dihilangkan dan diganti gradasi ringan agar scene besar tidak tertutup. Variabel Agenda mempertahankan konfigurasi lama secara utuh untuk menjaga crop Bulanan; gradasi biru atas yang disetujui dan seluruh foto/hero/latar Beranda tetap.
+
+Iterasi pertama memperbaiki header/kartu dan skala foto, tetapi atap terlalu tinggi. Iterasi kedua mengoreksi posisi Profil serta blur/overlay; hasil dibandingkan kembali dengan 03-profil/04-kontak pada zoom Chrome 100%. QA desktop 1728 × 1080, 1366 × 768 serta smoke mobile 390 × 844: PASS. Tidak ada wrapping baru yang merusak komposisi, tabrakan, overflow halaman, font/aset gagal atau exception runtime. Development/production masing-masing memeriksa 27 kombinasi tampilan serta 36 posisi scroll.
+
+Regresi Beranda/Agenda: geometri, tinggi dan konfigurasi background tetap sama; beberapa PNG identik, perbedaan raster kecil pada lainnya ditinjau tanpa perubahan komposisi. Navbar/glass dan hero tidak disentuh. Gate/modal, akses langsung/refresh laporan, filter, pratinjau serta ekspor nyata tetap lulus suite browser. npm run lint, 69 hasil frontend dan 3 test backend (tanpa skip), serta build production: PASS. Tidak menulis test CSS yang hanya menyalin implementasi.
+
+Bukti before/dua iterasi/final, perbandingan dan sampel kontras berada di tmp/m18b-refinement-qa/, diabaikan Git. Foto asli WebP 1928 × 1089 membatasi detail saat crop diperbesar; blur/crop tetap pendekatan raster Figma, belum identik piksel atau diuji pada layar fisik/Safari/Firefox. Setelah review diff/whitespace dan file sensitif, staging diperbarui hanya untuk tiga file tambahan yang diverifikasi; 12 file staged lainnya tetap utuh. Tidak melakukan commit, push, merge atau rebase.
+
+### Refinement final M1.8b — badge frosted glass
+
+Surface solid badge header Profil/Kontak diganti satu aturan bersama: gradient putih susu 76% → tint hangat 62%, blur 12 px/saturasi 115%, border putih 1 px/55%, highlight inset 65% dan shadow 0 4px 12px rgba(20,55,45,.12). Teks/ikon oranye tetap solid; opacity elemen tetap 1. Border Profil sebelumnya tidak memiliki lebar, sedangkan Kontak 1 px. Border kini identik; padding Profil dikurangi 1 px per sisi untuk mempertahankan dimensi, termasuk mobile. Tidak mengubah badge linimasa, kategori laporan atau label agenda.
+
+QA screenshot sebelum/sesudah Chrome zoom 100% pada 1728 × 1080, 1366 × 768 dan smoke 390 × 844: kapsul lebih transparan, outline sama tipis, teks tetap jelas. Pengukuran seluruh elemen pada 12 kombinasi empat halaman publik menunjukkan geometri/tinggi halaman tetap sama; enam screenshot Beranda/Agenda identik piksel dengan baseline. Tidak ada overflow, aset gagal atau exception runtime. Surface kedua badge sama pada seluruh viewport; font, radius dan posisi tetap. Bukti lokal di tmp/m18b-badge-qa/ tidak di-stage.
+
+Lint, 69 hasil test frontend (termasuk browser gate/filter/ekspor nyata) dan 3 test backend tanpa skip, build production serta whitespace check: PASS. Tidak menambah dependency atau mengubah backend/fitur. Staging M1.8b sebelumnya dipertahankan; tambahan hanya CSS badge dan dokumentasi progres/peta desain. Belum diuji ulang lintas browser atau pada layar fisik. Tidak melakukan commit/push/merge/rebase atau memulai M1.8c.

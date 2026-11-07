@@ -33,6 +33,7 @@ button:disabled { cursor: not-allowed; }
   filter: blur(10px);
   clip-path: inset(0);
 }
+.public-layout:is(.public-layout--agenda, .public-layout--profile, .public-layout--contact)::before { opacity: var(--public-scene-opacity, .65); background-image: var(--public-scene-overlay, linear-gradient(180deg, #dcecf7cc 0%, #edf5fab8 65%, #f5f9f3e6 100%)), url("/assets/masjid-background.webp"); background-size: 100% 100%, var(--public-scene-size, auto 120%); background-position: 0 0, var(--public-scene-position, 72% bottom); filter: var(--public-scene-blur, blur(8px)); }
 .page-container { width: min(82%, 1408px); margin-inline: auto; }
 .skip-link { position: absolute; top: 8px; left: 12px; z-index: 20; padding: 10px 16px; background: white; transform: translateY(-160%); }
 .skip-link:focus { transform: translateY(0); }
@@ -140,6 +141,13 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .report-access-error { margin-top: 12px; font-size: 15px; line-height: 1.4; text-align: center; color: #ffe0db; }
 .report-access-note { margin-top: 52px; padding-top: 18px; border-top: 1px solid #ffffff14; font-size: 12px; line-height: 1.4; color: #b3d2a9; }
 .report-access-note::before { content: "•"; color: #49df84; margin-right: 10px; }
+.report-access-dialog { width: min(calc(100% - 32px), 1120px); max-width: none; max-height: calc(100svh - 32px); margin: auto; padding: 0; border: 0; border-radius: 24px; background: transparent; color: inherit; font-family: "Plus Jakarta Sans", var(--font-sans); overflow-y: auto; z-index: 100; }
+.report-access-dialog::backdrop { background: #07110bbb; }
+.report-access-dialog .report-access-panel { padding: clamp(24px, 3vw, 40px) clamp(24px, 3vw, 40px) 24px; box-shadow: 0 20px 60px #00000059; }
+.report-access-dialog .report-access-panel h1 { font-size: clamp(30px, 2.8vw, 48px); }
+.report-access-close { position: absolute; top: 14px; right: 14px; display: grid; place-items: center; width: 36px; height: 36px; border: 1px solid #ffffff40; border-radius: 10px; color: white; background: #ffffff14; cursor: pointer; }
+.report-access-close svg { width: 20px; height: 20px; }
+.report-access-close:hover { background: #ffffff26; }
 .report-page.report-page--opened { display: block; padding: 0; background: white; }
 .financial-report { width: min(88.5%, 1528px); margin-inline: auto; padding-block: 48px 40px; color: #172033; }
 .financial-header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: start; gap: 24px; margin-bottom: 32px; }
@@ -160,7 +168,7 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .financial-presets button.is-active, .financial-apply { background: var(--color-mosque); border-color: var(--color-mosque); color: white; }
 .financial-presets button:hover { border-color: var(--color-mosque); }
 .financial-presets svg, .financial-date-control > svg, .financial-range-label svg { width: 18px; height: 18px; flex-shrink: 0; }
-.financial-filters-bottom { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 82px; margin-top: 18px; padding: 12px 16px; border: 1px solid #e3e9f1; border-radius: 16px; background: #f7f9fc; }
+.financial-filters-bottom { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 82px; margin-top: 18px; padding: 12px 16px; border: 1px solid #e3e9f1; border-radius: 16px; background: #f7f9fc; box-shadow: 0 2px 8px #1720330a; }
 .financial-custom-range { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; }
 .financial-range-label { display: inline-flex; align-items: center; gap: 8px; color: #778090; font-size: 13px; font-weight: 600; }
 .financial-range-label svg, .financial-date-control > svg { color: var(--color-mosque); }
@@ -204,6 +212,8 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .financial-summary h2 { font-size: clamp(26px, 2vw, 34px); line-height: 1.2; letter-spacing: -.7px; font-weight: 750; }
 .financial-summary > p { margin-top: 6px; color: #778090; font-size: 18px; line-height: 1.3; }
 .financial-summary-scroll { overflow-x: auto; margin-top: 12px; border: 1px solid #b9c3ce; border-radius: 12px; }
+.financial-report .financial-table { box-shadow: 0 4px 14px #0f503512; }
+.financial-report .financial-summary-scroll { border-color: #c6d1dc; box-shadow: 0 3px 12px #1720330d; }
 .financial-summary-table { width: 100%; min-width: 760px; table-layout: fixed; border-collapse: collapse; font-size: 17px; line-height: 1.3; }
 .financial-summary-table thead { background: #99a2b2; color: white; text-transform: uppercase; font-size: 15px; }
 .financial-summary-table th, .financial-summary-table td { padding: 12px 16px; text-align: right; border-bottom: 1px solid #e4e8ed; }
@@ -311,7 +321,6 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
   .report-access-note { margin-top: 32px; padding-top: 18px; }
 }
 
-.public-layout--contact::before { opacity: .65; background: linear-gradient(180deg, #dcecf7cc, #edf5fac9 65%, #f5f9f3e6), url("/assets/masjid-background.webp") center top / 100% auto no-repeat; }
 .contact-main { padding-top: clamp(164px, 13.4vw, 232px); }
 .contact-status { min-height: 55vh; padding-bottom: 64px; }
 .contact-header { text-align: center; }
@@ -319,11 +328,11 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .contact-badge svg { width: 16px; height: 16px; }
 .contact-header h1 { margin-top: 24px; font-size: clamp(36px, 3.7vw, 64px); font-weight: 800; line-height: 1.15; letter-spacing: -2px; text-wrap: balance; }
 .contact-header h1 em { color: #ed7100; font-style: normal; }
-.contact-header > p { max-width: 780px; margin: 12px auto 0; color: #6388c6; font-size: clamp(17px, 1.25vw, 22px); line-height: 1.3; }
-.contact-donation { width: min(93%, 1608px); margin: clamp(64px, 5.2vw, 90px) auto 0; padding: clamp(32px, 3.5vw, 60px); border: 1px solid #589d4b; border-radius: 48px; background: white; }
-.contact-donation > h2 { margin-bottom: 10px; font-size: clamp(36px, 3.7vw, 64px); }
+.contact-header > p { max-width: 780px; margin: 12px auto 0; color: #385464; font-size: clamp(17px, 1.25vw, 22px); line-height: 1.3; }
+.contact-donation { width: min(93%, 1608px); margin: clamp(64px, 5.2vw, 90px) auto 0; padding: clamp(32px, 3.5vw, 60px); border: 1px solid #9ac3a3; border-radius: 48px; background: white; box-shadow: 0 8px 24px #204a2610; }
+.contact-donation > h2 { margin-top: -8px; margin-bottom: 18px; font-size: clamp(36px, 3.7vw, 64px); }
 .contact-donation-grid { display: grid; grid-template-columns: minmax(0, .6fr) minmax(0, 1fr); gap: 40px; }
-.contact-donation-card { min-width: 0; border: 1px solid #529e51; border-radius: 24px; padding: clamp(24px, 2.3vw, 40px); display: flex; flex-direction: column; }
+.contact-donation-card { min-width: 0; border: 1px solid #a5cbb0; border-radius: 24px; padding: clamp(24px, 2.3vw, 40px); display: flex; flex-direction: column; background: linear-gradient(145deg, white, #f5faf7); box-shadow: 0 4px 14px #254b2810, inset 0 1px 0 white; }
 .contact-donation-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 12px; }
 .contact-donation-heading h3 { font-size: clamp(24px, 1.9vw, 32px); font-weight: 750; line-height: 1.2; letter-spacing: -1px; }
 .contact-chip { border: 1px solid #cfe5d6; border-radius: 999px; padding: 5px 12px; background: #eaf4ee; font-size: 12px; font-weight: 700; line-height: 1.25; }
@@ -468,7 +477,7 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
   .placeholder-page, .content-status { padding-top: 160px; }
 }
 
-.public-layout--agenda::before { opacity: .75; background-size: 100% 100%, auto clamp(1600px, 115vw, 1980px); background-position: 0 0, center top; }
+.public-layout--agenda::before { --public-scene-opacity: .75; --public-scene-size: auto clamp(1600px, 115vw, 1980px); --public-scene-position: center top; --public-scene-overlay: linear-gradient(180deg, #dcecf7cc 0%, #edf5fac9 65%, #f5f9f3e6 100%); --public-scene-blur: blur(10px); }
 .agenda-page { width: min(85%, 1464px); margin-inline: auto; padding-top: clamp(164px, 13.4vw, 232px); padding-bottom: clamp(80px, 7vw, 120px); }
 .agenda-page .agenda-section { width: 100%; }
 .agenda-page .agenda-copy h1 { font-size: clamp(36px, 3.7vw, 64px); font-weight: 800; line-height: 1.1; letter-spacing: -1.2px; margin-bottom: 28px; }
@@ -542,17 +551,31 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
   .agenda-row-time svg { width: 15px; height: 15px; }
 }
 
-.public-layout--profile::before { opacity: .65; }
+.public-layout--profile::before { --public-scene-position: 72% 65%; }
+@media (max-width: 1399px) {
+  .public-layout--profile::before { --public-scene-position: 72% 80%; }
+}
 .profile-main { padding-top: clamp(164px, 13.4vw, 232px); }
 .profile-wide-container { width: min(85%, 1464px); margin-inline: auto; }
 .profile-header { text-align: center; }
 .profile-badge { display: inline-block; padding: 4px 24px; border-radius: 999px; background: #ec7b0020; color: #ef7800; font-size: 16px; font-weight: 700; letter-spacing: 2px; line-height: 1.3; }
 .profile-header h1 { margin-top: 16px; font-size: clamp(36px, 3.7vw, 64px); font-weight: 800; line-height: 1.15; letter-spacing: -1.4px; }
 .profile-header h1 > span { color: #ef7800; }
-.profile-header h1 em { display: block; color: #779bdf; font-size: .6em; font-weight: 400; letter-spacing: 0; line-height: 1.2; }
-.profile-header > p { max-width: 850px; margin: 16px auto 0; font-size: clamp(17px, 1.3vw, 22px); line-height: 1.3; color: #779bdf; }
+.profile-header h1 em { display: block; color: #385464; font-size: .6em; font-weight: 400; letter-spacing: 0; line-height: 1.2; }
+.profile-header > p { max-width: 850px; margin: 16px auto 0; font-size: clamp(17px, 1.3vw, 22px); line-height: 1.3; color: #385464; }
+.profile-header .profile-badge, .contact-header .contact-badge {
+  background: linear-gradient(135deg, rgba(255, 255, 255, .76), rgba(255, 246, 234, .62));
+  border: 1px solid rgba(255, 255, 255, .55);
+  backdrop-filter: blur(12px) saturate(115%);
+  box-shadow: 0 4px 12px rgba(20, 55, 45, .12), inset 0 1px 0 rgba(255, 255, 255, .65);
+}
+/* Kompensasi border baru agar ukuran badge Profil tetap sama. */
+.profile-header .profile-badge { padding: 3px 23px; }
+@media (min-width: 1024px) {
+  .profile-header h1, .contact-header h1 { font-size: clamp(39px, 4vw, 69px); }
+}
 .profile-statistics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; margin-top: clamp(64px, 6.5vw, 112px); }
-.profile-statistic { padding: 40px; border-radius: 18px; color: white; background: var(--color-mosque); }
+.profile-statistic { padding: 40px; border-radius: 18px; color: white; background: var(--color-mosque); box-shadow: 0 6px 18px #2547351a, inset 0 1px 0 #ffffff1f; }
 .profile-statistic--capacity { background: #ef7800; }
 .profile-statistic-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
 .profile-statistic-top > span { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: #d2f83c20; color: var(--color-lime); flex-shrink: 0; }
@@ -562,7 +585,7 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .profile-statistic-value small { margin-left: 10px; font-size: 18px; letter-spacing: 0; color: var(--color-lime); }
 .profile-statistic-description { margin-top: 24px; font-size: clamp(17px, 1.3vw, 22px); line-height: 1.3; color: #ffffffb3; }
 .profile-history { position: relative; isolation: isolate; padding-bottom: 80px; }
-.profile-history::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, #e8f2faed, #e8f2fabd 55%, #e8f2facc), url("/assets/masjid-background.webp") center bottom / cover no-repeat; filter: blur(10px); clip-path: inset(0); opacity: .7; mask-image: linear-gradient(180deg, transparent, black 35%); }
+.profile-history::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, transparent, #e8f2fa26 55%, #e8f2fa66); filter: blur(10px); clip-path: inset(0); opacity: .7; mask-image: linear-gradient(180deg, transparent, black 35%); }
 .profile-history .profile-eyebrow, .profile-history h2 { text-align: center; }
 .profile-eyebrow { font-size: 20px; font-weight: 700; letter-spacing: 4px; color: #ef7800; }
 .profile-history h2 { color: #16843b; margin-bottom: 32px; }
@@ -583,7 +606,7 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .profile-management .profile-eyebrow { color: var(--color-lime); }
 .profile-management > h2 { margin-block: 10px 36px; }
 .profile-members { display: flex; flex-wrap: wrap; justify-content: center; gap: 40px; max-width: 1000px; margin-inline: auto; }
-.profile-member { flex: 0 0 calc((100% - 120px) / 4); min-width: 0; min-height: 200px; padding: 28px 16px; border-radius: 20px; border-top: 4px solid #ecf9e8; background: #ffffff0d; }
+.profile-member { flex: 0 0 calc((100% - 120px) / 4); min-width: 0; min-height: 200px; padding: 28px 16px; border-radius: 20px; border-top: 4px solid #ecf9e8; background: #ffffff0d; box-shadow: 0 5px 14px #00390024, inset 0 1px 0 #ffffff10; }
 .profile-member-avatar { display: grid; place-items: center; width: 56px; height: 56px; margin: 0 auto 24px; border-radius: 50%; background: #ffffff1a; font-size: 16px; font-weight: 700; }
 .profile-member-role { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 1px; background: #ffffff0d; border-radius: 5px; padding: 3px 6px; }
 .profile-member h3 { font-size: 14px; font-weight: 700; line-height: 1.3; margin-top: 8px; }
@@ -591,8 +614,8 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .profile-member:nth-child(even) { border-top-color: var(--color-lime); color: var(--color-lime); background: #d2f83c08; }
 .profile-member:nth-child(even) .profile-member-avatar { background: #d2f83c20; }
 .profile-contact { padding-block: 80px; }
-.profile-contact-panel { padding: clamp(80px, 8vw, 136px) 80px; border-radius: 80px; background: linear-gradient(100deg, #10843c 12%, #7fb597eb); color: white; box-shadow: 0 16px 30px #006b0038; }
-.profile-contact-panel > p { font-size: clamp(18px, 1.7vw, 28px); line-height: 1.4; color: #ffffffb3; margin-block: 14px 24px; }
+.profile-contact-panel { padding: clamp(80px, 8vw, 136px) 80px; border-radius: 80px; background: linear-gradient(100deg, var(--color-mosque) 12%, #4c8758ed); color: white; box-shadow: 0 16px 30px #006b0038; }
+.profile-contact-panel > p { font-size: clamp(18px, 1.7vw, 28px); line-height: 1.4; color: #eef7e8; margin-block: 14px 24px; }
 .profile-status { min-height: 50vh; padding-block: 40px 100px; }
 .profile-empty { padding-block: 24px; }
 
@@ -610,6 +633,7 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
   .profile-main { padding-top: 150px; }
   .profile-wide-container { width: calc(100% - 40px); }
   .profile-badge { font-size: 11px; padding: 4px 14px; letter-spacing: 1px; }
+  .profile-header .profile-badge { padding: 3px 13px; }
   .profile-header h1 { font-size: 32px; letter-spacing: -.7px; }
   .profile-header > p { font-size: 14px; line-height: 1.5; }
   .profile-statistics { grid-template-columns: 1fr; gap: 20px; margin-top: 40px; }
@@ -668,7 +692,7 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .report-export-steps svg { width: 18px; height: 18px; }
 .report-export-steps .is-complete { color: var(--color-mosque); font-weight: 700; }
 .report-export-steps .is-complete > span { background: var(--color-mosque); color: white; }
-.report-export-period { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 96px; padding: 22px 24px; border: 1px solid #dce4ee; border-radius: 16px; background: #f7f9fc; }
+.report-export-period { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 96px; padding: 22px 24px; border: 1px solid #dce4ee; border-radius: 16px; background: #f7f9fc; box-shadow: 0 2px 8px #1720330a; }
 .report-export-period > div { display: flex; align-items: center; gap: 18px; }
 .report-export-period svg { width: 24px; height: 24px; color: var(--color-mosque); flex-shrink: 0; }
 .report-export-period small { display: block; margin-bottom: 4px; color: #778090; font-size: 14px; line-height: 1.3; }
@@ -677,7 +701,7 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .report-format-options { margin-top: 32px; min-width: 0; }
 .report-format-options legend { margin-bottom: 18px; font-size: 26px; line-height: 1.3; font-weight: 750; }
 .report-format-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
-.report-format-card { min-width: 0; min-height: 264px; padding: 28px; border: 1px solid #dce4ee; border-radius: 22px; cursor: pointer; }
+.report-format-card { min-width: 0; min-height: 264px; padding: 28px; border: 1px solid #dce4ee; border-radius: 22px; cursor: pointer; background: white; box-shadow: 0 4px 16px #22334a0c; }
 .report-format-card.is-selected { border: 2px solid var(--color-mosque); padding: 27px; background: #f1faef; }
 .report-format-title { display: flex; align-items: center; gap: 16px; }
 .report-format-title > span { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 16px; background: white; color: var(--color-mosque); }
@@ -757,7 +781,7 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .report-sheet-transactions td > strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; line-height: 14px; font-weight: 600; }
 .report-sheet-transactions td > div { display: flex; align-items: center; gap: 6px; height: 10px; color: #97a2b3; font-size: 8px; line-height: 10px; }
 .report-sheet-transactions time { flex-shrink: 0; }
-.report-sheet .financial-category { padding: 0 4px; font-size: 7px; line-height: 10px; }
+.report-sheet .financial-category { flex-shrink: 0; padding: 0; border-radius: 0; background: transparent; font-size: 7.5px; font-weight: 600; line-height: 10px; }
 .report-sheet .financial-category::before { margin-right: 3px; }
 .report-sheet-transactions td:last-child { padding-left: 2px; color: #008b72; text-align: right; font-size: 11.5px; line-height: 1.2; font-weight: 650; white-space: nowrap; }
 .report-sheet-column--expense .report-sheet-transactions td:last-child { color: #ed164f; }

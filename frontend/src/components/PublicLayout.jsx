@@ -1,13 +1,21 @@
 import { useEffect, useState } from 'react'
-import { Outlet, useLocation } from 'react-router'
+import { Outlet, useLocation, useNavigate } from 'react-router'
 import { getPublicContent } from '../services/publicContentService.js'
 import Navbar from './Navbar.jsx'
 import Footer from './Footer.jsx'
+import ReportAccessModal from './ReportAccessModal.jsx'
 
 export default function PublicLayout() {
   const [content, setContent] = useState(null)
   const [error, setError] = useState('')
+  const [accessTrigger, setAccessTrigger] = useState(null)
   const { pathname } = useLocation()
+  const navigate = useNavigate()
+
+  function openReportAccess(event) {
+    event.preventDefault()
+    setAccessTrigger(event.currentTarget)
+  }
 
   useEffect(() => {
     const controller = new AbortController()
@@ -28,9 +36,10 @@ export default function PublicLayout() {
       <a className="skip-link" href="#konten">Lewati navigasi</a>
       <Navbar />
       <main id="konten" tabIndex={-1} className={mainClass}>
-        <Outlet context={{ content, error }} />
+        <Outlet context={{ content, error, openReportAccess }} />
       </main>
-      <Footer content={content} />
+      <Footer content={content} onReportAccess={openReportAccess} />
+      {accessTrigger && <ReportAccessModal returnFocusTo={accessTrigger} onClose={() => setAccessTrigger(null)} onAccessGranted={() => { setAccessTrigger(null); navigate('/laporan-keuangan') }} />}
     </div>
   )
 }

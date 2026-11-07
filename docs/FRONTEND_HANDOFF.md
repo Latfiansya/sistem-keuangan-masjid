@@ -1,4 +1,4 @@
-# Handoff frontend publik — M1.7
+# Handoff frontend publik — diperbarui M1.8b
 
 Frontend publik selesai untuk **mode mock**, dengan gate dan ekspor lokal. Backend bisnis belum terhubung; ini bukan pernyataan siap produksi. Hasil audit/QA terperinci ada di [PROGRESS](PROGRESS.md), pemetaan visual di [DESIGN_MAP](DESIGN_MAP.md), dan field/payload di [API_CONTRACT](API_CONTRACT.md).
 
@@ -10,10 +10,11 @@ Frontend publik selesai untuk **mode mock**, dengan gate dan ekspor lokal. Backe
 | /agenda | Kegiatan mingguan 5, bulanan 2, tahunan/PHBI 5 |
 | /profil | Statistik/visi bersama Beranda, sejarah 1980/2000, tujuh pengurus, CTA Kontak |
 | /kontak | Kontak/Donasi dan lokasi; data yang belum dikonfirmasi tetap placeholder |
-| /laporan-keuangan | Lima state: gate → laporan → format → pratinjau PDF/PNG. Satu route, tanpa Navbar/Footer publik |
+| Halaman publik | Klik CTA laporan Beranda/Footer membuka modal gate di atas halaman asal |
+| /laporan-keuangan | Laporan → format → pratinjau PDF/PNG. Akses langsung/refresh menampilkan laporan tanpa gate; tanpa Navbar/Footer publik |
 | * | Halaman tidak ditemukan dengan tautan Beranda |
 
-Komponen bersama: PublicLayout memuat konten melalui service dan konteks Outlet; Navbar/Footer, Button, VisionMission, AgendaSummary/AgendaGroup. Laporan memakai FinancialReportPage, ReportAccessPanel, FinancialTable, BalanceSummary, ReportFormatPicker, ReportPreview dan ReportSheet. Jangan membuat halaman duplikat untuk state format/pratinjau.
+Komponen bersama: PublicLayout memuat konten melalui service dan konteks Outlet; Navbar/Footer, Button, VisionMission, AgendaSummary/AgendaGroup. PublicLayout membuka ReportAccessModal yang menggunakan kembali ReportAccessPanel. Laporan memakai FinancialReportPage, FinancialTable, BalanceSummary, ReportFormatPicker, ReportPreview dan ReportSheet. Jangan membuat halaman duplikat untuk modal atau state format/pratinjau.
 
 ## Service dan sumber data
 
@@ -44,11 +45,13 @@ Saat ini mode itu hanya mengaktifkan HTTP health; service bisnis menampilkan err
 
 ## Gate, laporan dan ekspor
 
-- Sandi demo **demo123** hanya untuk pengembangan. Akses berhasil adalah state React; input dibersihkan, refresh/keluar route meminta sandi lagi. Tidak ada storage, cookie, akun, JWT atau session.
+- Sandi demo **demo123** hanya untuk pengembangan. Gate muncul hanya dari CTA laporan publik. Native dialog berada pada top layer di atas Navbar fixed, mengunci scroll/fokus, mendukung Escape/tutup dan mengembalikan fokus/posisi scroll pemicu. Menutup saat loading membatalkan service; sandi benar menutup modal dan menavigasi ke laporan. Tidak ada storage, cookie, akun, JWT atau session.
+- Akses URL langsung dan refresh /laporan-keuangan sengaja melewati gate. FinancialReportPage langsung memanggil getReport; tidak mempunyai hasAccess. Refresh dari pratinjau/format menampilkan laporan/periode default, tanpa mempertahankan filter lewat storage. Ini pembatas interaksi CTA, bukan proteksi akses data.
 - Backend kelak cukup memeriksa sandi bersama dari environment backend biasa. Respons valid bukan otorisasi: **gate hanya pembatas antarmuka dan tidak melindungi endpoint laporan publik**.
 - April 2026: 17 pemasukan/33 pengeluaran. Saldo awal 18.590.700 + pemasukan 10.665.500 − pengeluaran 8.771.500 = saldo akhir 20.484.700. Jangan menyalin kesalahan subtotal Kas Masjid dari Blade; rekonsiliasi ada di API_CONTRACT.
 - Filter inklusif; draft berlaku setelah Terapkan. Periode di luar cakupan berstatus unavailable, bukan nol. Hari kosong di dalam cakupan membawa saldo sebelumnya. Default/preset masih memakai acuan 30 April 2026; label contoh masih statis. Sepakati metadata data resmi dan periode produksi pada pekerjaan integrasi.
 - Format/kembali mempertahankan filter. PDF/PNG memakai report/pages/ReportSheet yang sama. PDF A4 landscape berbasis gambar 2×; PNG satu lembar langsung, lebih dari satu lembar menjadi ZIP berurutan. Ekspor tidak membutuhkan endpoint atau upload; tombol dikunci selama proses dan error dapat dicoba lagi.
+- Kategori transaksi pada ReportSheet berupa teks berwarna tanpa capsule; CSS yang sama ikut dirender ke PDF/PNG. Tinggi baris dan pagination tetap, jangan membuat versi kategori atau data kedua khusus ekspor.
 
 ## Verifikasi dan pekerjaan tertunda
 

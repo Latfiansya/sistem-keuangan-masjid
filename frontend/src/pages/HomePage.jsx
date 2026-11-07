@@ -7,7 +7,7 @@ import AgendaSummary from '../components/AgendaSummary.jsx'
 const icons = { calendar: CalendarDays, expand: Expand, users: Users, heart: Heart, health: HeartPulse, economy: Coins }
 
 export default function HomePage() {
-  const { content, error } = useOutletContext()
+  const { content, error, openReportAccess } = useOutletContext()
   if (error) return <p role="alert" className="page-container content-status">{error}</p>
   if (!content) return <p role="status" className="page-container content-status">Memuat konten Beranda…</p>
 
@@ -54,7 +54,7 @@ export default function HomePage() {
         <div>
           <h2 id="finance-heading">Transparansi &amp; Akuntabilitas Keuangan</h2>
           <p>Lihat ringkasan pemasukan dan pengeluaran dana Masjid Al-Hidayah menggunakan sandi akses bersama yang dibagikan pengurus masjid.</p>
-          <Button to="/laporan-keuangan">Lihat Laporan Keuangan</Button>
+          <Button to="/laporan-keuangan" onClick={openReportAccess}>Lihat Laporan Keuangan</Button>
         </div>
       </section>
     </>

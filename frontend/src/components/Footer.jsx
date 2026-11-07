@@ -1,7 +1,7 @@
 import { FileText, LogIn, MapPin } from 'lucide-react'
 import { Link } from 'react-router'
 
-export default function Footer({ content }) {
+export default function Footer({ content, onReportAccess }) {
   return (
     <footer className="public-footer">
       <div className="footer-top">
@@ -11,7 +11,7 @@ export default function Footer({ content }) {
         </div>
         <div className="footer-links">
           <p>TAUTAN KHUSUS</p>
-          <Link to="/laporan-keuangan"><FileText aria-hidden="true" />Laporan Keuangan</Link>
+          <Link to="/laporan-keuangan" onClick={onReportAccess}><FileText aria-hidden="true" />Laporan Keuangan</Link>
           <button type="button" disabled title="Tujuan Masuk Pengurus belum tersedia"><LogIn aria-hidden="true" />Masuk Pengurus</button>
         </div>
       </div>

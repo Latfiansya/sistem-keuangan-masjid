@@ -128,7 +128,7 @@ Profil memakai `getPublicContent({ signal })` yang sudah tersedia, melalui konte
 - Loading, error, tidak adanya objek Kontak, daftar informasi kosong dan data donasi belum tersedia memiliki pesan yang sesuai. Tidak ada fitur payment gateway, salin rekening atau unduhan QRIS.
 
 
-## Gate sandi bersama — M1.5a
+## Gate sandi bersama — M1.5a, perilaku diperbarui M1.8b
 
 Implementasi saat ini hanya frontend. `reportService.checkReportPassword(password, { signal })` mengembalikan `{ valid: boolean }` pada mode mock. Input kosong/bukan teks ditolak; mock `demo123` dibandingkan persis, termasuk kapital/spasi, dengan jeda 300 ms untuk memeriksa loading. Pembatalan melalui AbortSignal didukung. Sandi demo bukan rahasia atau kredensial produksi dan tidak digunakan untuk validasi mode API.
 
@@ -143,7 +143,9 @@ Usulan kontrak backend untuk integrasi berikutnya, **belum tersedia**:
 
 HTTP 200 pada POST berarti pemeriksaan berhasil dijalankan; valid/tidak valid adalah hasil pemeriksaan. Input kosong atau bentuk permintaan tidak valid diusulkan HTTP 400 dengan format error proyek. Sandi backend kelak berupa environment variable biasa, misalnya `REPORT_SHARED_PASSWORD`, tanpa awalan VITE dan tanpa nilai produksi di repository. Tidak perlu hashing, akun, login/logout, JWT, session, refresh token, kedaluwarsa atau penyimpanan browser.
 
-Akses berhasil hanya state React pada FinancialReportPage. Input dibersihkan, state dibuang saat halaman dilepas, dan refresh meminta sandi kembali. Tidak ada nilai sandi/status yang dimasukkan ke URL, localStorage, sessionStorage atau cookie oleh aplikasi.
+Keputusan M1.8b menggantikan gate halaman penuh: klik CTA laporan Beranda/Footer membuka modal pada halaman asal. PublicLayout mengelola buka/tutup; ReportAccessModal memakai ReportAccessPanel dan service yang sama. Input dibersihkan saat benar, modal ditutup dan frontend menuju /laporan-keuangan. Salah/error tetap di modal; menutup modal membatalkan pemeriksaan yang berjalan. Tidak ada status akses persisten maupun otorisasi pada route.
+
+/laporan-keuangan langsung mengambil laporan melalui getReport(), termasuk saat akses URL langsung atau refresh. Refresh dari format/pratinjau kembali ke tampilan laporan dengan periode default; state filter/format hanya dipertahankan selama halaman masih terbuka. Sandi/status tidak dimasukkan ke URL, localStorage, sessionStorage atau cookie. Endpoint sandi hanya dipakai oleh interaksi CTA; bukan prasyarat pemanggilan GET laporan. Tidak ada perubahan payload HTTP atau kontrak autentikasi admin.
 
 **Batasan:** pengecekan sandi hanya pembatas antarmuka. Respons `valid: true` bukan token/otorisasi dan tidak melindungi GET laporan. Endpoint laporan tanpa autentikasi tetap dapat diakses langsung tanpa melewati gate. Keputusan sederhana ini mengikuti kebutuhan tim; tidak mengklaim perlindungan data oleh gate.
 

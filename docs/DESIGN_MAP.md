@@ -2,11 +2,14 @@
 
 Sembilan tampilan user telah dinyatakan final oleh pengguna. Referensi implementasi M1.1 adalah `design-references/user/01-beranda.png` (1728 × 4121 px). Gambar dipakai untuk pemeriksaan visual, bukan dipasang sebagai halaman atau latar aplikasi. Figma MCP tidak dipanggil pada tahap ini; node ID tidak diketahui.
 
+Keputusan aktif M1.8b menggantikan gate halaman penuh M1.5a: CTA laporan Beranda/Footer membuka modal di atas halaman asal. Route laporan dapat dibuka langsung dan tetap menampilkan laporan saat refresh. Catatan gate halaman penuh/refresh pada milestone lama di bawah merupakan riwayat keputusan, bukan perilaku terkini.
+
 | Halaman React | Route | Referensi lokal | Status implementasi |
 | --- | --- | --- | --- |
 | Beranda (`HomePage`) | `/` | `01-beranda.png` | HTML/CSS dan mock melalui service; foto/logo Blade serta Plus Jakarta Sans lokal terintegrasi pada M1.1a |
 | Profil Masjid (`ProfilePage`) | `/profil` | `03-profil.png` | M1.3: header, statistik bersama, visi-misi, linimasa, tujuh pengurus, CTA Kontak |
-| Laporan Keuangan (`FinancialReportPage`) | `/laporan-keuangan` | `05-laporan.png`, `07-token.png` | M1.5a: gate sandi; M1.5b: laporan mock April 2026, filter tanggal, dua tabel dan ringkasan |
+| Laporan Keuangan (`FinancialReportPage`) | `/laporan-keuangan` | `05-laporan.png` | Laporan mock April 2026, filter tanggal, dua tabel dan ringkasan; akses langsung/refresh tanpa gate |
+| Modal akses (`ReportAccessModal` + `ReportAccessPanel`) | State pada halaman publik pemicu | `07-token.png` | M1.8b: overlay gelap di atas halaman asal/Navbar, tutup/Escape/fokus/scroll; berhasil menuju laporan |
 | Agenda (`AgendaPage`) | `/agenda` | `02-agenda.png` | M1.2: banner dan kelompok 5/2/5, mock/service bersama Beranda, responsive |
 | Kontak (`ContactPage`) | `/kontak` | `04-kontak.png` | M1.4: Donasi, informasi takmir dan placeholder lokasi; data transaksi/kontak menunggu konfirmasi |
 | Pilihan format (`ReportFormatPicker`) dan pratinjau (`ReportPreview`) | State pada `/laporan-keuangan` | `06-format-unduhan.png`, `08-preview-pdf.png`, `09-preview-png.png` | M1.6a/b: pilihan PDF/PNG, lembar A4 dinamis, unduhan PDF atau PNG/ZIP nyata |
@@ -213,3 +216,29 @@ Pada refinement Navbar/background sebelumnya, bukti di tmp/m18a-refinement-qa/ m
 Koreksi geometri terakhir memiliki baseline/screenshot di tmp/m18a-navbar-qa/. Logo dan menu dibandingkan sebagai rasio panel terhadap raster lokal 01-beranda; screenshot perbandingan terbaru yang disebut pengguna tidak terlihat sebagai lampiran pada pesan yang diterima. Screenshot desktop ditinjau kembali setelah penyesuaian. Hanya aturan geometri Navbar ≥1024 px ditambahkan; hero, background, section lain dan tombol hero tidak berubah. Lint, seluruh test/build, regresi sembilan tampilan, fixed scroll, hover, Tab/Enter dan klik menu diuji ulang. Smoke 390 px serta pemeriksaan tambahan 768/1024 px tanpa overflow.
 
 Belum merupakan kesamaan piksel terhadap raster; crop/blur dan panjang halaman mengikuti refinement sebelumnya. Glass dinilai melalui render Chrome, bukan simulasi optik Figma. Mobile menyeluruh tetap M1.8c; refinement khusus Profil/Kontak/laporan tidak dikerjakan pada tahap ini.
+
+## M1.8b — Polishing dan perubahan gate menjadi modal
+
+Baseline visual cbe90ea (M1.8a) dipertahankan untuk Navbar/geometri/glass, hero/fade/crop, gradasi biru atas, Beranda dan Agenda. Permintaan tambahan M1.8b mengizinkan penyesuaian latar dekoratif Profil/Kontak serta tipografi header yang dijelaskan di bawah. Referensi lokal 03/04/07/05/06/08/09 ditinjau; tidak menggunakan Figma MCP.
+
+- Profil: shadow lembut pada tujuh kartu pengurus; grid/konten tetap. CTA kontribusi memakai hijau masjid dengan gradasi yang dipertahankan, deskripsi lebih jelas.
+- Kontak: border lebih lembut, surface putih ke hijau sangat pucat dan shadow tipis pada panel/kartu Donasi. Judul dinaikkan 8 px dengan kompensasi margin bawah; posisi kartu dan komposisi dua kolom tetap. Semua data belum terkonfirmasi tetap placeholder.
+- Gate: native dialog maksimum 1120 px menggunakan kembali ReportAccessPanel, berada pada top layer di atas Navbar dengan backdrop gelap. Scroll belakang dikunci; Tab/Shift+Tab, fokus awal, Escape/tutup dan pengembalian fokus/scroll dikelola. Menutup saat loading membatalkan service. Salah/error tetap di modal, benar menutup modal dan menavigasi ke laporan. Tidak ada state otorisasi atau penyimpanan browser.
+- Laporan/format: shadow tipis pada tabel/resume, panel kontrol periode dan kartu format tanpa mengganti layout putih, ukuran tabel atau warna transaksi. Route laporan langsung memuat data termasuk setelah refresh; format/filter kembali ke default saat refresh, tanpa gate.
+- ReportSheet: kategori transaksi/resume menjadi teks berwarna tanpa capsule, font 7,5 px dan line-height 10 px, tanpa mengubah tinggi baris/pagination. Gaya dibatasi seluruh lembar agar tidak diwarisi berbeda dari breakpoint layar. Pratinjau dan ekspor memakai komponen/data yang sama.
+
+QA Chrome zoom 100% mencakup 1728 × 1080, 1366 × 768 dan smoke 390 × 844. Screenshot before/iterasi/final serta inspeksi ekspor berada di tmp/m18b-qa/, tidak masuk staging. Beranda/Agenda mempunyai geometri identik dengan baseline; sebagian screenshot identik piksel, selisih raster kecil pada lainnya ditinjau tanpa perubahan komposisi. Pengujian file PDF/PNG memeriksa dua lembar April, satu lembar kustom, fixture tiga lembar, semua transaksi dan kesamaan gambar antarformat. Batasan pixel-perfect/cross-browser sebelumnya tetap berlaku; mobile menyeluruh tidak dikerjakan.
+
+### Refinement tambahan header, kartu statistik dan latar
+
+- H1 Profil/Kontak desktop ≥1024 px memakai clamp(39px, 4vw, 69px): sekitar 63,94 → 69 px pada 1728 dan 50,54 → 54,64 px pada 1366 (+sekitar 8%). Plus Jakarta Sans, weight 800 dan hijau/oranye tetap. Font mobile Profil 32/Kontak 34 px tetap.
+- Subtitle kedua halaman dan Sorolaten memakai #385464 (biru keabu-abuan); Sorolaten tetap italic/weight 400. Sampel latar render aktual menunjukkan rasio minimum sekitar 5,14:1. Warna teks sekunder lain tidak diubah.
+- Badge header berbagi surface #fffaf0f2 (off-white sekitar 95%), border #dfc6a8 dan shadow 0 2px 6px #5b452018; oranye/padding/radius tetap. Aturan Profil hanya mengenai badge header, bukan badge era linimasa. Stat cards hanya diberi shadow 0 6px 18px #2547351a dan highlight inset, tanpa mengubah warna/ukuran/konten.
+- Latar non-Beranda memakai konfigurasi CSS bersama dengan variabel scene. Default foto Profil/Kontak: auto 120% tinggi lapisan, opacity .65, blur 8 px, lapisan putih tengah #edf5fab8 (sebelumnya #edf5fac9). Kontak memakai 72% bottom; Profil memakai 72% 65% desktop besar/72% 80% ≤1399 px agar atap sejajar area Sejarah. Lapisan foto kedua Sejarah dihapus, menyisakan gradient ringan supaya tidak menutupi scene bersama. Hasil belum identik piksel; aset WebP asli 1928 × 1089 membatasi ketajaman ketika diperbesar.
+- Agenda mempertahankan ukuran, posisi, overlay, opacity .75 dan blur 10 px sebelumnya melalui override scene; ini diperlukan untuk menjaga crop hijau Bulanan yang sudah disetujui. Foto/hero/latar Beranda dan gradasi biru atas non-Beranda tidak diubah.
+
+Baseline, dua iterasi dan hasil production diperiksa pada 1728 × 1080, 1366 × 768 serta smoke 390 × 844; screenshot/kontras di tmp/m18b-refinement-qa/, tidak di-stage. Navbar tetap terbaca/fixed, tanpa overflow atau tabrakan. Gate/filter/pratinjau/ekspor memakai source/logika yang sama; test dan build diulang. Mobile menyeluruh tetap M1.8c.
+
+### Koreksi final surface badge header
+
+Badge header Profil/Kontak kini memakai satu aturan frosted glass yang menggantikan surface solid di atas: gradient rgba(255,255,255,.76) → rgba(255,246,234,.62), backdrop blur 12 px/saturasi 115%, border putih transparan 1 px/55%, highlight inset putih 65% dan shadow kecil rgba(20,55,45,.12). Tidak ada override surface per halaman. Teks/ikon oranye, tipografi, radius dan ukuran tetap; padding Profil mengompensasi tambahan border 1 px agar geometri tidak berubah. Badge era linimasa dan badge lainnya tidak terkena aturan ini. Screenshot sebelum/sesudah serta pengukuran pada 1728, 1366 dan 390 px berada di tmp/m18b-badge-qa/ (tidak di-stage); Beranda/Agenda identik dengan baseline pada ketiga viewport.

@@ -45,7 +45,7 @@ export default function ReportAccessPanel({ onAccessGranted }) {
       <span className="report-access-icon"><ShieldCheck aria-hidden="true" /></span>
       <span className="report-access-badge">LAPORAN KEUANGAN</span>
       <h1 id="report-access-heading">Jendela <span>Transparansi</span> Keuangan</h1>
-      <p className="report-access-description">Masukkan kode akses laporan untuk melihat transparansi kas berjalan.</p>
+      <p id="report-access-description" className="report-access-description">Masukkan kode akses laporan untuk melihat transparansi kas berjalan.</p>
       <form className="report-access-form" onSubmit={handleSubmit} noValidate aria-busy={isChecking}>
         <label htmlFor="report-password">Kode Akses</label>
         <input id="report-password" type="password" name="password" value={password} placeholder="••••" autoComplete="off" required disabled={isChecking} aria-describedby={error ? 'report-access-error' : undefined} aria-invalid={Boolean(error)} onChange={(event) => { setPassword(event.target.value); setError('') }} />

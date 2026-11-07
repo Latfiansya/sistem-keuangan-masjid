@@ -61,9 +61,11 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
     assert.fail(`Kondisi browser tidak tercapai: ${expression}`)
   }
   const openGate = async (origin = baseUrl) => {
-    const url = `${origin}/laporan-keuangan?qa=${++sequence}`
+    const url = `${origin}/?qa=${++sequence}`
     await send('Page.navigate', { url })
-    await waitFor(`location.href === ${JSON.stringify(url)} && document.readyState === 'complete' && !!document.querySelector('#report-password')`)
+    await waitFor(`location.href === ${JSON.stringify(url)} && document.readyState === 'complete' && !!document.querySelector('.public-footer a[href="/laporan-keuangan"]')`)
+    await evaluate('document.querySelector(\'.public-footer a[href="/laporan-keuangan"]\').click()')
+    await waitFor('!!document.querySelector(".report-access-dialog[open] #report-password")')
   }
   const fillPassword = async (value) => {
     await evaluate('document.querySelector("#report-password").focus(); document.querySelector("#report-password").select()')
@@ -132,10 +134,41 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
     await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false })
     await send('Emulation.setPageScaleFactor', { pageScaleFactor: 1 })
 
-    await t.test('akses langsung diawali gate tanpa Navbar/Footer', async () => {
+    await t.test('akses langsung dan refresh memuat laporan tanpa gate atau Navbar/Footer publik', async () => {
+      await send('Page.navigate', { url: `${baseUrl}/laporan-keuangan` })
+      await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 50')
+      assert.equal(await evaluate('document.querySelectorAll("nav, .public-footer, #report-password").length'), 0)
+      await send('Page.reload', { ignoreCache: true })
+      await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 50')
+      assert.equal(await evaluate('!!document.querySelector("#report-password")'), false)
+    })
+    await t.test('modal berada di halaman asal, mengunci scroll/fokus, Escape dan tutup mengembalikan fokus', async () => {
       await openGate()
-      assert.equal(await evaluate('document.querySelectorAll("nav, footer").length'), 0)
+      assert.equal(await evaluate('location.pathname'), '/')
+      assert.equal(await evaluate('!!document.querySelector(".public-header")'), true)
+      assert.equal(await evaluate('document.querySelector("dialog").matches(":modal")'), true)
       assert.equal(await evaluate('document.querySelector("#report-password").type'), 'password')
+      assert.equal(await evaluate('document.activeElement.id'), 'report-password')
+      assert.equal(await evaluate('document.body.style.overflow'), 'hidden')
+      assert.equal(await evaluate(`(()=>{const e=document.querySelector('.navbar'),r=e.getBoundingClientRect();return e.contains(document.elementFromPoint(r.left+r.width/2,r.top+r.height/2))})()`), false)
+      for (let i = 0; i < 5; i++) {
+        await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 })
+        await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 })
+        assert.equal(await evaluate('!!document.activeElement.closest("dialog")'), true)
+      }
+      await send('Input.dispatchMouseEvent', { type: 'mouseWheel', x: 8, y: 740, deltaX: 0, deltaY: 500 })
+      assert.equal(await evaluate('scrollY'), 0)
+      await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
+      await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
+      await waitFor('!document.querySelector("dialog")')
+      assert.equal(await evaluate('document.activeElement.matches(\'.public-footer a[href="/laporan-keuangan"]\')'), true)
+      assert.equal(await evaluate('document.body.style.overflow'), '')
+      await evaluate('document.activeElement.click()')
+      await waitFor('!!document.querySelector("dialog[open]")')
+      await evaluate('document.querySelector(".report-access-close").click()')
+      await waitFor('!document.querySelector("dialog")')
+      assert.equal(await evaluate('document.activeElement.matches(\'.public-footer a[href="/laporan-keuangan"]\')'), true)
+      await openGate()
     })
     await t.test('sandi kosong menampilkan pesan tanpa membuka laporan', async () => {
       await submit()
@@ -233,6 +266,10 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
     await t.test('lanjut PDF menampilkan seluruh baris dan ringkasan pada halaman terakhir', async () => {
       await evaluate('document.querySelector(".report-export-actions .export-button--primary").click()')
       await waitFor('document.querySelectorAll(".report-sheet").length === 2')
+      assert.equal(await evaluate(`([...document.querySelectorAll('.report-sheet .financial-category')]).every(e => {
+        const style = getComputedStyle(e), box = e.getBoundingClientRect(), cell = e.closest('td, th').getBoundingClientRect()
+        return style.backgroundColor === 'rgba(0, 0, 0, 0)' && style.borderRadius === '0px' && e.scrollWidth <= e.clientWidth && box.right <= cell.right
+      })`), true)
       assert.equal(await evaluate('document.querySelectorAll(".report-sheet [data-transaction-id]").length'), 50)
       assert.equal(await evaluate('document.querySelector(".report-sheet").querySelectorAll(".financial-summary--sheet").length'), 0)
       assert.equal(await evaluate('document.querySelector(".financial-summary--sheet tfoot td:last-child").textContent'), '20.484.700')
@@ -332,11 +369,11 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
       assert.equal(await evaluate('document.cookie'), '')
       assert.equal(await evaluate('location.href.includes("demo123") || /password|valid|access=true/.test(location.search)'), false)
     })
-    await t.test('refresh dari pratinjau meminta sandi kembali dengan input kosong', async () => {
+    await t.test('refresh dari pratinjau tetap di laporan dan mereset tampilan tanpa sandi', async () => {
       await send('Page.reload', { ignoreCache: true })
-      await waitFor('!!document.querySelector("#report-password")')
-      assert.equal(await evaluate('document.querySelector("#report-password").value'), '')
-      assert.equal(await evaluate('!!document.querySelector(".financial-report")'), false)
+      await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 50')
+      assert.equal(await evaluate('!!document.querySelector("#report-password")'), false)
+      assert.equal(await evaluate('location.pathname'), '/laporan-keuangan')
     })
     await t.test('mode API gagal dengan pesan integrasi dan dapat dicoba kembali', async () => {
       await openGate(apiUrl)
@@ -345,6 +382,9 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
       await waitFor('document.querySelector("[role=alert]")?.textContent.includes("API belum tersedia")')
       assert.equal(await evaluate('document.querySelector("button[type=submit]").disabled'), false)
       assert.equal(await evaluate('!!document.querySelector(".financial-report")'), false)
+      await send('Page.navigate', { url: `${apiUrl}/laporan-keuangan` })
+      await waitFor('document.querySelector("[role=alert]")?.textContent.includes("Laporan keuangan melalui API belum tersedia")')
+      assert.equal(await evaluate('!!document.querySelector("#report-password")'), false)
     })
     await t.test('CTA Beranda dan tautan Footer seluruh halaman membuka gate', async () => {
       for (const route of ['/', '/agenda', '/profil', '/kontak']) {
@@ -357,11 +397,19 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
           await send('Page.navigate', { url })
           await waitFor(`location.href === ${JSON.stringify(url)} && !!document.querySelector('.public-footer')`)
         }
+        await evaluate(`document.querySelector('.public-footer a[href="/laporan-keuangan"]').scrollIntoView({ block: 'center' })`)
+        const originScroll = await evaluate('scrollY')
         await evaluate(`document.querySelector('.public-footer a[href="/laporan-keuangan"]').click()`)
-        await waitFor('location.pathname === "/laporan-keuangan" && !!document.querySelector("#report-password")')
+        await waitFor(`location.pathname === ${JSON.stringify(route)} && !!document.querySelector('dialog[open] #report-password')`)
+        assert.equal(await evaluate('scrollY'), originScroll)
+        await evaluate('document.querySelector(".report-access-close").click()')
+        await waitFor('!document.querySelector("dialog")')
+        assert.equal(await evaluate('scrollY'), originScroll)
+        assert.equal(await evaluate('document.activeElement.matches(\'.public-footer a[href="/laporan-keuangan"]\')'), true)
       }
     })
-    await t.test('navigasi keluar setelah akses berhasil mengembalikan gate saat dibuka lagi', async () => {
+    await t.test('keluar laporan lalu klik CTA kembali membuka modal baru pada Beranda', async () => {
+      await openGate()
       await fillPassword('demo123')
       await submit()
       await waitFor('!!document.querySelector(".financial-report")')
@@ -369,6 +417,22 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
       await waitFor('location.pathname === "/" && !!document.querySelector(".hero")')
       await evaluate('document.querySelector(".finance-cta a").click()')
       await waitFor('!!document.querySelector("#report-password")')
+      assert.equal(await evaluate('location.pathname'), '/')
+    })
+    await t.test('menutup modal saat loading membatalkan pemeriksaan dan tidak berpindah halaman', async () => {
+      await openGate()
+      await fillPassword('demo123')
+      await submit()
+      await waitFor('document.querySelector(".report-access-form").getAttribute("aria-busy") === "true"')
+      await evaluate('document.querySelector(".report-access-close").click()')
+      await waitFor('!document.querySelector("dialog")')
+      await new Promise((resolve) => setTimeout(resolve, 350))
+      assert.equal(await evaluate('location.pathname'), '/')
+      await evaluate('document.activeElement.click()')
+      await waitFor('!!document.querySelector("dialog[open]")')
+      assert.equal(await evaluate('document.querySelector("#report-password").value'), '')
+      assert.equal(await evaluate('!!document.querySelector(".report-access-error")'), false)
+      await evaluate('document.querySelector(".report-access-close").click()')
     })
     await t.test('navigasi publik berurutan, menu aktif dan skip link dapat digunakan melalui keyboard', async () => {
       const url = `${baseUrl}/?qa=${++sequence}`
@@ -458,7 +522,7 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
           assert.equal(await evaluate('scrollY'), 0)
         }
         await openGate()
-        assert.equal(await evaluate('!!document.querySelector(".public-header")'), false)
+        assert.equal(await evaluate('!!document.querySelector(".public-header") && document.querySelector("dialog").matches(":modal")'), true)
         await fillPassword('demo123')
         await submit()
         await waitFor('!!document.querySelector(".financial-summary-table")')

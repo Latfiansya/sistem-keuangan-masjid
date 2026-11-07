@@ -18,7 +18,7 @@ export default function ReportSheet({ report, page, pageCount }) {
             <div className="report-sheet-column-labels"><span>Uraian · tanggal &amp; kategori</span><span>Nominal (Rp)</span></div>
             {page[type].length ? <table className="report-sheet-transactions"><caption className="sr-only">{title} pada lembar {page.number}</caption><tbody>{page[type].map((item) => {
               const category = report.summary.rows.find((entry) => entry.id === item.categoryId)
-              return <tr key={item.id} data-transaction-id={item.id}><td><strong title={item.description}>{item.description}</strong><div><time dateTime={item.date}>{formatReportDate(item.date)}</time><span className={`financial-category financial-category--${category.color}`}>{category.label}</span></div></td><td>{formatRupiah(item.amount)}</td></tr>
+              return <tr key={item.id} data-transaction-id={item.id}><td><strong title={item.description}>{item.description}</strong><div className="report-sheet-meta"><time dateTime={item.date}>{formatReportDate(item.date)}</time><span className={`financial-category financial-category--${category.color} report-sheet-category`}>{category.label}</span></div></td><td>{formatRupiah(item.amount)}</td></tr>
             })}</tbody></table> : <div className="report-sheet-empty"><strong>{page.number > 1 && totalCount ? `Tidak ada lanjutan ${title.toLowerCase()}` : `Tidak ada transaksi ${title.toLowerCase()}`}</strong><p>{totalCount ? 'Seluruh transaksi tercantum pada halaman sebelumnya.' : 'Tidak ada transaksi pada rentang ini.'}</p></div>}
           </section>
         })}
