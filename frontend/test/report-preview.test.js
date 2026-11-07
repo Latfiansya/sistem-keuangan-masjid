@@ -71,7 +71,8 @@ test('PDF dan PNG memakai lembar identik dengan semua nominal dan total dari ser
     assert.equal((markup.match(/data-transaction-id=/g) || []).length, 50)
     assert.equal((markup.match(/id="report-sheet-summary-heading"/g) || []).length, 1)
     for (const value of ['18.590.700', '10.665.500', '8.771.500', '20.484.700', 'Data contoh pengembangan']) assert.ok(markup.includes(value))
-    assert.match(markup, /disabled=""[^>]*aria-describedby="report-export-unavailable"/)
+    assert.match(markup, /aria-describedby="report-export-status"/)
+    assert.doesNotMatch(markup, /disabled=""/)
     assert.doesNotMatch(markup, /<canvas|<iframe|download=|blob:|berhasil diunduh/)
   }
 })
@@ -111,7 +112,7 @@ test('kartu memilih format yang diberikan dan informasi halaman selalu berasal d
     assert.ok(input?.includes('checked=""'))
     assert.ok(html.includes('1 lembar'))
     assert.ok(html.includes('1 dokumen PDF · 1 halaman'))
-    assert.ok(html.includes('1 gambar PNG · 1 gambar per halaman'))
+    assert.ok(html.includes('1 gambar PNG · unduh langsung'))
   }
   assert.equal(formatReportRange(report.range), '30 April 2026')
   assert.equal(formatReportYear(report.range), '2026')

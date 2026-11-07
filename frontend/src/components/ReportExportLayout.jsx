@@ -1,11 +1,11 @@
 import { ArrowLeft, Check, Info } from 'lucide-react'
 import { formatReportYear } from '../utils/reportFormatters.js'
 
-export default function ReportExportLayout({ report, headingRef, title, description, step, onBack, children }) {
+export default function ReportExportLayout({ report, headingRef, title, description, step, onBack, busy = false, children }) {
   return (
     <div className={`report-export report-export--${step === 1 ? 'picker' : 'preview'}`}>
       <header className="report-export-header">
-        {onBack && <button type="button" className="export-button export-button--back" onClick={onBack}><ArrowLeft aria-hidden="true" />Kembali</button>}
+        {onBack && <button type="button" className="export-button export-button--back" onClick={onBack} disabled={busy}><ArrowLeft aria-hidden="true" />Kembali</button>}
         <div><h1 ref={headingRef} tabIndex={-1}>Laporan Keuangan {formatReportYear(report.range)}</h1><p>{report.name}</p><small>Data contoh pengembangan · bukan laporan produksi</small></div>
       </header>
       <div className="report-export-introduction"><div><h2>{title}</h2><p>{description}</p></div>

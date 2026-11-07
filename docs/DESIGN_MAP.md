@@ -9,7 +9,7 @@ Sembilan tampilan user telah dinyatakan final oleh pengguna. Referensi implement
 | Laporan Keuangan (`FinancialReportPage`) | `/laporan-keuangan` | `05-laporan.png`, `07-token.png` | M1.5a: gate sandi; M1.5b: laporan mock April 2026, filter tanggal, dua tabel dan ringkasan |
 | Agenda (`AgendaPage`) | `/agenda` | `02-agenda.png` | M1.2: banner dan kelompok 5/2/5, mock/service bersama Beranda, responsive |
 | Kontak (`ContactPage`) | `/kontak` | `04-kontak.png` | M1.4: Donasi, informasi takmir dan placeholder lokasi; data transaksi/kontak menunggu konfirmasi |
-| Pilihan format (`ReportFormatPicker`) dan pratinjau (`ReportPreview`) | State pada `/laporan-keuangan` | `06-format-unduhan.png`, `08-preview-pdf.png`, `09-preview-png.png` | M1.6a: pilihan PDF/PNG dan lembar A4 dinamis; unduhan nyata belum tersedia |
+| Pilihan format (`ReportFormatPicker`) dan pratinjau (`ReportPreview`) | State pada `/laporan-keuangan` | `06-format-unduhan.png`, `08-preview-pdf.png`, `09-preview-png.png` | M1.6a/b: pilihan PDF/PNG, lembar A4 dinamis, unduhan PDF atau PNG/ZIP nyata |
 | Halaman tidak ditemukan (`NotFoundPage`) | `*` | Belum ditentukan | Placeholder fungsional |
 
 ## Layout dan komponen M1.1
@@ -156,3 +156,22 @@ Regresi Beranda, Agenda, Profil, Kontak dan gate: geometri identik dengan baseli
 ### Persiapan M1.6b, belum diimplementasikan
 
 Gunakan ReportSheet dengan data dan hasil reportPagination yang sama sebagai sumber ekspor, tanpa transform pratinjau. Tunggu font lokal selesai dimuat, lalu render tiap lembar secara utuh pada resolusi keluaran yang disepakati: satu PNG per lembar, atau rangkaian lembar yang sama menjadi satu PDF A4 lanskap. Pemilihan pustaka/adaptor render dan pengemasan berkas dibahas pada M1.6b; tidak menambah dependency sekarang. Verifikasi hasil berkas terhadap pratinjau termasuk font, ellipsis, baris, resume dan nominal sebelum mengaktifkan tombol unduhan. Tidak memerlukan perubahan API hanya untuk pratinjau ini.
+
+
+## M1.6b — Ekspor berkas nyata
+
+Pendekatan persiapan M1.6a kini diterapkan melalui `reportExportService`. ReportSheet, data laporan, pembagian lembar, kalkulasi keuangan, route dan gate tidak diubah. ReportPreview mengirim elemen lembar yang sedang ditampilkan beserta report/pages yang sama; tidak meminta data baru saat ekspor. Service memeriksa kelengkapan data, kesamaan field transaksi, ID tepat sekali dan urutan baris DOM sebelum merender.
+
+- Dependency frontend dikunci pada html-to-image 1.11.13, jsPDF 4.2.1 dan JSZip 3.10.2 setelah membaca dokumentasi resmi. Import dinamis menunda pemuatan library sampai diperlukan; ZIP hanya digunakan untuk PNG jamak. Tidak membawa stylesheet atau backend Laravel.
+- Font Plus Jakarta Sans lokal ditunggu dan CSS font disematkan ke gambar; aset gambar pada lembar ditunggu. html-to-image menyalin hanya ReportSheet dengan transform responsif/margin/shadow dilepas, ukuran tetap A4 dan pixelRatio 2. PNG nyata berukuran 2245 × 1587 px pada semua viewport. Tidak mengambil kontainer pratinjau, tombol atau screenshot browser.
+- PDF menggunakan satu gambar PNG untuk satu halaman A4 landscape 297 × 210 mm, sesuai urutan. Gambar dipasang proporsional dan dipusatkan, tanpa distorsi atau halaman kosong tambahan. Teks PDF berbasis raster, belum dapat diseleksi/dicari.
+- PNG satu lembar diunduh langsung; beberapa lembar menjadi satu ZIP dengan halaman-01.png, halaman-02.png dan seterusnya. Kartu PNG, toolbar, footer dan tombol menjelaskan ZIP secara eksplisit. Nama berkas mengikuti bulan penuh atau tanggal awal/akhir rentang khusus.
+- Dua tombol unduh aktif. Status proses, gagal dan unduhan dimulai ditampilkan seperlunya. Ref menahan submit ganda sebelum render state berikutnya; tombol format/kembali juga dinonaktifkan selama proses. Navigasi keluar membatalkan pengiriman hasil. Kanvas diperiksa agar tidak kosong dan dilepas setelah tiap lembar; URL Blob dibersihkan setelah browser diberi waktu mengambil berkas.
+
+QA aktual development dan preview build pada 1728 × 1080, 1366 × 768 dan 390 × 844, zoom 100%: PASS. PDF/PNG di mobile tetap berukuran cetak yang sama, termasuk ketika pratinjau berganti dari skala baca ke Lebar halaman. Tidak ada overflow halaman, teks/nominal sumber yang terpotong tambahan, baris keluar lembar atau tabrakan ringkasan/footer. Uraian yang sudah memakai titik-titik pada sumber tetap dipertahankan. Status mock ada pada pratinjau dan setiap lembar ekspor.
+
+Pemeriksaan berkas memakai pembaca/render PDF PyMuPDF dan dekoder PNG/ZIP pada alat QA sementara di tmp, tanpa menambah dependency aplikasi untuk inspeksi. Development menghasilkan 14 berkas uji (April, rentang 3–5 April pada tiga viewport, serta fixture QA 60 transaksi/3 lembar). Seluruh 12 halaman PDF dan 12 gambar PNG diperiksa; gambar yang dipakai tiap halaman PDF identik piksel dengan PNG pasangannya. Preview build menghasilkan 12 berkas tambahan dan lulus pemeriksaan yang sama. PNG identik piksel lintas viewport dan antara development/build. Halaman pertama/terakhir PDF, seluruh gambar dalam ZIP, resume dan fixture lembar tengah ditinjau; tidak kosong atau terpotong. Hasil QA di `tmp/m16b-qa/`, tidak di-stage.
+
+Regresi Beranda/Agenda/Profil/Kontak dan gate: geometri identik dengan baseline M1.6a pada tiga viewport, tanpa overflow. Sebanyak 12 dari 15 PNG identik; tiga halaman desktop berbeda tipis dalam raster dan ditinjau visual tanpa perubahan komposisi. Tidak ada perubahan desain atau kode halaman tersebut.
+
+Batasan: resolusi raster 2× sekitar 192 dpi; ukuran teks kecil mengikuti komposisi cetak final. PDF belum menyediakan teks/cari atau aksesibilitas dokumen berbasis teks. Browser lain dan perangkat mobile fisik belum diuji. Waktu/memori ekspor mengikuti panjang laporan dan kemampuan perangkat. Status unduhan berarti berkas sudah dibuat dan pemicu browser dijalankan, bukan konfirmasi penyimpanan akhir pada disk. Gate tetap hanya pembatas antarmuka, bukan perlindungan endpoint laporan.

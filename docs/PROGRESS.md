@@ -387,3 +387,46 @@ README dan DESIGN_MAP diperbarui termasuk pendekatan M1.6b: gunakan ReportSheet/
 Status, daftar file, diff, whitespace, file sensitif dan staged diff diperiksa. Hanya perubahan kode/test/dokumentasi M1.6a yang disiapkan; tidak menyertakan referensi, screenshot QA, temporary files, `.env`, credential, dependency atau build. Tidak mengubah backend, gate, transaksi atau perhitungan keuangan. Tidak menggunakan Figma MCP atau menjalankan commit, push, merge maupun rebase. Pekerjaan berhenti pada M1.6a.
 
 Usulan pesan commit: `feat: tambahkan pilihan format dan pratinjau laporan A4`.
+
+
+## M1.6b — Ekspor PDF dan PNG nyata
+
+Status: implementasi selesai dan tervalidasi pada `feature/frontend-publik`; siap ditinjau dan di-commit manual. Awal pekerjaan bersih selain design-references/ yang untracked. Pekerjaan berhenti pada M1.6b.
+
+### Implementasi
+
+- Menambah html-to-image 1.11.13, jsPDF 4.2.1 dan JSZip 3.10.2 hanya pada workspace frontend, dengan versi pasti dan pembaruan lockfile. Dokumentasi resmi/version compatibility diperiksa sebelum instalasi. Library dimuat dinamis; JSZip digunakan hanya untuk beberapa PNG. Paket lama tidak berubah versi, manifest backend tetap sama. Audit npm melaporkan 0 kerentanan; pemberitahuan skrip instalasi opsional core-js/fsevents tidak mengubah izin skrip proyek.
+- reportExportService menerima report, pages dan node ReportSheet yang sama dengan pratinjau; tidak mengimpor mock, mengambil data baru, membagi ulang halaman atau menghitung saldo kedua. Kelengkapan data, kesamaan field transaksi dan ID/urutan node diperiksa sebelum ekspor. Periode tidak lengkap ditolak.
+- Font lokal ditunggu dan disematkan; gambar pada lembar ditunggu. Render ukuran A4 tetap dengan pixelRatio 2 mengabaikan transform/scroll pratinjau. PNG 2245 × 1587 px, termasuk pada mobile. Kanvas kosong atau resolusi kurang ditolak; kanvas dilepas per lembar.
+- PDF A4 landscape memakai satu PNG per halaman sesuai urutan, tanpa distorsi atau halaman kosong tambahan. PNG satu halaman menjadi berkas langsung; PNG jamak menjadi ZIP dengan nama halaman berurutan. Nama berkas bulanan dan rentang kustom jelas. Penanda data contoh tetap terlihat pada pratinjau dan hasil ekspor.
+- ReportPreview mengaktifkan kedua tombol unduh, memberi status proses/error, serta menahan ekspor ganda melalui ref dan tombol nonaktif. Format/kembali dikunci saat ekspor; navigasi keluar membatalkan pengiriman hasil. Pesan selesai baru muncul setelah Blob dibuat dan unduhan dipicu. URL Blob dibersihkan; tidak ada upload, endpoint atau perubahan backend.
+
+### Konsistensi dan berkas nyata
+
+Data April tidak berubah: 17 pemasukan, 33 pengeluaran, saldo awal Rp18.590.700, pemasukan Rp10.665.500, pengeluaran Rp8.771.500 dan saldo akhir Rp20.484.700. Dua lembar tetap memuat 17/21 lalu 0/12 baris dengan resume pada akhir. Seluruh ID muncul tepat sekali. Rentang 3–5 April memuat 9 transaksi dan satu lembar, saldo awal Rp15.445.700 dan saldo akhir Rp16.602.700; filter dipertahankan setelah unduhan/kembali.
+
+| Skenario | Hasil pemeriksaan berkas |
+| --- | --- |
+| April 2026 | PDF 2 halaman A4 (792.460 byte), ZIP berisi 2 PNG asli (1.012.190 byte), setiap PNG 2245 × 1587 |
+| 3–5 April | PDF 1 halaman (255.125 byte), PNG langsung (349.581 byte), 2245 × 1587 |
+| Lebih dari dua lembar | Fixture QA terpisah: 60 transaksi/3 lembar, PDF 3 halaman dan ZIP 3 PNG; seluruh ID/urutan utuh dan resume hanya terakhir |
+
+Fixture tambahan hanya dibuat dalam browser QA dari salinan data untuk menguji kapasitas; tidak mengubah mock aplikasi atau menambahkan data produksi. Development menghasilkan 14 berkas uji dengan 12 halaman PDF serta 12 gambar PNG. Preview build menghasilkan 12 berkas tambahan dengan 9 halaman/gambar. Seluruh PDF dibuka dengan pembaca PDF, ukuran/jumlah halaman diperiksa dan halaman pertama/terakhir dirender. ZIP diperiksa CRC, nama, jumlah dan semua gambarnya didekode; format PNG asli, ukuran konsisten dan tidak kosong. Gambar yang benar-benar dipasang pada setiap halaman PDF identik piksel dengan PNG pasangannya, lintas viewport dan development/build. Halaman tengah fixture juga ditinjau visual. PDF tidak mengandung teks yang dapat diseleksi, sesuai pendekatan raster.
+
+### Pengujian dan visual QA
+
+- `npm run lint`: PASS, frontend dan pemeriksaan sintaks backend.
+- Seluruh test dengan Chrome QA: PASS, 62 hasil frontend (35 unit/struktur, 26 skenario browser serta satu induk) dan 3 test backend, tanpa dilewati. Tiga test unit baru memeriksa nama/format, penolakan data/lembar tidak konsisten dan pembatalan. Empat skenario browser baru menerima PDF/ZIP nyata, mencegah unduh ganda, menolak render kosong dan menangani pemicu unduhan gagal. Test rentang khusus juga menerima PDF serta PNG tunggal nyata. Gate, refresh/storage, loading/error, filter, total dan navigasi sebelumnya tetap diuji.
+- `npm run build`: PASS. Seluruh 26 skenario browser kembali PASS pada preview build. Dependency ekspor terpisah dari entry aplikasi; chunk opsional jsPDF tidak dipakai oleh alur PNG/browser render ini.
+- Browser development/preview build, zoom 100%: PASS pada 1728 × 1080, 1366 × 768 dan 390 × 844. Setiap viewport mengunduh PDF, ZIP April, serta PDF/PNG rentang khusus. Tidak ada horizontal overflow halaman, nominal/teks sumber terpotong tambahan, baris terbelah, tabrakan footer/resume atau error runtime/aset aplikasi selain favicon bawaan. Tombol, informasi ZIP, status dan layout mengikuti struktur M1.6a. Ukuran keluaran tetap sama ketika mobile memakai skala baca maupun Lebar halaman.
+- Regresi empat halaman publik dan gate: geometri identik dengan baseline M1.6a pada semua viewport; 12 dari 15 PNG identik. Agenda/Profil/Kontak desktop yang berbeda tipis ditinjau visual tanpa perubahan komposisi. Kalkulasi, mock, ReportSheet, reportPagination dan mekanisme gate tidak diubah.
+
+Screenshot, log, metrik, berkas PDF/PNG/ZIP dan alat inspeksi hanya berada di tmp/m16b-qa/ atau tmp/report-export-tests/, diabaikan Git. Inspeksi memakai PyMuPDF/Pillow pada lingkungan QA sementara; bukan dependency aplikasi.
+
+### Batasan dan Git
+
+PDF berbasis gambar belum mendukung seleksi/cari teks; resolusi 2× sekitar 192 dpi. Uraian yang sudah disingkat pada sumber tidak dikarang kepanjangannya. Frame mobile resmi belum tersedia; QA mobile memakai viewport Chrome, belum perangkat fisik atau Safari/Firefox. Berkas panjang memerlukan lebih banyak waktu/memori. Pemicu unduhan browser tidak dapat mengonfirmasi pilihan simpan/batal pada sistem operasi; status UI membatasi klaimnya pada berkas dibuat dan unduhan dimulai.
+
+README, DESIGN_MAP dan PROGRESS diperbarui; API_CONTRACT hanya memperjelas status ekspor frontend tanpa perubahan payload/endpoint. Status, daftar file, diff, whitespace, dependency, file sensitif dan staged diff diperiksa. Hanya kode/test/dokumentasi serta manifest/lockfile M1.6b disiapkan. Tidak menyertakan artefak QA, referensi desain, build, environment atau kredensial. Tidak mengubah backend, menggunakan Figma MCP, menjalankan commit/push/merge/rebase atau mengerjakan M1.7.
+
+Usulan pesan commit: `feat: aktifkan ekspor PDF dan PNG laporan keuangan`.

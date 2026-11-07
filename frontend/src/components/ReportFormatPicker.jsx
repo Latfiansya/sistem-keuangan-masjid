@@ -11,7 +11,7 @@ export default function ReportFormatPicker({ report, pages, format, onFormatChan
       <fieldset className="report-format-options"><legend>Format unduhan</legend><div className="report-format-grid">
         {[
           { id: 'pdf', Icon: FileText, description: 'Satu dokumen untuk dibaca, diarsipkan, atau dicetak. Semua halaman tersimpan dalam satu berkas.', detail: `1 dokumen PDF · ${count} halaman` },
-          { id: 'png', Icon: Images, description: 'Gambar terpisah untuk setiap halaman laporan. Praktis untuk dibagikan sebagai foto.', detail: `${count} gambar PNG · 1 gambar per halaman` },
+          { id: 'png', Icon: Images, description: count > 1 ? 'Gambar terpisah untuk setiap halaman laporan, dikemas dalam satu berkas ZIP.' : 'Satu gambar PNG untuk satu halaman laporan. Praktis untuk dibagikan sebagai foto.', detail: `${count} gambar PNG · ${count > 1 ? 'dalam 1 ZIP' : 'unduh langsung'}` },
         ].map(({ id, Icon, description, detail }) => <label key={id} className={`report-format-card${format === id ? ' is-selected' : ''}`}>
           <div className="report-format-title"><span><Icon aria-hidden="true" /></span><strong>{id.toUpperCase()}</strong><input type="radio" name="report-format" value={id} checked={format === id} onChange={() => onFormatChange(id)} aria-label={id.toUpperCase()} /></div>
           <p>{description}</p><span className="report-format-detail"><Layers aria-hidden="true" />{detail}</span>
