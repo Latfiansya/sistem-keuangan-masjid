@@ -431,6 +431,40 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
         assert.equal(await evaluate('!!document.querySelector(".report-preview-scroll-hint")'), width >= 768)
       }
     })
+    await t.test('Navbar publik tetap terlihat dan dapat dipakai saat scroll tanpa masuk ke layout laporan', async () => {
+      for (const [width, height] of [[1728, 1080], [1366, 768], [390, 844]]) {
+        await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false })
+        for (const route of ['/', '/agenda', '/profil', '/kontak']) {
+          const url = `${baseUrl}${route}?qa=${++sequence}`
+          await send('Page.navigate', { url })
+          await waitFor(`location.href === ${JSON.stringify(url)} && !!document.querySelector('.copyright')`)
+          for (const fraction of [0, .5, 1]) {
+            await evaluate(`scrollTo(0, (document.documentElement.scrollHeight - innerHeight) * ${fraction})`)
+            const result = await evaluate(`(()=>{
+              const nav = document.querySelector('.navbar'), rect = nav.getBoundingClientRect()
+              const link = nav.querySelector('a[aria-current="page"]'), target = link.getBoundingClientRect()
+              return {
+                fixed: getComputedStyle(document.querySelector('.public-header')).position === 'fixed',
+                visible: rect.top >= 0 && rect.bottom <= innerHeight,
+                clickable: link.contains(document.elementFromPoint(target.left + target.width / 2, target.top + target.height / 2)),
+                overflow: document.documentElement.scrollWidth > innerWidth
+              }
+            })()`)
+            assert.deepEqual(result, { fixed: true, visible: true, clickable: true, overflow: false }, `${route} ${width} scroll ${fraction}`)
+          }
+          const nextRoute = route === '/agenda' ? '/' : '/agenda'
+          await evaluate(`document.querySelector('.nav-links a[href="${nextRoute}"]').click()`)
+          await waitFor(`location.pathname === ${JSON.stringify(nextRoute)} && !!document.querySelector(${JSON.stringify(nextRoute === '/' ? '.hero' : '.agenda-group')})`)
+          assert.equal(await evaluate('scrollY'), 0)
+        }
+        await openGate()
+        assert.equal(await evaluate('!!document.querySelector(".public-header")'), false)
+        await fillPassword('demo123')
+        await submit()
+        await waitFor('!!document.querySelector(".financial-summary-table")')
+        assert.equal(await evaluate('!!document.querySelector(".public-header")'), false)
+      }
+    })
     assert.deepEqual(failures, [])
   } finally {
     await send('Browser.setDownloadBehavior', { behavior: 'default' })

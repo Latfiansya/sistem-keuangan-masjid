@@ -507,3 +507,95 @@ Tertunda sebelum publikasi produksi: persetujuan kontrak/adapter API, data/sandi
 README, DESIGN_MAP, API_CONTRACT dan PROGRESS diperbarui; FRONTEND_HANDOFF dibuat. Hanya perubahan M1.7 yang diverifikasi disiapkan untuk staging. Tidak menyertakan backend, environment, credential, referensi desain, screenshot, ekspor, temporary files atau build. Tidak menggunakan Figma MCP, menjalankan commit/push/merge/rebase, atau melanjutkan admin/milestone lain.
 
 Usulan pesan commit: `chore: finalisasi QA frontend publik dan dokumentasi handoff backend`.
+
+## M1.8a — Refinement desktop layout, Beranda dan Agenda (7 November 2026)
+
+Status: refinement lingkup M1.8a selesai, siap review/commit manual setelah validasi. Branch feature/frontend-publik, awal kerja tanpa perubahan tracked/staged; design-references/ tetap untracked. Tidak menimpa pekerjaan lama atau mengubah backend.
+
+### Implementasi dan iterasi visual
+
+- Navbar sebelumnya absolute dan hilang pada scroll. Kini fixed pada keempat halaman publik; iterasi awal mempertahankan tinggi sekitar 60 px, lalu refinement tambahan merapatkannya menjadi 52 px. Glass transparan, blur/highlight/border dan shadow halus menjaga karakter referensi; drop-shadow logo membantu latar terang. Pointer events hanya aktif pada panel sehingga sisi kosong header tidak menghalangi klik. Scroll margin ditambahkan pada target navigasi/fokus; laporan khusus tidak memperoleh Navbar.
+- Bagian atas selain Beranda diberi gradasi langit sedikit lebih dalam. Crop foto Agenda disesuaikan secara terisolasi hingga nuansa hijau dinding muncul sekitar Bulanan. Foto Profil/Kontak tidak diubah crop-nya. Beranda tidak mendapat gradasi biru baru di atas hero.
+- Hero Beranda diberi fade bawah dan bayangan batas lebih ringan. Kemakmuran dipersempit agar sejajar panel Agenda (maksimum 1464 px, sebelumnya 1608 px), padding/gap kartu dirapikan dan shadow subtil ditambahkan. Ukuran Navbar, hero, heading/tombol/statistik tidak diperbesar.
+- Hijau CTA dipertahankan lebih panjang; iterasi kontras memperdalam warna akhir agar teks kecil tetap terbaca. Copyright desktop menjadi 12 px dengan bobot 350, mobile tetap 11 px.
+- Badge jumlah dan label waktu Agenda memakai lapisan glass/highlight dengan blur 8 px; bayangan kartu kelompok sangat tipis. Struktur, warna hijau/lime, jumlah 5/2/5 dan semua jadwal tidak berubah.
+
+Raster Beranda/Agenda ditinjau bersama screenshot sebelum dan sesudah. Iterasi kedua melembutkan shadow hero, memperjelas logo dan memperkuat kontras CTA; hasil akhir diperiksa ulang. Satu pengambilan screenshot sempat terganggu karena alat QA memakai tab bersamaan; pengambilan final diulang berurutan dan hasil yang gagal tidak dijadikan bukti lulus. Artefak hanya ada di tmp/m18a-qa/, diabaikan Git.
+
+### Hasil QA aktual
+
+| Chrome, zoom 100% | Hasil |
+| --- | --- |
+| 1728 × 1080 | PASS — Navbar akhir 880 × 52 px pada top 48 px, tetap terlihat pada scroll awal/tengah/akhir; komposisi Beranda/Agenda dan glass ditinjau visual |
+| 1366 × 768 | PASS — Navbar akhir 880 × 52 px pada top sekitar 41 px, judul/kartu tidak terpotong, tiga kartu Kemakmuran tetap seimbang, semua jadwal terbaca |
+| 390 × 844 | PASS smoke — Navbar ringkas dua baris, kartu ditumpuk, tidak ada overflow atau interaksi utama terhalang; bukan refinement mobile menyeluruh |
+
+Development dan production preview masing-masing mencakup 27 kombinasi (sembilan tampilan × tiga viewport) serta 36 posisi scroll (empat halaman publik × tiga viewport × awal/tengah/akhir). Seluruh posisi Navbar terlihat dan dapat diklik; navigasi ke route lain mengembalikan scroll ke atas. Font/aset termuat, tanpa horizontal overflow atau HTTP gagal/exception runtime aplikasi.
+
+Pemeriksaan tambahan production mencakup 12 target CTA/Footer pada empat halaman × tiga viewport: fokus terlihat dan scroll target berada di bawah Navbar. Klik mouse nyata melalui Chrome pada menu saat scroll tengah berhasil berpindah route dan kembali ke atas.
+
+Regresi Profil/Kontak dibatasi perubahan Navbar, gradasi atas dan copyright bersama; isi, layout bagian dan CTA tetap berfungsi. Gate, filter/ringkasan laporan, pilihan format dan dua pratinjau mempertahankan geometri serta data. Sebagian raster browser berbeda tipis dan ditinjau visual tanpa perubahan susunan. Suite browser menerima berkas PDF/ZIP/PNG nyata dan memeriksa format/jumlah halaman/dimensi, sekaligus alur gate, refresh, filter, error API dan navigasi sebelumnya. Tidak mengubah kalkulasi, mock atau ekspor.
+
+### Testing dan Git
+
+- npm run lint: PASS.
+- Seluruh test dengan Chrome: PASS, 66 hasil frontend (35 unit/struktur + 30 skenario browser + satu induk), 3 test backend; tidak ada yang dilewati. Satu skenario baru memeriksa Navbar pada 36 posisi scroll, menu dapat digunakan, scroll reset ketika route berubah, dan tidak ada Navbar pada gate/laporan.
+- npm run build: PASS. Tidak menambah dependency atau mengubah manifest/lockfile.
+- Review diff, whitespace dan file sensitif dilakukan sebelum staging eksplisit. Hanya CSS, test browser, README, PROGRESS dan DESIGN_MAP M1.8a disiapkan; referensi desain, screenshot, log, ekspor, build, environment dan temporary files tidak disertakan. Tidak menjalankan commit, push, merge atau rebase.
+
+Batasan: belum identik piksel terhadap Figma, terutama crop/blur dan panjang halaman dari refinement terdahulu. Navbar fixed secara normal membuat konten bergulir di belakang panel; target navigasi diberi scroll margin dan interaksi utama tetap terjangkau. Smoke mobile bukan pengganti M1.8c. Tidak melakukan QA Safari/Firefox baru, refinement khusus M1.8b, integrasi bisnis atau milestone lain.
+
+Usulan pesan commit: `style: sempurnakan navbar dan tampilan desktop Beranda serta Agenda`.
+
+### Refinement tambahan M1.8a sebelum commit
+
+Staging lima file M1.8a sebelumnya dipertahankan; tidak ada pekerjaan tracked lain yang belum di-stage saat awal revisi. Perubahan tambahan hanya CSS serta catatan PROGRESS/DESIGN_MAP:
+
+- Navbar desktop dari 1000 × sekitar 60 menjadi 880 × 52 px; padding 6 × 24 menjadi 4 × 18 px, gap logo/menu maksimum 64 menjadi 32 px dan gap antaritem 10 menjadi 8 px. Logo 155 menjadi 140 px, padding menu 6 × 20 menjadi 5 × 16 px. Ukuran teks, menu aktif, posisi fixed dan navigasi tetap.
+- Border putih tetap 1 px tetapi opasitas turun dari 60% ke sekitar 22%; background dari 50%–40% menjadi 20%–12%. Blur 16 menjadi 12 px, saturasi 115% menjadi 125%, highlight tepi 0,5 px dan shadow lebih lembut. Menggunakan CSS glassmorphism sederhana tanpa library/efek kompleks.
+- Gradasi atas Agenda/Profil/Kontak diperkuat dari #89b8df80/#bad8ef40 menjadi #72a7d4a6/#9cc6e86b. Cakupan naik dari sekitar 550/437 menjadi 720/574 px pada desktop/laptop, lalu memudar transparan. Crop/posisi foto, termasuk nuansa hijau Bulanan, tidak berubah. Tidak mengubah CSS hero/fade/overlay Beranda atau ukuran isi halaman.
+- Screenshot sebelum/sesudah diperiksa di atas foto, latar biru dan section hijau pada kedua desktop; header Profil/Kontak serta smoke 390 × 844 juga ditinjau. Navbar mobile tetap sekitar 358 × 97 px, navigasi utuh. Sembilan tampilan × tiga viewport dan 36 posisi scroll kembali diperiksa per lingkungan development/production preview, tanpa overflow atau error HTTP/runtime. Geometri hero dan isi halaman dipertahankan; raster minor bukan klaim identik piksel.
+- Lint, seluruh test (66 hasil frontend dan 3 backend, tanpa skip), serta build diulang: PASS. Regresi gate, laporan/filter, format/pratinjau dan berkas ekspor tetap lulus. Tidak mengubah mock, service, backend, dependency atau memulai M1.8b.
+
+Bukti tambahan hanya di tmp/m18a-refinement-qa/, tidak di-stage. Setelah review diff/whitespace, staging diperbarui hanya untuk CSS dan dua dokumentasi tersebut; README dan test yang sebelumnya staged tetap dipertahankan. Tidak melakukan commit, push, merge atau rebase. Batasan kesamaan piksel dan pengujian lintas browser dari M1.8a tetap berlaku.
+
+### Refinement final hero, distribusi Navbar dan tombol Profil
+
+Permintaan lanjutan pengguna memperbarui keputusan tinggi hero desktop sebelumnya. Staging M1.8a tetap dipertahankan. Hanya CSS dan dokumentasi terkait diperbarui; tanpa perubahan konten, route, backend, dependency atau pekerjaan M1.8b.
+
+- Hero desktop ≥1024 memakai min-height max(100svh, 64.5vw), menggantikan clamp(620px, 52vw, 900px). Foto asli tetap object-fit cover, kini kanan bawah; skala render foto sekitar 14% lebih besar pada tiga desktop acuan. Tinggi hero dan crop ditangani bersama, tanpa zoom/transform halaman. Padding atas menjadi clamp(164px, 13.4vw, 232px); ukuran judul dan CTA tetap.
+- Navbar tetap 880 × 52 px dan fixed. Distribusi space-between dengan padding horizontal 32 px memindahkan logo ke kiri dan menu ke kanan, masing-masing sekitar 33 px dari tepi panel. Border, transparansi, blur/saturasi, tinggi, menu aktif dan ukuran teks dipertahankan. Mobile mempertahankan susunan dan padding breakpoint sebelumnya.
+- Dua token CSS permukaan/filter glass dipakai Navbar serta tombol Profil hero. Tombol memakai tint ringan di bawah permukaan translucent, blur 12 px/saturasi 125%, border/highlight tipis, shadow dan teks putih dengan bayangan ringan. Hover/fokus sederhana; CTA Lihat Agenda tetap putih.
+- Iterasi pertama mendekatkan proporsi foto/hero dan distribusi Navbar. Setelah perbandingan, fade masih memudarkan anak tangga; iterasi kedua memperpendek fade desktop menjadi clamp(48px, 4vw, 72px), tetap menempel batas bawah hero. Fade/crop/tinggi mobile tidak diubah.
+
+| Chrome, zoom 100% | Hero sebelum → akhir | Awal kartu statistik akhir | Hasil |
+| --- | --- | --- | --- |
+| 1728 × 1080 | sekitar 899 → 1115 px | sekitar 1187 px | PASS — foto mendominasi layar pertama, Navbar top 48 px, statistik sesudah scroll |
+| 1440 × 900 | sekitar 749 → 929 px | sekitar 991 px | PASS — crop proporsional, Navbar top 43 px, statistik di bawah fold |
+| 1366 × 768 | sekitar 710 → 881 px | sekitar 940 px | PASS — atap/fasad kanan bawah, Navbar top 41 px, CTA tetap terbaca |
+| 390 × 844 | tetap 500 px | tetap 528 px | PASS smoke — Navbar sekitar 358 × 97 px, tanpa overflow/kerusakan navigasi |
+
+Screenshot referensi dibandingkan dengan render pada viewport/zoom setara; untuk lebar berbeda, raster dinormalisasi hanya sebagai pembanding rasio komposisi, bukan ukuran CSS mentah. Dua iterasi, crop fade dan tampilan mobile ditinjau visual. Development dan production preview masing-masing memeriksa 36 kombinasi (sembilan tampilan × empat viewport) serta 48 posisi scroll. Tidak ada overflow halaman, aset/font gagal atau exception runtime. Geometri isi Agenda/Profil/Kontak serta gate/laporan/format/pratinjau tidak berubah; hanya distribusi Navbar bersama yang menyesuaikan.
+
+Pemeriksaan tambahan production: posisi foto/cakupan viewport/statistik, inset logo/menu, ukuran Navbar, hover/fokus dan Enter pada tombol Profil: PASS di empat viewport. Tombol Lihat Agenda tetap berlatar putih. Lint, seluruh test (66 hasil frontend dan 3 backend, tanpa skip) dan build: PASS. Regresi gate, filter serta ekspor nyata tetap lulus. Artefak QA hanya di tmp/m18a-hero-qa/ dan tidak di-stage.
+
+Belum identik piksel: ketajaman/warna foto mengikuti aset WebP asli, overlay dan refinement font sebelumnya; hero desktop kini mengikuti komposisi baru yang diminta, sementara mobile menyeluruh tetap M1.8c. Staging hanya diperbarui untuk CSS/PROGRESS/DESIGN_MAP yang diverifikasi; README/test staged sebelumnya dipertahankan. Tidak melakukan commit, push, merge atau rebase.
+
+### Koreksi akhir geometri Navbar
+
+Hanya geometri Navbar desktop ≥1024 px yang ditambahkan pada CSS; hero/foto/fade, background, section, tombol hero dan tipografi halaman tidak diubah. Staging M1.8a sebelumnya tetap dipertahankan. Acuan visual yang dapat diperiksa adalah raster lokal 01-beranda.png; screenshot pembanding terbaru yang disebut pengguna tidak tampak sebagai lampiran pesan.
+
+- Grid dua kolom menggantikan space-between desktop. Lebar panel clamp(720px, 63vw, 1088px), kolom logo clamp(170px, 13vw, 224px), gap kolom terukur dan padding internal seimbang secara visual. Logo diperbesar dengan merapikan padding transparan vertikal melalui object-fit cover; tulisan/ikon tidak diregangkan atau dipotong. Efek glass, border, shadow dan posisi fixed tetap.
+- Empat tombol mempunyai kolom dengan rasio 147:140:190:131, gap 8–12 px, font 17–24 px, serta area klik lebih besar. Posisi dinilai relatif terhadap panel: identitas visual sekitar 18%, awal Beranda sekitar 33%, akhir Kontak sekitar 93%, mendekati raster lokal. Ruang kosong logo–Beranda berkurang tanpa menumpuk seluruh menu di kanan.
+
+| Viewport | Panel sebelum → akhir | Hasil |
+| --- | --- | --- |
+| 1728 × 1080 | 880 × 52 → 1088 × 64 px | PASS — panel terpusat; logo visual sekitar 200 px, tombol sekitar 148/141/192/132 px |
+| 1440 × 900 | 880 × 52 → sekitar 907 × 56 px | PASS — proporsi logo/menu konsisten dengan panel dan raster pembanding |
+| 390 × 844 | tetap sekitar 358 × 97 px | PASS smoke — susunan, navigasi dan geometri mobile dipertahankan |
+
+Baseline, iterasi dan screenshot akhir dibandingkan kembali pada zoom Chrome 100%. Development/production preview masing-masing mencakup 36 kombinasi tampilan dan 48 posisi scroll; tidak ada overflow halaman, kegagalan aset/font atau exception runtime. Geometri hero dan seluruh isi halaman sama dengan baseline. Pemeriksaan tambahan 1728/1440/1366/1024/768/390 px meliputi panel terpusat, rasio posisi, hover, Tab/Enter, menu aktif dan klik mouse saat scroll: PASS.
+
+Lint, seluruh test (66 hasil frontend dan 3 backend, tanpa skip), build dan whitespace: PASS. Screenshot/log hanya di tmp/m18a-navbar-qa/, tidak di-stage. Staging diperbarui hanya untuk CSS dan catatan desain/progres; README serta test browser staged sebelumnya tetap utuh. Tidak mengubah backend/dependency atau melakukan commit, push, merge maupun melanjutkan M1.8b.
+
+Perbedaan tersisa terhadap raster lokal berupa detail raster logo dan selisih kecil tinggi/posisi vertikal panel; belum diklaim identik piksel atau diverifikasi terhadap lampiran yang tidak tersedia. Usulan commit tetap: `style: sempurnakan hero, navbar, dan tampilan desktop publik`.
