@@ -1,14 +1,11 @@
 import app from './app.js'
+import { loadEnv } from './config/env.js'
 
-const port = Number(process.env.PORT ?? 3000)
-const host = process.env.HOST ?? '127.0.0.1'
+const { port, host, apiBasePath } = loadEnv()
 
-if (!Number.isInteger(port) || port < 1 || port > 65535) {
-  throw new Error('PORT harus berupa bilangan bulat antara 1 dan 65535.')
-}
-
-const server = app.listen(port, host, () => {
-  console.log(`Backend berjalan di http://${host}:${port}`)
+const server = app.listen(port, host, (error) => {
+  if (error) return
+  console.log(`Backend berjalan di http://${host}:${port}${apiBasePath || '/'}`)
 })
 
 server.on('error', (error) => {

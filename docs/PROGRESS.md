@@ -708,3 +708,26 @@ Lint: PASS. Seluruh test: 72 hasil frontend (36 test dasar, 35 skenario browser 
 Bukti screenshot/berkas/metrics di tmp/m18c-qa/ diabaikan Git. Perubahan manual pengguna pada shadow badge (blur 12 → 32 px) yang sudah ada saat mulai dipertahankan di working tree dan tidak dicampur ke staging M1.8c. Hanya Navbar, ReportAccessModal, CSS responsive, test browser serta empat dokumen terkait disiapkan untuk commit manual; referensi desain, credential, build output dan artefak QA tidak di-stage. Tidak melakukan commit, push, merge atau rebase.
 
 Frontend mode mock siap untuk review manual sebelum pertimbangan merge; belum berarti siap produksi. Belum ada desain mobile resmi atau pengujian perangkat fisik/Safari/Firefox pada tahap ini. Data resmi Kontak/Donasi, izin aset dan integrasi endpoint Express tetap mengikuti handoff; tidak dikerjakan pada M1.8c. Tidak melanjutkan milestone lain/admin atau melakukan merge.
+
+## Backend Publik Fase 1 (tanpa database, selaras SOP Capstone) — 8 November 2026
+
+Status: implementasi backend publik pada branch `fitur/backend-publik` selesai dan tervalidasi tanpa menyentuh `frontend/` dan tanpa menambah dependency baru.
+
+### Implementasi
+
+- Memisahkan arsitektur backend menjadi 3 layer tegas (`routes/` + `controllers/` → `services/` → `repositories/` → `data/`) serta memusatkan konfigurasi runtime di `backend/src/config/env.js`.
+- Menyesuaikan fondasi terhadap SOP Capstone Project: batas body JSON `10kb` (`JSON_BODY_LIMIT`), prefix path API configurable (`API_BASE_PATH`, default `/api`) untuk dukungan subdirectory, validasi & sanitasi input serta error terstruktur (`httpError.js`) tanpa membocorkan stack trace.
+- Mengimplementasikan keempat endpoint publik sesuai `docs/API_CONTRACT.md` dengan sumber data sementara (menunggu kesiapan skema PostgreSQL/pgAdmin tim):
+  - `GET /api/public/agenda`: 5 mingguan, 2 bulanan, 5 tahunan tanpa `counts`.
+  - `GET /api/public/content`: konten bersama, profil, dan sanitasi placeholder aman `contact`/`donation` (`verified: false`, `null`), tanpa `agenda`.
+  - `POST /api/public/report/check-password`: verifikasi `scrypt` + `timingSafeEqual` dari `REPORT_SHARED_PASSWORD_HASH` (development mendukung hash otomatis `REPORT_SHARED_PASSWORD` di memori; production menolak plaintext), validasi input ketat (`400`), status `503` jika belum dikonfigurasi, serta rate limiter in-memory anti brute-force (`429 TOO_MANY_REQUESTS`).
+  - `GET /api/public/finance/report`: validasi tanggal kalender & batas rentang maks 366 hari (`400`), default cakupan April 2026 bila query kosong, HTTP `200` `status: 'unavailable'` di luar cakupan, dan rekonsiliasi 50 transaksi integer Rupiah (ID string, saldo awal `18.590.700`, pemasukan `10.665.500`, pengeluaran `8.771.500`, saldo akhir `20.484.700`).
+- Menjaga `frontend/` tidak diubah (sesuai batas tugas backend) dan memperbarui `docs/API_CONTRACT.md` serta `backend/.env.example`.
+
+### Verifikasi dan Batasan
+
+- `npm run lint`: PASS (frontend Oxlint 47 file + backend `node --check` 23 file).
+- `npm test --workspace frontend`: PASS (36 test unit/SSR, 1 suite Chrome QA opsional dilewati).
+- `npm test --workspace backend`: PASS (18 test HTTP & unit untuk health, 404, JSON invalid, batas 10 KB/413, `API_BASE_PATH` subdirectory, `agenda`, `content`, `check-password` termasuk 400/503/429 brute-force, `finance/report` termasuk rekonsiliasi/inklusif/hari kosong/unavailable/400, serta isolasi data).
+- `npm run build`: PASS.
+- Batasan tersisa: koneksi PostgreSQL (pgAdmin), skema tabel/migrasi/seeder, autentikasi admin & CRUD pengurus ("Masuk Pengurus"), upload file QRIS, dan pengaktifan adapter `VITE_DATA_SOURCE=api` di `frontend/` belum dikerjakan pada tahap ini.
