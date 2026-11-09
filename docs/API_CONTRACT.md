@@ -1,6 +1,6 @@
 # Kerangka kontrak API
 
-Status: hanya endpoint health dan format respons fondasi yang sudah diterapkan. Aturan data bisnis di bawah merupakan usulan integrasi untuk ditinjau bersama anggota backend; endpoint bisnis belum ditetapkan.
+Status: pada branch `fitur/backend-publik`, seluruh endpoint publik (`health`, `public/content`, `public/agenda`, `public/report/check-password`, `public/finance/report`) sudah diterapkan di backend dengan arsitektur 3-layer dan sumber data sementara (tanpa koneksi PostgreSQL). Cabang API di service frontend belum dihubungkan. Aturan integrasi database PostgreSQL dan fitur pengurus/admin masih menunggu penyepakatan tim.
 
 ## Respons dasar yang diterapkan
 
@@ -29,19 +29,27 @@ Kegagalan memakai status HTTP yang sesuai, bukan HTTP 200:
 
 | Kondisi | HTTP | Kode saat ini |
 | --- | --- | --- |
-| Health berhasil | 200 | Tidak ada kode error |
-| JSON tidak valid | 400 | `BAD_REQUEST` |
-| Body terlalu besar (batas 100 KB) | 413 | `BAD_REQUEST` |
+| Health / permintaan publik berhasil | 200 | Tidak ada kode error |
+| JSON tidak valid / input validasi tidak sah | 400 | `BAD_REQUEST` |
+| Body terlalu besar (batas default 10 KB via `JSON_BODY_LIMIT`) | 413 | `BAD_REQUEST` |
 | Route tidak tersedia | 404 | `NOT_FOUND` |
+| Percobaan sandi melebihi batas rate limiter | 429 | `TOO_MANY_REQUESTS` |
 | Error internal | 500 | `INTERNAL_SERVER_ERROR` |
+| Sandi laporan belum dikonfigurasi di environment | 503 | `SERVICE_UNAVAILABLE` |
 
 ## Endpoint yang tersedia
+
+Prefix default `/api` dapat dikonfigurasi melalui `API_BASE_PATH` di environment backend (mendukung deployment subdirectory).
 
 | Metode | Path | Kegunaan | Data sukses |
 | --- | --- | --- | --- |
 | GET | `/api/health` | Memastikan proses API merespons, tanpa pemeriksaan database | `{ "status": "ok" }` |
+| GET | `/api/public/content` | Konten publik bersama, profil, dan placeholder kontak/donasi (tanpa `agenda`) | Objek konten publik sesuai bagian di bawah |
+| GET | `/api/public/agenda` | Deskripsi dan daftar kelompok kegiatan (`weekly`, `monthly`, `yearly`) tanpa `counts` | `{ "description", "groups" }` |
+| POST | `/api/public/report/check-password` | Memeriksa sandi bersama terhadap `REPORT_SHARED_PASSWORD_HASH` (dilindungi rate limiter) | `{ "valid": boolean }` |
+| GET | `/api/public/finance/report` | Laporan keuangan publik berdasarkan `startDate` & `endDate` (default cakupan April 2026 jika kosong) | Objek laporan (`status: "ready" \| "unavailable"`, `transactions`, `summary`) |
 
-Base URL lokal backend: `http://127.0.0.1:3000/api`. Frontend development menggunakan `/api` melalui proxy Vite. Health tidak memerlukan autentikasi. Kebijakan akses endpoint bisnis belum diputuskan.
+Base URL lokal backend: `http://127.0.0.1:3000/api`. Frontend development menggunakan `/api` melalui proxy Vite. Endpoint publik di atas belum memakai autentikasi pengguna dan saat ini menyajikan data terstruktur contoh sampai koneksi PostgreSQL siap.
 
 ## Usulan aturan tanggal dan Rupiah
 
@@ -63,9 +71,9 @@ Base URL lokal backend: `http://127.0.0.1:3000/api`. Frontend development menggu
 
 Jangan membuat endpoint bisnis, database, migrasi, atau autentikasi berdasarkan tabel kebutuhan ini saja. Catat persetujuan tim dan contoh payload sebelum implementasi. Saat kontrak disepakati, buat service dan mock dengan bentuk data yang sama.
 
-## Pemetaan service ke HTTP — handoff M1.7
+## Pemetaan service ke HTTP — handoff M1.7 (diperbarui fase backend publik)
 
-**Hanya GET /api/health sudah tersedia.** Dua nama endpoint konten di bawah adalah usulan untuk ditinjau tim, bukan endpoint yang sudah disepakati/diimplementasikan. POST sandi dan GET laporan tetap usulan sebelumnya. Tidak perlu endpoint ekspor karena ekspor berjalan lokal pada snapshot laporan.
+Keempat endpoint bisnis publik di bawah sudah diterapkan pada workspace `backend` dengan arsitektur 3-layer dan data sementara tanpa database, namun **adapter API pada `frontend/src/services/` belum dihubungkan** (dikerjakan terpisah bersama tim frontend). Tidak perlu endpoint ekspor karena ekspor berjalan lokal pada snapshot laporan.
 
 | Service frontend | Request HTTP yang diusulkan | Respons sukses HTTP 200 |
 | --- | --- | --- |
@@ -141,7 +149,7 @@ Usulan kontrak backend untuk integrasi berikutnya, **belum tersedia**:
 | POST | `/api/public/report/check-password` | JSON `{ "password": "<sandi dari input>" }` | HTTP 200 `{ "success": true, "data": { "valid": true } }` atau `valid: false` |
 | GET | `/api/public/finance/report` | Usulan parameter `startDate`, `endDate` | Usulan payload M1.5b di bawah; endpoint belum tersedia |
 
-HTTP 200 pada POST berarti pemeriksaan berhasil dijalankan; valid/tidak valid adalah hasil pemeriksaan. Input kosong atau bentuk permintaan tidak valid diusulkan HTTP 400 dengan format error proyek. Sandi backend kelak berupa environment variable biasa, misalnya `REPORT_SHARED_PASSWORD`, tanpa awalan VITE dan tanpa nilai produksi di repository. Tidak perlu hashing, akun, login/logout, JWT, session, refresh token, kedaluwarsa atau penyimpanan browser.
+HTTP 200 pada POST berarti pemeriksaan berhasil dijalankan; valid/tidak valid adalah hasil pemeriksaan. Input kosong, hanya spasi, non-string, atau mengandung karakter kontrol mengembalikan HTTP 400 dengan format error proyek. Untuk kepatuhan keamanan SOP, sandi backend disimpan sebagai hash `scrypt` pada environment `REPORT_SHARED_PASSWORD_HASH` (di development lokal, `REPORT_SHARED_PASSWORD` di `.env` juga dapat di-hash otomatis saat boot; di `production` plaintext ditolak), dilengkapi `timingSafeEqual` serta rate limiter anti brute-force (`429 TOO_MANY_REQUESTS`), tanpa nilai sandi di repository dan tanpa JWT/session/cookie. Jika hash belum dikonfigurasi, endpoint mengembalikan HTTP `503 SERVICE_UNAVAILABLE`.
 
 Keputusan M1.8b menggantikan gate halaman penuh: klik CTA laporan Beranda/Footer membuka modal pada halaman asal. PublicLayout mengelola buka/tutup; ReportAccessModal memakai ReportAccessPanel dan service yang sama. Input dibersihkan saat benar, modal ditutup dan frontend menuju /laporan-keuangan. Salah/error tetap di modal; menutup modal membatalkan pemeriksaan yang berjalan. Tidak ada status akses persisten maupun otorisasi pada route.
 
@@ -184,4 +192,4 @@ Penjumlahan aktual cocok dengan audit. Resume Blade salah menuliskan pengeluaran
 
 Preset mock menggunakan acuan 30 April 2026: 1w = 24–30 April; 1m = 1–30 April; 3m = 1 Februari–30 April (unavailable). Draft kustom berlaku setelah Terapkan. Pilihan bulan menggunakan awal/akhir bulan kalender. Tidak ada filter kategori atau sorting. M1.6a memakai hasil getReport yang sama untuk pilihan format dan pratinjau PDF/PNG di frontend, tanpa kebutuhan endpoint atau perubahan payload. M1.6b merender lembar yang sama menjadi PDF atau PNG/ZIP sepenuhnya di browser, tanpa permintaan data baru, upload, endpoint ekspor atau perubahan kontrak HTTP.
 
-Usulan GET `/api/public/finance/report?startDate=2026-04-01&endDate=2026-04-30` nantinya mengembalikan envelope proyek dengan data berbentuk hasil getReport di atas, termasuk saldo awal sesuai rentang dan ringkasan yang konsisten dengan transaksi. Skema HTTP final dan sumber saldo memerlukan kesepakatan backend; ini bukan endpoint yang sudah diimplementasikan. Gate sandi tetap hanya pembatas antarmuka dan tidak melindungi endpoint laporan tanpa autentikasi.
+Endpoint GET `/api/public/finance/report?startDate=2026-04-01&endDate=2026-04-30` mengembalikan envelope proyek dengan data berbentuk hasil `getReport` di atas, termasuk saldo awal sesuai rentang dan ringkasan yang konsisten dengan transaksi. Jika `startDate` dan `endDate` sama-sama tidak dikirim, backend memakai rentang cakupan default (1–30 April 2026); jika hanya salah satu dikirim, format tanggal kalender tidak valid, terbalik, atau melebihi batas 366 hari, backend mengembalikan HTTP 400 `BAD_REQUEST`. Rentang valid di luar cakupan mengembalikan HTTP 200 dengan `status: "unavailable"`, `transactions: []`, dan `summary: null`. Sumber database PostgreSQL serta endpoint pengurus/CRUD akan dihubungkan pada fase berikutnya. Gate sandi tetap hanya pembatas antarmuka dan tidak melindungi endpoint laporan tanpa autentikasi.
