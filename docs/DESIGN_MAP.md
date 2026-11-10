@@ -329,3 +329,25 @@ Referensi final: `design-references/user/15-admin-agenda.png` (1766 × 1505 px).
 - Tambah/Edit/Hapus nonaktif dengan title/label dan catatan data contoh di bawah daftar. Tidak ada modal/CRUD/notifikasi sukses. Aksi ikon mempunyai target 44 px. Smartphone menumpuk heading/tombol, membungkus nama/jadwal dan memindahkan aksi ke baris berikutnya dalam kartu; tablet mempertahankan kartu horizontal selama muat.
 
 QA Chrome development dan preview production pada 1728×1080, 1366×768, 768×1024 dan 390×844. Bukti di `tmp/admin16-qa/`, tidak di-stage. Adaptasi mobile belum berasal dari frame mobile resmi; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.
+
+## Admin 1.7 — Kontak & Pengaturan Website
+
+Referensi final: `design-references/user/16-admin-kontak-pengaturan.png` (1766 × 1056 px). Route `/admin/kontak-pengaturan` memakai AdminLayout, menu Kontak & Pengaturan aktif dan judul Topbar lengkap. Margin/bayangan hitam luar gambar tidak menjadi layout aplikasi.
+
+- Heading beraksen oranye, subtitle serta Simpan Perubahan hijau berikon Check mengikuti pola admin. Kartu memakai admin-panel, radius 24 px, padding 24 px, gap 16 px dan shadow lembut. Bagian Informasi Kontak menggunakan Phone hijau, input latar abu muda/radius 14 px, alamat textarea serta baris laporan berlatar abu muda.
+- WhatsApp/email/Maps awal kosong; placeholder kontak menandai belum dikonfirmasi dan Maps memakai contoh format tautan. Contoh nomor/email pada raster tidak menjadi data resmi. Alamat memakai salinan referensi publik yang sama dengan Profil Masjid. Perubahan tidak disinkronkan ke halaman lain. Catatan simulasi dan feedback ditambahkan untuk menjelaskan batas penyimpanan serta toggle.
+- Switch native berlabel Laporan Keuangan Publik, tampilan track 38×20 px dengan target 44 px dan fokus terlihat. Aktif hijau/knob kanan, nonaktif abu/knob kiri; mendukung keyboard Space. Tidak menjadi pengaman atau pengubah route laporan publik.
+- Desktop mempertahankan form selebar konten. Tablet/mobile memakai menu sebelumnya dan input 16 px; smartphone menumpuk heading/tombol, judul Topbar membungkus, textarea lebih tinggi dan baris switch menjaga ruang teks/target klik.
+
+Visual Chrome development/preview production ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844. Bukti di `tmp/admin17-qa/`, tidak di-stage. Mobile merupakan adaptasi desktop; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.
+
+## Admin 1.8 — Kelola Akun
+
+Referensi final: `design-references/user/17-admin-kelola-akun.png` (1766 × 1056 px). Route `/admin/kelola-akun` memakai AdminLayout dan menu Kelola Akun aktif; Topbar tetap memakai komponen lama. Margin hitam/bayangan luar raster tidak menjadi layout halaman.
+
+- Label visual Super Admin Only dengan Shield oranye dan pill kuning pucat, heading beraksen oranye, subtitle serta Tambah Akun Admin hijau. Panel pencarian putih berikon Search, input dan Pencarian; placeholder menjadi **Cari nama atau email...** sesuai fungsi halaman, bukan Cari transaksi pada raster.
+- Empat kartu admin-panel putih/radius 24 px, shadow lembut, padding 20 px, tinggi minimum 104 px dan gap 12 px. Avatar bulat hijau pucat, nama 16 px, email 14 px, role/tanggal 12 px dan badge Aktif hijau/Nonaktif abu. Inisial SA/AF/SR/BS diselaraskan dengan nama; tanggal memakai formatter Indonesia panjang yang sudah ada, bukan singkatan campuran pada gambar.
+- Nama/email/role/status/tanggal mengikuti contoh referensi. Tiga akun aktif memiliki Edit/Nonaktifkan, akun nonaktif Edit/Hapus/Aktifkan. Warna dan ikon mengikuti desain; semua aksi pengelolaan nonaktif, tanpa modal atau perubahan data. Label Super Admin Only tidak menjadi otorisasi.
+- Pada tablet tombol aksi memiliki tinggi minimum 44 px; smartphone memindahkan aksi ke baris berikutnya dalam kartu, teks/email dapat membungkus, heading/tombol serta panel pencarian menyesuaikan lebar. Hasil pencarian tanpa kecocokan menampilkan pesan jelas, bukan kartu fiktif.
+
+Visual Chrome development/preview production ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844. Screenshot di `tmp/admin18-qa/` tidak di-stage. Mobile adalah adaptasi desktop; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.

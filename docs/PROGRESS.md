@@ -898,3 +898,47 @@ Status: selesai pada `feature/frontend-admin`, baseline commit `e51629c`. Awal k
 Hanya sembilan file Admin 1.6 di-stage setelah pemeriksaan status, diff, daftar file dan staged diff. Aset referensi, log, screenshot, profil Chrome dan hasil build tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah daftar Agenda selesai.
 
 Usulan pesan commit: `feat: tambahkan halaman agenda admin dari data agenda publik`.
+
+## Admin 1.7 — Kontak & Pengaturan Website (10 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline commit `094caf2`. Awal kerja tanpa perubahan tracked/staged; `design-references/` tetap untracked. Raster final `16-admin-kontak-pengaturan.png` (1766×1056 px), AdminLayout, Profil Masjid Admin dan sumber konten publik diperiksa sebelum implementasi.
+
+- Route `/admin/kontak-pengaturan` memakai AdminLayout yang sama; menu Kontak & Pengaturan aktif dan Topbar berjudul lengkap. Heading oranye, tombol Simpan, kartu Informasi Kontak berikon Phone, empat field dan switch mengikuti referensi. CSS baru dibatasi `.admin-settings*`, tanpa perubahan CSS atau perilaku halaman lama.
+- Service minimal memisahkan state awal dari sumber publik: WhatsApp/email kosong, Maps kosong karena belum terverifikasi, alamat dari salinan mockPublicContent.address. Tidak menganggap contoh raster atau email akun Sidebar sebagai data resmi. Switch default aktif merupakan contoh UI lokal, bukan status keamanan/akses laporan nyata.
+- Semua field controlled dan opsional; WhatsApp divalidasi 8–15 digit, email dengan format ringan/karakter kontrol, URL HTTPS pada domain/path Google Maps yang didukung. Batas panjang input diterapkan. Error per field, aria-invalid/describedby dan fokus kesalahan pertama tersedia. Switch checkbox native ber-role switch mendukung mouse/Space dan target 44 px.
+- Simpan hanya memvalidasi dan menandai state sementara, dengan catatan/feedback eksplisit belum permanen. Edit/toggle membersihkan feedback; keluar/refresh mengembalikan data awal. Tidak ada HTTP simpan, localStorage/sessionStorage/cookie atau penguncian laporan baru. Mode API memberi error integrasi tanpa request/fallback mock, tombol Simpan nonaktif.
+- Alamat/kontak juga muncul di Profil Masjid Admin. State tetap terpisah, tanpa sinkronisasi palsu; integrasi berikutnya perlu sumber API tunggal, pemetaan telepon/WhatsApp/email/alamat/peta, verifikasi dan aturan publikasi. Semantik toggle visibilitas serta otorisasi laporan perlu disepakati backend. Tidak mengubah kontrak API sepihak.
+- Tidak mengubah frontend publik, Login, Dashboard, Kelola Dana, Kategori Dana, Profil Masjid, Agenda, backend, mock/service publik, autentikasi, dependency atau lockfile. Tidak membuat fitur QRIS/rekening/akun. README dan DESIGN_MAP diperbarui.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 64 frontend unit/SSR (4 baru), 18 backend; tiga suite browser opsional dilewati dalam perintah standar, admin/login dijalankan terpisah.
+- Chrome development: 17 skenario admin dan 6 Login PASS (25 hasil termasuk dua induk). Skenario baru mencakup route/menu, edit seluruh field, validasi/fokus, Enter, toggle mouse/Space, simpan simulasi, feedback dibersihkan, reset keluar/refresh/trailing slash, field opsional, profil tidak tersinkron, kontak publik tetap placeholder dan laporan publik masih terbuka setelah toggle dimatikan. Regresi admin lama termasuk tabel/saldo, profil/foto/cleanup URL dan agenda lulus.
+- `npm run build`: PASS. Preview production: 17 skenario admin PASS (18 hasil termasuk induk), termasuk error mode API tanpa HTTP. Visual desktop 1728×1080 / 1366×768, tablet 768×1024 dan mobile 390×844 ditinjau, tanpa overflow halaman, kontrol terpotong, aset gagal atau exception runtime aplikasi.
+- Screenshot di `tmp/admin17-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport, belum perangkat fisik/Safari/Firefox. API admin/penyimpanan permanen dan sumber pengaturan bersama belum tersedia; toggle hanya simulasi antarmuka.
+
+Hanya 10 file Admin 1.7 di-stage setelah review status, diff, daftar file dan staged diff. Referensi, log, screenshot, profil Chrome serta build tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah halaman ini selesai.
+
+Usulan pesan commit: `feat: tambahkan kontak dan pengaturan website admin dengan simpan simulasi`.
+
+## Admin 1.8 — Kelola Akun (10 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, HEAD awal `094caf2`. Saat mulai, sepuluh file Admin 1.7 masih staged dan belum di-commit; pekerjaan/staging tersebut dipertahankan. `design-references/` tetap untracked. AGENTS, AdminLayout/routing/pola sebelumnya serta referensi final `17-admin-kelola-akun.png` (1766×1056 px) diperiksa sebelum implementasi.
+
+- Route `/admin/kelola-akun` dan tautan Sidebar memakai AdminLayout yang sama. Label Super Admin Only dengan Shield, heading oranye, Tambah Akun Admin, panel pencarian dan empat kartu mengikuti referensi. Menggunakan admin-panel, font dan ikon yang sudah ada; CSS baru dibatasi `.admin-accounts*`.
+- Fixture terpisah berisi empat contoh nama/email/role/tanggal: Super Admin, Ahmad Fauzi, Siti Rahmawati aktif; Budi Santoso nonaktif. Tidak menambah password, token atau kredensial. Inisial diselaraskan dengan nama; tanggal memakai formatter Indonesia panjang. Placeholder pencarian diperjelas menjadi nama/email sesuai fungsi halaman.
+- Service menyediakan salinan fixture dan filter murni nama/email. Query controlled diterapkan lewat tombol atau Enter, tanpa membedakan kapital, dengan trim spasi luar. Query kosong menampilkan semua akun; tidak cocok menghasilkan empty state. Tidak mencari berdasarkan role atau memutasi sumber. Pencarian hilang saat keluar/refresh, tanpa URL/storage/cookie.
+- Semua 10 aksi pengelolaan nonaktif dengan label/title: Tambah serta Edit/Nonaktifkan pada akun aktif, Edit/Hapus/Aktifkan pada nonaktif. Tidak membuat form/modal CRUD, registrasi, reset password, aktivasi atau penghapusan sungguhan. Search adalah satu-satunya form interaktif.
+- Label Super Admin Only dan field role hanya data visual, bukan otorisasi atau sistem role. Backend nantinya wajib memverifikasi pengguna terautentikasi serta izin Super Admin pada akses daftar dan setiap operasi akun. Tidak membuat autentikasi, login sukses palsu, endpoint atau perubahan kontrak API. Mode API memberi error integrasi tanpa HTTP/fallback mock.
+- Responsive mengikuti menu lama, tombol tablet/mobile minimum 44 px, teks/email membungkus dan aksi berpindah baris pada smartphone. Tidak mengubah halaman admin sebelumnya, publik, backend, sumber data lama, dependency atau lockfile. README dan DESIGN_MAP diperbarui.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 68 frontend unit/SSR (4 baru), 18 backend; tiga suite browser opsional dilewati dalam perintah standar, admin/login dijalankan terpisah.
+- Chrome development: 19 skenario admin dan 6 Login PASS (27 hasil termasuk dua induk). Skenario baru menguji empat contoh/status/tanggal, 10 aksi nonaktif, pencarian tombol/Enter/nama/email/kapital/spasi/domain, empty state, pemulihan hasil tanpa mutasi, query tidak persisten, refresh/trailing slash dan navigasi enam halaman sebelumnya. Regresi halaman admin lama dan Login lulus.
+- `npm run build`: PASS. Preview production: 19 skenario admin PASS (20 hasil termasuk induk), termasuk mode API tanpa HTTP. Visual ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844, tanpa overflow horizontal halaman, benturan teks/aksi, aset gagal atau exception runtime aplikasi.
+- Screenshot di `tmp/admin18-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport; belum perangkat fisik/Safari/Firefox. Akun tetap contoh, CRUD/API/autentikasi/otorisasi menunggu backend dan desain berikutnya.
+
+Sebelas file memuat perubahan Admin 1.8: App, AdminLayout, halaman/CSS akun, mock, service, dua test serta README/DESIGN_MAP/PROGRESS. Setelah pemeriksaan diff/status/staged diff, hanya perubahan terkait ini ditambahkan ke staging. Total staged menjadi 15 file karena Admin 1.7 yang sudah staged dipertahankan; empat file khusus Admin 1.7 tidak diedit. Aset referensi, log, screenshot, profil Chrome dan build tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah Kelola Akun selesai.
+
+Usulan pesan commit untuk staging gabungan Admin 1.7–1.8: `feat: tambahkan pengaturan website dan kelola akun admin`.

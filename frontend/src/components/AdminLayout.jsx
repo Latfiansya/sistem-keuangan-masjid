@@ -16,10 +16,10 @@ const navigation = [
   { label: 'Konten Website', items: [
     { label: 'Profil Masjid', icon: Building2, to: '/admin/profil-masjid' },
     { label: 'Agenda', icon: CalendarDays, to: '/admin/agenda' },
-    { label: 'Kontak & Pengaturan', icon: Contact },
+    { label: 'Kontak & Pengaturan', title: 'Kontak & Pengaturan Website', icon: Contact, to: '/admin/kontak-pengaturan' },
   ] },
   { label: 'Pengaturan', items: [
-    { label: 'Kelola Akun', icon: Users },
+    { label: 'Kelola Akun', icon: Users, to: '/admin/kelola-akun' },
     { label: 'Kode Akses Laporan', icon: KeyRound },
   ] },
 ]

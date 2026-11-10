@@ -81,7 +81,7 @@ Dashboard dapat direview langsung di `/admin/dashboard` dengan `VITE_DATA_SOURCE
 
 `adminDashboardService.getAdminDashboard({ signal })` mengambil mock admin terpisah, menghitung saldo akhir tiap kategori dan total untuk empat kartu/tabel. Data 20 Oktober 2026 mengikuti referensi: saldo awal Rp16.864.200 + pemasukan Rp1.791.500 − pengeluaran Rp1.427.500 = saldo akhir Rp17.228.200. Lima transaksi terbaru hanyalah cuplikan. Mock laporan publik April 2026 tidak diubah. Nama/email Super Admin hanya konten akun contoh dari desain, bukan akun login atau penerapan role.
 
-Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/kategori/agenda, laporan admin, kwitansi, activity log, kontak admin, akun, kode akses, notifikasi dan logout. Dashboard, Kelola Dana, Kategori Dana, Profil Masjid dan Agenda dapat dibuka melalui Sidebar. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
+Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/kategori/agenda, operasi akun, laporan admin, kwitansi, activity log, kode akses, notifikasi dan logout. Dashboard, Kelola Dana, Kategori Dana, Profil Masjid, Agenda, Kontak & Pengaturan serta Kelola Akun dapat dibuka melalui Sidebar. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
 
 Test unit/SSR dashboard ikut `npm test`. Setelah server mock/API dan Chrome QA dijalankan sesuai bagian browser, jalankan dari root:
 
@@ -130,6 +130,30 @@ Halaman memanggil `agendaService.getAgenda({ signal })` yang sudah dipakai publi
 Mode mock mandiri; loading/error/daftar kosong tersedia. Cabang API pada service agenda lama belum dihubungkan dan tetap memberi error integrasi tanpa HTTP/fallback. Pada smartphone heading/tombol bertumpuk, teks/jadwal membungkus dan aksi berpindah ke baris berikutnya agar tidak bertabrakan. Tidak mengubah halaman/service/mock publik atau halaman admin sebelumnya.
 
 Test route ikut `npm test`. Suite browser admin pada perintah di atas mencakup jumlah/isi identik dengan sumber, navigasi lima halaman, menu aktif, aksi nonaktif, empat viewport, refresh/trailing slash dan daftar publik tetap. Screenshot di `tmp/admin16-qa/development/` atau `tmp/admin16-qa/production/`, tidak di-stage. QA terbatas Chrome/emulasi viewport; CRUD dan integrasi API admin menunggu desain/kontrak berikutnya.
+
+## Kontak & Pengaturan Website — Admin 1.7
+
+Route `/admin/kontak-pengaturan` memakai AdminLayout, menu aktif serta judul Topbar Kontak & Pengaturan Website. Form mengikuti `16-admin-kontak-pengaturan.png`: heading beraksen oranye, Simpan Perubahan, kartu Informasi Kontak, WhatsApp, email, alamat, Google Maps dan switch Laporan Keuangan Publik.
+
+`adminWebsiteSettingsService.getAdminWebsiteSettings({ signal })` memberikan state awal terpisah: WhatsApp/email kosong karena belum tersedia, Maps kosong karena belum terverifikasi, serta salinan alamat contoh yang juga dipakai Profil Masjid. Tidak mengambil email akun contoh Sidebar atau menganggap telepon sebagai nomor WhatsApp resmi. Switch awal aktif hanya untuk review UI; bukan pembacaan status keamanan/publikasi yang nyata.
+
+Seluruh field controlled dan opsional. Validasi awal memeriksa WhatsApp 8–15 digit, format email dan HTTPS Google Maps (`google.com`/`google.co.id` dengan path Maps, subdomain Maps, `maps.app.goo.gl` serta `goo.gl/maps/`). Error per field memfokuskan kesalahan pertama; switch mendukung mouse/keyboard dan Simpan menampilkan feedback simulasi. Perubahan hilang saat keluar/refresh, tanpa HTTP simpan, localStorage atau cookie. Mode API menampilkan error integrasi dan tombol simpan nonaktif.
+
+Alamat dan kontak pada Profil Masjid, halaman ini serta konten publik perlu satu sumber API dan aturan verifikasi/publikasi yang disepakati. Saat ini state masing-masing halaman terpisah; tidak ada sinkronisasi palsu. Arti toggle visibilitas dan kebutuhan otorisasi laporan harus disepakati dengan backend; toggle UI ini tidak mengubah akses/isi laporan publik. Tidak ada fitur donasi/akun atau endpoint baru.
+
+Test service/validasi/route ikut `npm test`. Suite browser admin memeriksa empat viewport, navigasi, edit, validasi, switch keyboard, simpan simulasi, reset dan isolasi profil/kontak/laporan publik. Screenshot di `tmp/admin17-qa/development/` atau `tmp/admin17-qa/production/`, tidak di-stage. QA terbatas Chrome/emulasi viewport.
+
+## Kelola Akun — Admin 1.8
+
+Route `/admin/kelola-akun` memakai AdminLayout yang sama, dengan menu aktif dan Topbar Kelola Akun. Label Super Admin Only berikon Shield, heading, Tambah Akun Admin, panel pencarian dan empat kartu mengikuti `17-admin-kelola-akun.png`. Nama/email/role/tanggal serta tiga status Aktif dan satu Nonaktif adalah data contoh tampilan, bukan akun login. Tidak ada password, token atau kredensial baru.
+
+`adminAccountsService.getAdminAccounts({ signal })` mengembalikan salinan `mocks/adminAccounts.js`. Pencarian lokal nama/email melalui Pencarian atau Enter mengabaikan kapital dan spasi luar; query kosong menampilkan semua akun, hasil kosong memiliki pesan. Mengedit input baru diterapkan saat submit. Pencarian tidak memfilter role, melakukan HTTP atau mengubah akun. Query hilang saat keluar/refresh, tanpa URL/storage/cookie. Mode API menampilkan error integrasi tanpa fallback akun contoh.
+
+Tambah, Edit, Nonaktifkan, Hapus dan Aktifkan tetap nonaktif dengan keterangan belum tersedia. Akun aktif menampilkan Edit/Nonaktifkan, nonaktif menampilkan Edit/Hapus/Aktifkan. Inisial avatar diselaraskan dengan nama dan tanggal menggunakan formatter Indonesia yang sudah ada. Placeholder diperjelas menjadi Cari nama atau email, menggantikan Cari transaksi pada raster.
+
+Super Admin Only serta field role hanya tampilan; tidak memberikan izin atau perlindungan route. Backend nantinya wajib memverifikasi pengguna terautentikasi dan izin Super Admin untuk akses daftar maupun setiap operasi akun. Kontrak/API autentikasi dan manajemen akun belum diintegrasikan; tidak membuat sistem role, form/modal CRUD, registrasi atau reset password.
+
+Test service/filter/route ikut `npm test`. Suite browser admin mencakup pencarian nama/email/kapital/spasi/Enter, empty state, status/aksi, empat viewport, refresh/trailing slash dan navigasi kembali dari enam halaman admin sebelumnya. Screenshot di `tmp/admin18-qa/` tidak di-stage; QA terbatas Chrome/emulasi viewport.
 
 ## Mock dan integrasi API
 

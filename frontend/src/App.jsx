@@ -13,6 +13,8 @@ import AdminFundsPage from './pages/AdminFundsPage.jsx'
 import AdminCategoriesPage from './pages/AdminCategoriesPage.jsx'
 import AdminProfilePage from './pages/AdminProfilePage.jsx'
 import AdminAgendaPage from './pages/AdminAgendaPage.jsx'
+import AdminWebsiteSettingsPage from './pages/AdminWebsiteSettingsPage.jsx'
+import AdminAccountsPage from './pages/AdminAccountsPage.jsx'
 
 export default function App() {
   return (
@@ -32,6 +34,8 @@ export default function App() {
         <Route path="kategori-dana" element={<AdminCategoriesPage />} />
         <Route path="profil-masjid" element={<AdminProfilePage />} />
         <Route path="agenda" element={<AdminAgendaPage />} />
+        <Route path="kontak-pengaturan" element={<AdminWebsiteSettingsPage />} />
+        <Route path="kelola-akun" element={<AdminAccountsPage />} />
       </Route>
     </Routes>
   )

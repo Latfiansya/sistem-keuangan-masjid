@@ -1,0 +1,48 @@
+.admin-accounts { display: grid; gap: 12px; }
+.admin-accounts-intro { display: grid; gap: 8px; margin-bottom: 12px; }
+.admin-accounts-restriction { display: flex; align-items: center; gap: 10px; color: #f49a00; }
+.admin-accounts-restriction span { padding: 2px 10px; border-radius: 999px; color: #a64405; background: #fff3c4; font-size: 12px; line-height: 1.4; }
+.admin-accounts-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 64px; }
+.admin-accounts-heading > div { min-width: 0; padding-left: 12px; border-left: 4px solid #f49a00; }
+.admin-accounts-heading h2 { margin: 0; font-size: 32px; font-weight: 750; line-height: 1.2; letter-spacing: -.7px; }
+.admin-accounts-heading p { margin: 4px 0 0; color: #758aa5; font-size: 14px; line-height: 1.5; }
+.admin-accounts-add, .admin-accounts-search button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 10px 18px; border: 0; border-radius: 16px; color: #fff; background: var(--admin-green); font-size: 14px; font-weight: 600; line-height: 1.4; }
+.admin-accounts-add { flex-shrink: 0; background: #14813b; }
+.admin-accounts-add:disabled { opacity: .8; }
+.admin-accounts-search { display: flex; align-items: center; gap: 12px; padding: 20px; }
+.admin-accounts-search-icon { display: grid; place-items: center; flex-shrink: 0; width: 34px; height: 40px; border-radius: 14px; color: #7c899d; background: #f3f5f8; }
+.admin-accounts-search input { flex: 1; min-width: 0; min-height: 40px; padding: 8px 0; border: 0; border-radius: 6px; color: #34465f; background: #fff; font: inherit; font-size: 14px; }
+.admin-accounts-search button:hover:not(:disabled) { background: #005500; }
+.admin-accounts-search button:disabled { opacity: .65; }
+.admin-accounts-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.admin-accounts-card { display: flex; align-items: center; gap: 16px; min-height: 104px; padding: 20px; box-shadow: 0 8px 24px #345d8310; }
+.admin-accounts-avatar { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; color: #148447; background: #cbfae4; font-size: 14px; font-weight: 700; }
+.admin-accounts-copy { flex: 1; min-width: 0; }
+.admin-accounts-identity { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; }
+.admin-accounts-copy h3 { margin: 0; color: #34465f; font-size: 16px; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; }
+.admin-accounts-status { padding: 2px 10px; border-radius: 999px; color: #61748e; background: #f1f5f9; font-size: 12px; line-height: 1.4; }
+.admin-accounts-status--active { color: #087c32; background: #dcfce7; }
+.admin-accounts-email { margin: 0; color: #758aa5; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.admin-accounts-meta { margin: 0; color: #8b9fbf; font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.admin-accounts-meta > span { color: #43546b; }
+.admin-accounts-actions { display: flex; align-self: flex-start; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+.admin-accounts-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 34px; padding: 7px 12px; border: 1px solid #e1e9f4; border-radius: 14px; color: #34465f; background: #f7f9fc; font-size: 14px; line-height: 1.3; }
+.admin-accounts-actions .admin-accounts-action--danger { border-color: #ffc4cc; color: #ee152e; background: #fff3f4; }
+.admin-accounts-actions .admin-accounts-action--activate { border-color: #9be9c8; color: #008b42; background: #effdf5; }
+.admin-accounts-actions button:disabled { opacity: .8; }
+.admin-accounts-note { margin: 0; color: #61748e; font-size: 12px; line-height: 1.6; }
+@media (max-width: 1023px) {
+  .admin-accounts-add, .admin-accounts-search button, .admin-accounts-search input, .admin-accounts-actions button { min-height: 44px; }
+  .admin-accounts-search input { font-size: 16px; }
+}
+@media (max-width: 639px) {
+  .admin-accounts-card { display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: start; }
+  .admin-accounts-actions { grid-column: 1 / -1; }
+}
+@media (max-width: 479px) {
+  .admin-accounts-heading { flex-direction: column; align-items: flex-start; gap: 18px; }
+  .admin-accounts-heading h2 { font-size: 28px; }
+  .admin-accounts-add { width: 100%; }
+  .admin-accounts-search { display: grid; grid-template-columns: 34px minmax(0, 1fr); }
+  .admin-accounts-search button { grid-column: 1 / -1; }
+}
