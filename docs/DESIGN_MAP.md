@@ -19,7 +19,7 @@ Keputusan aktif M1.8b menggantikan gate halaman penuh M1.5a: CTA laporan Beranda
 
 `PublicLayout` memuat konten dari `publicContentService`, menampilkan Navbar/Footer, dan membagikan konten ke Beranda melalui konteks Outlet. `Button`, `VisionMission`, dan `AgendaSummary` diekstrak untuk pola yang berulang. Statistik dan kartu kemakmuran tetap berada di Beranda tanpa abstraksi kartu generik.
 
-Urutan Beranda: hero, tiga statistik, visi-misi, ringkasan agenda, tiga kartu kemakmuran, CTA laporan, Footer. Logo/Beranda menuju `/`, Profil menuju `/profil`, dan CTA/Footer laporan menuju `/laporan-keuangan`. M1.2 menambahkan `/agenda` untuk Navbar serta kedua CTA Agenda pada Beranda. Masuk Pengurus dinonaktifkan sampai tujuan resmi tersedia.
+Urutan Beranda: hero, tiga statistik, visi-misi, ringkasan agenda, tiga kartu kemakmuran, CTA laporan, Footer. Logo/Beranda menuju `/`, Profil menuju `/profil`, dan CTA/Footer laporan menuju `/laporan-keuangan`. M1.2 menambahkan `/agenda` untuk Navbar serta kedua CTA Agenda pada Beranda. Masuk Pengurus pada Footer menuju `/admin/login` memakai React Router Link.
 
 ## Batas kesetiaan visual
 
@@ -259,3 +259,15 @@ Desktop ≥1024 px tetap memakai baseline M1.8a/M1.8b. Aturan baru dibatasi brea
 | Format/PDF/PNG | Mobile: tombol pratinjau bertumpuk dan kontrol lebar halaman ≥44 px. Tablet: pengantar/tombol dapat membungkus. ReportSheet A4, skala baca lokal, pagination dan ekspor tetap. |
 
 Screenshot sebelum/iterasi/final pada 360×800, 390×844, 768×1024, 1024×768, 1366×768 dan 1728×1080 berada di tmp/m18c-qa/ (diabaikan Git). Adaptasi ini belum menjadi desain mobile resmi/pixel-perfect.
+
+## Admin 1.1 — Login Pengurus
+
+Referensi resmi pengguna: `design-references/user/10-admin-login.png` (3456 × 2000 px, dibandingkan pada skala 1728 × 1000). `AdminLoginPage` berada di `/admin/login`, terpisah dari `PublicLayout` dan route laporan. Tidak membuat layout dashboard, menu admin atau halaman lanjutan.
+
+- Desktop ≥1024 px: panel identitas sekitar 29% lebar layar, foto masjid lokal dengan overlay biru–hijau, logo, judul dan deskripsi di bawah. Panel kanan abu-abu muda dengan kartu putih di tengah, label Email/Password, input dan tombol Masuk Dashboard. Font Plus Jakarta Sans lokal; tidak memakai screenshot sebagai isi aplikasi.
+- Tablet/mobile: panel identitas di atas kartu login, spacing dan judul lebih ringkas, form satu kolom dengan input minimal 44 px dan teks input 16 px. Halaman boleh bergulir vertikal pada layar pendek. Ini adaptasi responsive dari referensi desktop, bukan frame mobile resmi.
+- Gaya baru dibatasi `.admin-login*` dalam `AdminLoginPage.css`; CSS, aset dan komponen publik tidak diubah. Kredensial contoh pada gambar tidak diisi ke input atau disalin sebagai akun aplikasi.
+- Refinement: tombol Eye/EyeOff Lucide di kanan input password, area klik 44 px, hover/fokus dan label tampilkan/sembunyikan. Lebar/tinggi, border dan radius input tetap; padding kanan memberi ruang ikon. Password tersembunyi secara default dan toggle tidak mengubah nilai/validasi atau melakukan submit. CTA Masuk Pengurus pada Footer tetap menuju `/admin/login`.
+- Loading/error/validasi mendukung alur form. Tidak ada login berhasil semu, token, session, lupa password atau registrasi. Batas integrasi dan status endpoint mengikuti README Admin 1.1; kontrak API tidak diubah.
+
+Screenshot QA lokal disimpan di `tmp/admin11-qa/` dan tidak masuk Git. Kemiripan dinilai dari susunan, proporsi, crop, warna dan tipografi; belum diklaim identik piksel atau diuji pada perangkat fisik/lintas browser.

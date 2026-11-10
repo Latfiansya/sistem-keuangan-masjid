@@ -1,0 +1,67 @@
+.admin-login {
+  min-height: 100svh;
+  display: grid;
+  grid-template-columns: 29% minmax(0, 1fr);
+  color: #202c3e;
+  background: #f7f9fc;
+  font-family: "Plus Jakarta Sans", Arial, Helvetica, sans-serif;
+}
+
+.admin-login *, .admin-login *::before, .admin-login *::after { box-sizing: border-box; }
+.admin-login-brand {
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: clamp(28px, 2.8vw, 58px);
+  color: #fff;
+  background: linear-gradient(180deg, #2589d838 0%, #208b9d85 40%, #007300d6 100%), url("/assets/masjid-background.webp") center bottom / cover no-repeat;
+}
+.admin-login-brand-copy { width: 100%; }
+.admin-login-logo { display: block; width: clamp(180px, 12vw, 250px); max-width: 100%; height: auto; margin-bottom: 28px; }
+.admin-login-brand h2 { margin: 0; font-size: clamp(28px, 2.1vw, 44px); font-weight: 800; line-height: 1.25; letter-spacing: -.02em; }
+.admin-login-brand p { margin: 18px 0 0; color: #d0e3ce; font-size: clamp(15px, 1vw, 20px); line-height: 1.5; }
+.admin-login-content { min-width: 0; display: flex; align-items: center; justify-content: center; padding: 48px; }
+.admin-login-card { width: min(100%, clamp(400px, 26vw, 600px)); padding: clamp(28px, 1.85vw, 40px); border-radius: 26px; background: #fff; box-shadow: 0 6px 30px #294b8210; }
+.admin-login-card h1 { margin: 0; font-size: clamp(24px, 1.4vw, 30px); font-weight: 800; line-height: 1.3; letter-spacing: -.02em; }
+.admin-login-description { margin: 6px 0 0; color: #6c80a0; font-size: clamp(14px, .8vw, 18px); line-height: 1.5; }
+.admin-login-form { display: grid; gap: 18px; margin-top: 32px; }
+.admin-login-field { min-width: 0; }
+.admin-login-field label { display: block; margin-bottom: 6px; color: #3b4c66; font-size: clamp(14px, .8vw, 18px); font-weight: 600; line-height: 1.5; }
+.admin-login-field label span { color: #d52a3e; }
+.admin-login-field input { display: block; width: 100%; min-height: 44px; padding: 10px 13px; border: 1px solid #e0e7f0; border-radius: 14px; color: #26344b; background: #f7f9fc; font: inherit; font-size: 16px; line-height: 1.5; }
+.admin-login-field input:focus-visible, .admin-login-submit:focus-visible { outline: 3px solid #147d5a; outline-offset: 3px; }
+.admin-login-field input[aria-invalid="true"] { border-color: #bd253b; }
+.admin-login-password { position: relative; }
+.admin-login-password input { padding-right: 52px; }
+.admin-login-password-toggle { position: absolute; top: 50%; right: 2px; transform: translateY(-50%); display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 12px; color: #6c80a0; background: transparent; cursor: pointer; }
+.admin-login-password-toggle:hover:not(:disabled) { color: #26344b; background: #eaf0f6; }
+.admin-login-password-toggle:focus-visible { outline: 3px solid #147d5a; outline-offset: -3px; }
+.admin-login-password-toggle:disabled { cursor: wait; opacity: .65; }
+.admin-login-submit { width: 100%; min-height: 46px; margin-top: 6px; padding: 10px 18px; border: 0; border-radius: 14px; color: #fff; background: #006b00; font: inherit; font-size: 14px; font-weight: 700; line-height: 1.5; cursor: pointer; }
+.admin-login-submit:hover:not(:disabled) { background: #005500; }
+.admin-login-submit:disabled { cursor: wait; opacity: .65; }
+.admin-login-field input:disabled { opacity: .7; }
+.admin-login-error { margin: 7px 0 0; color: #b02036; font-size: 14px; line-height: 1.5; overflow-wrap: anywhere; }
+.admin-login-submit-error { margin: 0; }
+
+@media (max-width: 1023px) {
+  .admin-login { grid-template-columns: 1fr; }
+  .admin-login-brand { padding: 32px; }
+  .admin-login-brand-copy { max-width: 530px; margin: 0 auto; }
+  .admin-login-logo { width: 180px; margin-bottom: 20px; }
+  .admin-login-brand h2 { font-size: 30px; }
+  .admin-login-brand h2 br { display: none; }
+  .admin-login-brand p { margin-top: 12px; font-size: 15px; }
+  .admin-login-content { padding: 40px 24px; }
+}
+
+@media (max-width: 479px) {
+  .admin-login-brand { padding: 28px 24px; }
+  .admin-login-brand h2 { max-width: 300px; font-size: 26px; }
+  .admin-login-brand p { font-size: 14px; }
+  .admin-login-content { padding: 28px 16px; }
+  .admin-login-card { padding: 28px 24px; border-radius: 24px; }
+  .admin-login-card h1 { font-size: 25px; }
+  .admin-login-description { font-size: 14px; }
+  .admin-login-form { margin-top: 28px; }
+}

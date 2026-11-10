@@ -731,3 +731,41 @@ Status: implementasi backend publik pada branch `fitur/backend-publik` selesai d
 - `npm test --workspace backend`: PASS (18 test HTTP & unit untuk health, 404, JSON invalid, batas 10 KB/413, `API_BASE_PATH` subdirectory, `agenda`, `content`, `check-password` termasuk 400/503/429 brute-force, `finance/report` termasuk rekonsiliasi/inklusif/hari kosong/unavailable/400, serta isolasi data).
 - `npm run build`: PASS.
 - Batasan tersisa: koneksi PostgreSQL (pgAdmin), skema tabel/migrasi/seeder, autentikasi admin & CRUD pengurus ("Masuk Pengurus"), upload file QRIS, dan pengaktifan adapter `VITE_DATA_SOURCE=api` di `frontend/` belum dikerjakan pada tahap ini.
+
+## Admin 1.1 — Login Pengurus (10 November 2026)
+
+Status: halaman login selesai dan tervalidasi pada branch `feature/frontend-admin`; siap review dan commit manual pengguna. Baseline saat mulai `c583969`, tanpa perubahan tracked/staged; `design-references/` tetap untracked.
+
+### Implementasi dan batas autentikasi
+
+- Menambahkan `/admin/login` pada aplikasi React yang sama, di luar PublicLayout. Desktop dua panel mengikuti `10-admin-login.png` (3456 × 2000); foto/gradasi biru–hijau, logo dan font lokal yang sudah tersedia. Tablet/mobile satu kolom, form dan kartu dapat digulir pada layar pendek. CSS terpisah dibatasi `.admin-login*`.
+- Form dimulai kosong, email/password wajib, format email dan karakter kontrol divalidasi; karakter khusus password biasa tidak dihapus/diubah. Input password tersembunyi, autocomplete sesuai tujuan, Enter/submit, fokus error, aria-invalid/describedby, status loading dan pesan kesalahan tersedia. Ref serta tombol/input nonaktif mencegah submit ganda. Request dibatalkan saat halaman dilepas; password dibersihkan setelah submit selesai.
+- Kode backend, API_CONTRACT dan referensi remote ditinjau: belum ada endpoint autentikasi admin. `adminAuthService.loginAdmin()` menyediakan batas integrasi tanpa HTTP atau endpoint karangan. Jeda 500 ms hanya development mode mock untuk menguji loading; semua kredensial ditolak sebagai integrasi belum tersedia. Mode API/build production tidak memakai simulasi autentikasi. Tidak ada akun/password/token/secret aplikasi baru, persistence kredensial, session, role, route protection atau sukses semu.
+- Perlu koordinasi backend untuk metode/path, payload email/password, respons sukses dan error (validasi, kredensial, rate limit), mekanisme akses dan tujuan setelah berhasil. Validasi ulang, hashing password, mitigasi brute force serta pentest tetap kebutuhan backend sebelum autentikasi nyata; bukan klaim keamanan dari UI. Kontrak API tidak diubah sepihak.
+- Hanya login yang dibuat. Komponen/CSS/aset/service/mock publik, backend, dependency dan lockfile tidak diubah. Masuk Pengurus di Footer publik tetap nonaktif; tidak membuat dashboard, menu admin, CRUD, profil, pengaturan akun, lupa password atau registrasi.
+
+### Verifikasi aktual
+
+- `npm run lint`: PASS tanpa peringatan, frontend dan backend.
+- `npm test`: PASS — 41 test frontend unit/SSR (5 baru untuk login) dan 18 test backend. Dua suite browser opsional dilewati pada perintah standar, lalu dijalankan terpisah dengan Chrome QA.
+- Suite browser login: PASS — 4 skenario (5 hasil termasuk induk), mencakup validasi/fokus, Enter/loading, submit berulang, error/retry, refresh, input kosong, isolasi route, tidak ada storage/cookie/HTTP autentikasi. Akun yang dimasukkan pada QA hanya data uji yang selalu ditolak, bukan kredensial aplikasi.
+- Suite regresi publik: PASS — 35 skenario (36 hasil termasuk induk), termasuk CTA/modal, akses langsung/refresh laporan, filter/rekonsiliasi, menu responsive/keyboard, serta unduhan PDF/PNG/ZIP nyata.
+- `npm run build`: PASS. Preview build production juga diperiksa pada tujuh viewport: 1728×1000, 1366×768, 1024×768, 768×1024, 390×844, 360×800 dan 390×360. Development diuji pada ukuran yang sama. Tidak ada overflow horizontal/elemen terpotong, font/logo gagal atau exception runtime/HTTP gagal. Submit production tetap di login dengan pesan belum tersedia, password dibersihkan, tanpa HTTP autentikasi atau penyimpanan kredensial.
+- Screenshot development/production dibandingkan dengan raster resmi dan ditinjau pada desktop/tablet/mobile. Satu iterasi memperbaiki pemisahan kata judul pada satu kolom serta tracking teks. Bukti lokal di `tmp/admin11-qa/`, diabaikan Git. Pengujian hanya Chrome/emulasi viewport; belum perangkat fisik, Safari/Firefox, pentest atau klaim identik piksel.
+
+README dan DESIGN_MAP diperbarui untuk route, desain dan batas integrasi. Setelah review status, diff, daftar file, whitespace dan file sensitif, hanya sembilan file kode/test/dokumentasi Admin 1.1 disiapkan untuk staging. Screenshot, profil Chrome, build, environment dan referensi desain tidak disertakan. Tidak melakukan commit, push atau merge. Pekerjaan berhenti setelah Login Pengurus; integrasi autentikasi menunggu kesepakatan backend.
+
+Usulan pesan commit: `feat: tambahkan halaman login pengurus dan batas integrasi autentikasi`.
+
+### Tindak lanjut — CTA Footer ke login (10 November 2026)
+
+- Mengganti tombol Masuk Pengurus nonaktif pada Footer dengan React Router `Link` menuju `/admin/login`, mengikuti tautan Footer yang sudah ada. CSS, autentikasi dan backend tidak diubah. README dan DESIGN_MAP diselaraskan.
+- Verifikasi lulus: lint, build, 41 test frontend dan 18 test backend. Dua suite browser opsional dilewati pada `npm test`; pemeriksaan Chrome terpisah mencakup lima halaman publik (Beranda, Agenda, Profil, Kontak dan 404) pada desktop 1366×768 serta mobile 390×844: klik/Enter menuju login tanpa reload dokumen, navigasi Kembali, CTA laporan tetap membuka modal pada halaman asal, serta akses langsung/refresh login. Tidak ada overflow horizontal, exception runtime atau HTTP gagal pada pemeriksaan tersebut.
+- Perubahan tindak lanjut dibiarkan unstaged; sembilan file staged dari pekerjaan login sebelumnya dipertahankan. Tidak melakukan commit atau push. Autentikasi tetap belum terhubung. Usulan pesan commit khusus tindak lanjut: `fix: hubungkan tautan masuk pengurus di footer ke halaman login`.
+
+### Refinement — tampilkan/sembunyikan password (10 November 2026)
+
+- Menambahkan tombol Eye/EyeOff Lucide pada sisi kanan input, default tersembunyi. Tombol `type="button"`, label Tampilkan/Sembunyikan password, aria-controls, target 44 px dan hover/fokus. Toggle hanya mengubah visibilitas, menjaga nilai serta validasi; nonaktif saat submit dan kembali tersembunyi setelah submit selesai. Tinggi/lebar, border dan radius input dipertahankan dengan padding kanan untuk ikon.
+- Perubahan Footer/README/DESIGN_MAP dari tindak lanjut sebelumnya dipertahankan. Footer memakai Link ke `/admin/login`; kini ikut staging sesuai instruksi pengguna. Tidak mengubah autentikasi, service, kontrak API, backend atau dependency dan tidak menambah halaman/komponen.
+- Verifikasi: lint PASS tanpa peringatan, `npm test` PASS (42 test frontend dan 18 backend; dua suite browser opsional dilewati), build PASS. Suite Chrome login dijalankan terpisah: 6 skenario PASS (7 hasil termasuk induk), termasuk toggle mouse/keyboard, hover/fokus, nilai/validasi/geometri input tetap, loading/submit ganda, dan navigasi Footer pada lima halaman publik × desktop/mobile. Layout diperiksa pada tujuh viewport; screenshot desktop/mobile ditinjau, tanpa overflow atau error runtime/HTTP aplikasi. QA terbatas pada Chrome/emulasi viewport.
+- README dan DESIGN_MAP mencatat perilaku terbaru. Staging diperbarui hanya untuk file terkait, mempertahankan pekerjaan login terdahulu. Referensi desain, hasil build, screenshot dan profil Chrome di tmp tetap tidak di-stage. Tidak melakukan commit, push atau merge. Usulan commit gabungan: `feat: lengkapi login pengurus dengan toggle password dan tautan footer`.

@@ -33,7 +33,7 @@ Terminal pertama, frontend mandiri:
 npm run dev:frontend
 ```
 
-Buka `http://localhost:5173`. Route publik: `/`, `/agenda`, `/profil`, `/kontak`, `/laporan-keuangan`. Navbar dan Footer halaman publik dipakai bersama melalui `PublicLayout`. Route laporan memakai halaman khusus tanpa Navbar/Footer. Menu Kontak dan CTA Hubungi Takmir pada Profil menuju `/kontak`. Masuk Pengurus belum aktif. Halaman tidak dikenal menampilkan placeholder 404.
+Buka `http://localhost:5173`. Route publik: `/`, `/agenda`, `/profil`, `/kontak`, `/laporan-keuangan`. Navbar dan Footer halaman publik dipakai bersama melalui `PublicLayout`. Route laporan memakai halaman khusus tanpa Navbar/Footer. Menu Kontak dan CTA Hubungi Takmir pada Profil menuju `/kontak`. CTA Masuk Pengurus pada Footer menuju `/admin/login`. Halaman tidak dikenal menampilkan placeholder 404.
 
 Terminal kedua, backend mandiri:
 
@@ -58,6 +58,22 @@ npm run start:backend
 Untuk lingkungan production, set `NODE_ENV=production` melalui environment proses. Perintah start hanya menjalankan server; tidak melakukan deployment. `PORT` dan `HOST` dapat diubah melalui environment atau `.env`; environment proses memiliki prioritas.
 
 Kedua workspace juga dapat dijalankan dari direktorinya masing-masing dengan `npm run dev`; backend menyediakan `npm start` dan frontend menyediakan `npm run build`.
+
+## Login Pengurus — Admin 1.1
+
+Halaman `/admin/login` berada dalam aplikasi React yang sama, dengan layout sendiri tanpa Navbar/Footer publik. Desktop mengikuti `design-references/user/10-admin-login.png`; tablet/mobile memakai satu kolom. Foto, logo dan font memakai aset lokal yang sudah tersedia. CTA Masuk Pengurus pada Footer publik memakai React Router Link menuju halaman ini.
+
+Form dimulai kosong, memvalidasi field wajib/format email/karakter kontrol, mendukung Enter, pesan error dan pencegahan submit ganda. Password tersembunyi secara default; tombol Eye/EyeOff di kanan input dapat menampilkan/menyembunyikannya tanpa mengubah nilai atau validasi, dengan label aksesibilitas serta hover/fokus. Tombol visibilitas tidak melakukan submit dan nonaktif saat loading. Password dibersihkan dan disembunyikan kembali setelah submit selesai; email/password tidak dipersist ke URL, storage atau cookie. `adminAuthService.loginAdmin()` menjadi batas integrasi. Endpoint autentikasi admin belum tersedia: service tidak melakukan HTTP, tidak menerima akun apa pun dan tidak membuat token/session atau navigasi dashboard. Jeda 500 ms hanya menyimulasikan loading pada development dengan `VITE_DATA_SOURCE=mock`; mode API dan build production langsung melaporkan login belum tersedia. Ini belum merupakan autentikasi sungguhan.
+
+Koordinasi backend diperlukan untuk metode/path login di bawah base API yang dikonfigurasi, payload email/password, respons sukses, error kredensial/validasi/rate limit, mekanisme akses, serta tujuan setelah berhasil. Ikuti envelope proyek setelah disepakati. Validasi ulang, hash password, mitigasi brute force dan pengujian keamanan menjadi kebutuhan backend; belum diterapkan oleh halaman ini. Tidak ada kontrak endpoint admin yang ditetapkan sepihak.
+
+Pengujian unit/SSR login ikut `npm test`. Dengan server development mock/API dan Chrome QA pada bagian pengujian browser di bawah, jalankan suite login terpisah dari root:
+
+```sh
+ADMIN_BROWSER_QA_URL=http://127.0.0.1:5173 ADMIN_BROWSER_API_QA_URL=http://127.0.0.1:5174 REPORT_BROWSER_CDP_URL=http://127.0.0.1:9228 node --test frontend/test/admin-login.browser.test.js
+```
+
+Suite memakai tab QA sendiri, memeriksa desktop/tablet/mobile/layar pendek, validasi/fokus, Enter/loading/submit ganda, refresh, password kosong setelah kegagalan, tidak ada penyimpanan kredensial atau HTTP autentikasi. Screenshot hanya di `tmp/admin11-qa/` yang diabaikan Git. Jalankan suite browser publik dan login secara berurutan agar input keyboard QA tidak saling mengganggu.
 
 ## Mock dan integrasi API
 

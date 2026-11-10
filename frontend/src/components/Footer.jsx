@@ -12,7 +12,7 @@ export default function Footer({ content, onReportAccess }) {
         <div className="footer-links">
           <p>TAUTAN KHUSUS</p>
           <Link to="/laporan-keuangan" onClick={onReportAccess}><FileText aria-hidden="true" />Laporan Keuangan</Link>
-          <button type="button" disabled title="Tujuan Masuk Pengurus belum tersedia"><LogIn aria-hidden="true" />Masuk Pengurus</button>
+          <Link to="/admin/login"><LogIn aria-hidden="true" />Masuk Pengurus</Link>
         </div>
       </div>
       {content && <p className="copyright">© {content.copyrightYear} Masjid Al-Hidayah Sorolaten. All rights reserved.</p>}
