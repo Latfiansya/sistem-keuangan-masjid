@@ -14,7 +14,7 @@ const navigation = [
     { label: 'Activity Log', icon: ClipboardList },
   ] },
   { label: 'Konten Website', items: [
-    { label: 'Profil Masjid', icon: Building2 },
+    { label: 'Profil Masjid', icon: Building2, to: '/admin/profil-masjid' },
     { label: 'Agenda', icon: CalendarDays },
     { label: 'Kontak & Pengaturan', icon: Contact },
   ] },

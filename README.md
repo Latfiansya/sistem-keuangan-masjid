@@ -81,7 +81,7 @@ Dashboard dapat direview langsung di `/admin/dashboard` dengan `VITE_DATA_SOURCE
 
 `adminDashboardService.getAdminDashboard({ signal })` mengambil mock admin terpisah, menghitung saldo akhir tiap kategori dan total untuk empat kartu/tabel. Data 20 Oktober 2026 mengikuti referensi: saldo awal Rp16.864.200 + pemasukan Rp1.791.500 − pengeluaran Rp1.427.500 = saldo akhir Rp17.228.200. Lima transaksi terbaru hanyalah cuplikan. Mock laporan publik April 2026 tidak diubah. Nama/email Super Admin hanya konten akun contoh dari desain, bukan akun login atau penerapan role.
 
-Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/kategori, laporan admin, kwitansi, activity log, konten website, akun, kode akses, notifikasi dan logout. Dashboard, Kelola Dana dan Kategori Dana dapat dibuka melalui Sidebar. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
+Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/kategori, laporan admin, kwitansi, activity log, agenda/kontak admin, akun, kode akses, notifikasi dan logout. Dashboard, Kelola Dana, Kategori Dana dan Profil Masjid dapat dibuka melalui Sidebar. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
 
 Test unit/SSR dashboard ikut `npm test`. Setelah server mock/API dan Chrome QA dijalankan sesuai bagian browser, jalankan dari root:
 
@@ -106,6 +106,20 @@ Route `/admin/kategori-dana` memakai AdminLayout yang sama, dengan menu aktif da
 Kategori, saldo dan tanggal update berasal dari `adminDashboardService` melalui konteks layout yang sama. `AdminBalanceSummary` dipakai Dashboard dan Kategori Dana; kolom pertama tetap Saldo Awal. Pada Kategori Dana, deskripsi tambahan di atas resume disembunyikan sesuai referensi. Badge Jum'at Berkah dalam daftar kategori berwarna emas, sedangkan titik resume tetap biru; ini styling khusus tabel, bukan perubahan data. Saldo dan transaksi tidak berubah.
 
 Suite `admin-dashboard.browser.test.js` juga memeriksa navigasi tiga halaman, kesamaan resume, aksi nonaktif, refresh/trailing slash dan scroll lokal pada empat viewport. Screenshot kategori di `tmp/admin14-qa/development/` atau `tmp/admin14-qa/production/` tidak di-stage. Mode API/autentikasi dan batas QA mengikuti milestone sebelumnya.
+
+## Profil Masjid — Admin 1.5
+
+Route `/admin/profil-masjid` memakai AdminLayout, menu aktif dan judul Topbar yang sama. Form mengikuti referensi `14-admin-profil-masjid.png`: heading beraksen oranye, Simpan Perubahan, banner, nama wajib, deskripsi singkat, alamat dan kontak. Refinement atas permintaan klien menambahkan Ganti Foto untuk preview lokal. Tidak ada upload ke server, crop, pengelolaan sejarah/visi-misi/pengurus atau endpoint baru.
+
+`adminProfileService.getAdminProfile({ signal })` memetakan salinan field dari mock publik yang sudah ada: `name`, `heroDescription` dan `address`. Kontak dimulai kosong karena nomor publik belum terverifikasi; contoh nomor pada desain tidak digunakan. Data sumber maupun halaman publik tidak diubah. Ini konten referensi, belum data produksi terkonfirmasi.
+
+Form memakai state lokal. Simpan memvalidasi nama dan kontak opsional (8–15 digit dengan pemisah lazim), menandai field bermasalah dan memfokuskan kesalahan pertama. Penyimpanan hanya simulasi di halaman aktif, dengan pemberitahuan yang terlihat setelah simpan; perubahan hilang saat navigasi keluar atau refresh, tanpa HTTP, storage atau cookie. Mode API menampilkan error integrasi dan tombol simpan nonaktif. Kontrak baca/tulis profil admin serta autentikasi perlu disepakati bersama backend sebelum integrasi permanen.
+
+Ganti Foto memakai file picker native yang dapat diakses melalui keyboard, satu berkas JPG/JPEG, PNG atau WebP, maksimal 5 MB (5 × 1024 × 1024 byte). `adminProfileService` menyediakan batas/validator awal ekstensi, MIME, ukuran dan jumlah. Berkas kosong/rusak ditolak; format/ukuran tidak valid mempertahankan preview valid sebelumnya. Batalkan Foto kembali ke foto awal halaman; batal pada picker mempertahankan pilihan yang ada. Object URL dilepas saat diganti, dibatalkan, gagal dibaca atau halaman dilepas. File hanya berada di state sementara; Simpan menegaskan foto belum tersimpan ke server.
+
+Kebutuhan backend: sepakati endpoint/metode dan field multipart untuk satu gambar, otorisasi pengurus, validasi ulang ekstensi/MIME/isi gambar/ukuran/jumlah, penyimpanan aman serta respons URL banner. URL tersebut perlu terhubung ke sumber konten publik setelah integrasi disepakati. Batas multipart harus khusus upload, tanpa memperbesar batas JSON umum 10 KB. Belum menetapkan endpoint atau mengubah kontrak API maupun banner publik.
+
+Test unit/service dan routing ikut `npm test`. Suite browser admin pada perintah di atas juga memeriksa form, validasi, Enter, simpan simulasi, reset saat keluar/refresh, data publik tetap dan empat viewport. Refinement foto menguji picker keyboard, format/ukuran/jumlah/berkas rusak, preview, pembatalan dan pelepasan object URL. Screenshot awal/validasi/simulasi di `tmp/admin15-qa/`, serta preview/validasi foto di `tmp/admin15-photo-qa/`, tidak di-stage. QA masih terbatas Chrome/emulasi viewport.
 
 ## Mock dan integrasi API
 

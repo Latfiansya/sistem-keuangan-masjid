@@ -838,3 +838,41 @@ Status: implementasi dan QA selesai pada `feature/frontend-admin`, baseline comm
 README dan DESIGN_MAP diperbarui. Setelah review status, diff, daftar file, whitespace dan staged diff, hanya 11 file Admin 1.4 disiapkan untuk commit manual. Referensi, build, screenshot dan profil Chrome tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah halaman Kategori Dana selesai.
 
 Usulan pesan commit: `feat: tambahkan halaman kategori dana dengan resume saldo bersama`.
+
+## Admin 1.5 — Profil Masjid (10 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline `5b78aef`. Awal kerja tanpa perubahan tracked/staged; `design-references/` tetap untracked. Referensi final `14-admin-profil-masjid.png` (1766×1405 px) dibaca sebelum implementasi.
+
+- Route `/admin/profil-masjid` dan tautan Sidebar memakai AdminLayout yang sudah ada. Topbar/menu aktif mengikuti halaman. Tidak mengubah halaman Login, Dashboard, Kelola Dana, Kategori Dana atau frontend publik.
+- Heading beraksen oranye, tombol hijau, kartu putih, banner statis dan empat field mengikuti desain. Foto/font memakai aset lama; CSS baru dibatasi `.admin-profile*`. Smartphone menumpuk heading/tombol dan menambah tinggi textarea; tablet/mobile mempertahankan menu admin yang sama.
+- Service admin minimal membaca salinan field mock publik: nama, heroDescription sebagai deskripsi singkat dan alamat. Kontak kosong karena data sumber belum terverifikasi; tidak menggunakan nomor contoh Figma. Tidak mengubah sumber mock/service publik atau menambah salinan fixture profil.
+- Form controlled mendukung edit semua field, nama wajib dan kontak opsional 8–15 digit dengan pemisah lazim. Error ditampilkan di field dan fokus menuju kesalahan pertama; perubahan field membersihkan error/feedback terkait. Nama menolak karakter kontrol, panjang field dibatasi dan teks dirender sebagai nilai input/textarea.
+- Simpan hanya memvalidasi serta menandai state sementara di komponen. Catatan dan feedback menegaskan simulasi, belum permanen ke server; feedback digulirkan ke area terlihat setelah simpan. Keluar halaman/refresh mengembalikan data awal. Tidak ada HTTP simpan, localStorage, sessionStorage atau cookie; profil publik tetap.
+- Mode API memberi error integrasi profil dan tombol simpan nonaktif tanpa request/fallback mock. Kontrak baca/tulis profil admin dan autentikasi perlu koordinasi backend. Tidak membuat endpoint, database, upload server/crop, form profil tambahan, dependency atau perubahan kontrak API.
+
+### Verifikasi
+
+- `npm run lint`: PASS. `npm test`: PASS — 58 test frontend unit/SSR (4 baru), 18 test backend. Tiga suite browser opsional dilewati pada perintah standar; suite admin/login dijalankan terpisah.
+- Chrome development: 11 skenario admin PASS, termasuk empat viewport, menu aktif, navigasi empat halaman, data/angka sebelumnya, edit seluruh field, validasi nama/kontak, fokus, Enter, simpan simulasi, reset saat keluar/refresh/trailing slash, publik tetap dan mode API tanpa HTTP. Enam skenario Login juga PASS.
+- Pemeriksaan awal QA diperbaiki agar Enter mengirim karakter tombol lengkap dan perpindahan halaman menunggu konten tujuan terpasang. Suite admin diulang dan lulus; tidak mengubah perilaku halaman lama.
+- `npm run build`: PASS. Preview production: 11 skenario admin PASS (12 hasil termasuk induk). Visual ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844, tanpa overflow horizontal halaman, aset gagal atau exception runtime aplikasi.
+- Screenshot awal, validasi dan simulasi di `tmp/admin15-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport; belum perangkat fisik/Safari/Firefox. Penyimpanan permanen, autentikasi dan upload server memang belum tersedia pada milestone ini.
+
+README dan DESIGN_MAP diperbarui. Hanya 10 file terkait Admin 1.5 disiapkan setelah pemeriksaan status/diff/staged diff; referensi, build, log dan artefak QA tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah Profil Masjid selesai.
+
+Usulan pesan commit: `feat: tambahkan halaman profil masjid admin dengan simpan simulasi`.
+
+### Refinement Admin 1.5 — Ganti Foto Masjid
+
+Diminta setelah implementasi awal, sebelum pengguna melakukan commit. Staging 10 file Admin 1.5 dipertahankan; perubahan lanjutan hanya menyentuh halaman/CSS profil, service/validator profil, dua test dan tiga dokumen yang sudah terkait milestone ini.
+
+- Kontrol Ganti Foto berikon Camera, putih semi-transparan dengan shadow di kanan bawah banner. File picker native memiliki label, fokus keyboard, filter JPG/JPEG/PNG/WebP dan hanya satu berkas. Rasio/ukuran/radius banner serta empat field lain tidak diubah. Batalkan Foto mengembalikan aset awal; batal picker mempertahankan preview saat ini.
+- Validator awal pada adminProfileService memeriksa jumlah, ekstensi dan MIME yang sesuai, berkas tidak kosong serta maksimum 5 × 1024 × 1024 byte. Berkas rusak yang gagal ditampilkan menghasilkan error dan kembali ke foto awal. Format/ukuran/jumlah yang ditolak tidak menghapus preview valid sebelumnya. Input direset agar berkas yang sama dapat dipilih kembali.
+- File dan object URL hanya disimpan pada state komponen. Cleanup melepas URL lama saat mengganti foto, membatalkan, gagal membaca gambar atau unmount. Status di bawah foto dan feedback Simpan menegaskan foto hanya dipratinjau, belum tersimpan ke server. Tidak ada request upload, storage permanen, crop, dependency atau perubahan publik/backend/kontrak.
+- Batas integrasi tetap sederhana: state menyimpan File asli dan service menyediakan batas/validator awal. Backend perlu menyepakati endpoint/metode/field multipart, otorisasi dan validasi ulang ekstensi/MIME/isi gambar/ukuran/jumlah, penyimpanan aman serta URL banner yang kelak dibaca konten publik. Batas upload khusus tidak boleh menaikkan batas JSON umum 10 KB.
+
+Verifikasi lanjutan: lint tanpa peringatan; `npm test` lulus 59 test frontend unit/SSR (1 tambahan validator foto) dan 18 backend. Browser development serta preview production lulus 13 skenario admin (14 hasil termasuk induk): native picker lewat Enter, JPG/PNG/WebP, ukuran batas tepat 5 MB pada unit test dan berkas melebihi batas, ekstensi/MIME/jumlah/berkas kosong/rusak, preview/batal, banner tetap, form lain tetap, simpan simulasi dan regresi admin. URL yang dibuat/dilepas dilacak pada penggantian, pembatalan, kegagalan dan keluar halaman; seluruhnya dilepas. Build lulus. Visual diperiksa pada 1728×1080, 1366×768, 768×1024 dan 390×844, tanpa overflow halaman atau exception runtime. Bukti foto di `tmp/admin15-photo-qa/`; tidak di-stage. Pengujian picker menggunakan Chrome dengan intersepsi dialog native, belum perangkat fisik/Safari/Firefox.
+
+Setelah pemeriksaan diff dan staging, total tetap 10 file Admin 1.5; hanya delapan file terkait refinement diperbarui dalam staging. Aset referensi, fixture, log dan hasil build tidak disertakan. Tidak melakukan commit, push atau merge.
+
+Usulan pesan commit yang mencakup hasil akhir: `feat: tambahkan profil masjid admin dengan simulasi simpan dan preview foto`.

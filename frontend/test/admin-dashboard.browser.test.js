@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { mkdir, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 const baseUrl = process.env.ADMIN_BROWSER_QA_URL
@@ -22,13 +22,18 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
   const pending = new Map()
   const failures = []
   const requests = []
+  let fileChooserCount = 0
   const metrics = []
   const output = fileURLToPath(new URL(`../../tmp/admin12-qa/${phase}/`, import.meta.url))
   const fundsOutput = fileURLToPath(new URL(`../../tmp/admin13-qa/${phase}/`, import.meta.url))
   const categoriesOutput = fileURLToPath(new URL(`../../tmp/admin14-qa/${phase}/`, import.meta.url))
+  const profileOutput = fileURLToPath(new URL(`../../tmp/admin15-qa/${phase}/`, import.meta.url))
+  const photoOutput = fileURLToPath(new URL(`../../tmp/admin15-photo-qa/${phase}/`, import.meta.url))
   await mkdir(output, { recursive: true })
   await mkdir(fundsOutput, { recursive: true })
   await mkdir(categoriesOutput, { recursive: true })
+  await mkdir(profileOutput, { recursive: true })
+  await mkdir(photoOutput, { recursive: true })
   ws.addEventListener('message', ({ data }) => {
     const message = JSON.parse(data)
     if (message.id) {
@@ -38,6 +43,7 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
       else request.resolve(message.result)
     }
     if (message.method === 'Runtime.exceptionThrown') failures.push(message.params.exceptionDetails.text)
+    if (message.method === 'Page.fileChooserOpened') fileChooserCount++
     if (message.method === 'Network.responseReceived' && message.params.response.status >= 400) failures.push(message.params.response.url)
     if (message.method === 'Network.requestWillBeSent' && ['Fetch', 'XHR'].includes(message.params.type)) requests.push(message.params.request.url)
   })
@@ -72,6 +78,21 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
     const point = await evaluate(`(() => { const e=document.querySelector(${JSON.stringify(selector)}); e.scrollIntoView({block:'center'}); const r=e.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2} })()`)
     for (const type of ['mousePressed', 'mouseReleased']) await send('Input.dispatchMouseEvent', { type, ...point, button: 'left', clickCount: 1 })
   }
+  const fill = async (name, value) => {
+    await evaluate(`document.querySelector('#admin-profile-${name}').focus();document.querySelector('#admin-profile-${name}').select()`)
+    await send('Input.insertText', { text: value })
+  }
+  const choosePhoto = async (files) => {
+    const { root } = await send('DOM.getDocument')
+    const { nodeId } = await send('DOM.querySelector', { nodeId: root.nodeId, selector: '#admin-profile-photo' })
+    await send('DOM.setFileInputFiles', { nodeId, files })
+  }
+  const trackPhotoUrls = () => evaluate(`(() => {
+    window.photoUrls = {created:[],revoked:[]}
+    const create = URL.createObjectURL.bind(URL), revoke = URL.revokeObjectURL.bind(URL)
+    URL.createObjectURL = file => {const url=create(file);photoUrls.created.push(url);return url}
+    URL.revokeObjectURL = url => {photoUrls.revoked.push(url);revoke(url)}
+  })()`)
   const screenshot = async (name, full = false, directory = output) => {
     const size = await evaluate('({width:innerWidth,height:document.documentElement.scrollHeight})')
     const result = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: full, ...(full ? { clip: { x: 0, y: 0, ...size, scale: 1 } } : {}) })
@@ -159,7 +180,7 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
     await t.test('fitur di luar lingkup nonaktif, akun contoh tidak menjadi autentikasi dan refresh tetap membuka dashboard', async () => {
       assert.equal(await evaluate('[...document.querySelectorAll(".admin-dashboard button, .admin-nav-group button, .admin-account button, .admin-topbar-actions button")].every(e=>e.disabled&&!!e.title)'), true)
       assert.match(await evaluate('document.querySelector(".admin-dashboard-status").textContent'), /Data contoh/)
-      assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-shell a[href]")].map(e=>e.getAttribute("href"))'), ['#admin-content', '/admin/dashboard', '/admin/kelola-dana', '/admin/kategori-dana'])
+      assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-shell a[href]")].map(e=>e.getAttribute("href"))'), ['#admin-content', '/admin/dashboard', '/admin/kelola-dana', '/admin/kategori-dana', '/admin/profil-masjid'])
       assert.deepEqual(await evaluate('({local:localStorage.length,session:sessionStorage.length,cookie:document.cookie})'), { local: 0, session: 0, cookie: '' })
       await reload('!!document.querySelector(".admin-dashboard")')
       await open(baseUrl, '/')
@@ -259,6 +280,192 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
       assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'), 'Kategori Dana')
     })
 
+    await t.test('Profil Masjid pada empat viewport mendukung navigasi, edit, validasi dan simpan simulasi', async () => {
+      for (const [width, height] of [[1728, 1080], [1366, 768], [768, 1024], [390, 844]]) {
+        await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false })
+        await open()
+        await evaluate('window.adminProfileNavigation = true')
+        if (width < 1024) await click('.admin-menu-toggle')
+        await click('.admin-nav-link[href="/admin/profil-masjid"]')
+        await waitFor('!!document.querySelector("#admin-profile-form")')
+        await evaluate('document.fonts.ready')
+        await waitFor('document.querySelector(".admin-profile-banner img").complete')
+        assert.equal(await evaluate('window.adminProfileNavigation'), true)
+        assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'), 'Profil Masjid')
+        assert.equal(await evaluate('document.querySelector(".admin-nav-link[aria-current=page]").getAttribute("href")'), '/admin/profil-masjid')
+        assert.equal(await evaluate('document.querySelector("#admin-profile-name").value'), 'Masjid Al-Hidayah')
+        assert.equal(await evaluate('document.querySelector("#admin-profile-contact").value'), '')
+        assert.equal(await evaluate('document.querySelectorAll("input[type=file]").length'), 1)
+        assert.equal(await evaluate('document.querySelectorAll(".admin-profile dialog").length'), 0)
+        assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
+        assert.equal(await evaluate('document.querySelector(".admin-profile-banner img").naturalWidth > 0'), true)
+        assert.equal(await evaluate('[...document.querySelectorAll(".admin-profile input,.admin-profile textarea,.admin-profile-save")].every(e=>{const r=e.getBoundingClientRect();return r.width>0&&r.left>=0&&r.right<=innerWidth&&r.height>=40})'), true)
+        await evaluate('window.scrollTo(0,0)')
+        await screenshot(`profil-masjid-${width}-top`, false, profileOutput)
+        await screenshot(`profil-masjid-${width}-full`, true, profileOutput)
+        await fill('name', '   ')
+        await fill('contact', 'bukan nomor')
+        await click('.admin-profile-save')
+        assert.match(await evaluate('document.querySelector("#admin-profile-name-error").textContent'), /wajib/)
+        assert.match(await evaluate('document.querySelector("#admin-profile-contact-error").textContent'), /8–15 digit/)
+        assert.equal(await evaluate('document.activeElement.id'), 'admin-profile-name')
+        assert.equal(await evaluate('!!document.querySelector(".admin-profile-feedback")'), false)
+        await screenshot(`profil-masjid-${width}-validasi`, true, profileOutput)
+        await fill('name', 'Masjid untuk review UI')
+        await fill('description', 'Deskripsi percobaan\nBaris kedua tetap tersimpan.')
+        await fill('address', 'Alamat percobaan\nSorolaten')
+        await fill('contact', '+62 812-0000-0000')
+        await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' })
+        await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
+        await waitFor('!!document.querySelector(".admin-profile-feedback")')
+        assert.match(await evaluate('document.querySelector(".admin-profile-feedback").textContent'), /Simulasi.*sementara.*belum tersimpan permanen/)
+        assert.equal(await evaluate('document.querySelector("#admin-profile-name").value'), 'Masjid untuk review UI')
+        assert.equal(await evaluate('document.querySelector("#admin-profile-description").value'), 'Deskripsi percobaan\nBaris kedua tetap tersimpan.')
+        assert.equal(await evaluate('document.querySelector("#admin-profile-address").value'), 'Alamat percobaan\nSorolaten')
+        await screenshot(`profil-masjid-${width}-simulasi`, true, profileOutput)
+        await fill('contact', '123')
+        assert.equal(await evaluate('!!document.querySelector(".admin-profile-feedback")'), false)
+        await click('.admin-profile-save')
+        assert.equal(await evaluate('document.activeElement.id'), 'admin-profile-contact')
+        await fill('contact', '')
+        await click('.admin-profile-save')
+        assert.equal(await evaluate('!!document.querySelector(".admin-profile-feedback")'), true)
+        assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
+      }
+    })
+
+    await t.test('simulasi profil tidak dipersist, tidak mengubah publik, dan kembali ke data awal setelah refresh/navigasi', async () => {
+      await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: false })
+      assert.deepEqual(await evaluate('({local:localStorage.length,session:sessionStorage.length,cookie:document.cookie})'), { local: 0, session: 0, cookie: '' })
+      assert.equal(await evaluate('location.search'), '')
+      await reload('!!document.querySelector("#admin-profile-form")')
+      assert.equal(await evaluate('document.querySelector("#admin-profile-name").value'), 'Masjid Al-Hidayah')
+      assert.equal(await evaluate('document.querySelector("#admin-profile-contact").value'), '')
+      assert.equal(await evaluate('!!document.querySelector(".admin-profile-feedback")'), false)
+      await fill('name', 'Sementara saja')
+      await click('.admin-profile-save')
+      for (const [route, selector] of [['dashboard', '.admin-dashboard'], ['kelola-dana', '.admin-funds'], ['kategori-dana', '.admin-categories']]) {
+        await click('.admin-menu-toggle')
+        await click(`.admin-nav-link[href="/admin/${route}"]`)
+        await waitFor(`location.pathname === '/admin/${route}' && !!document.querySelector('${selector}')`)
+        assert.equal(await evaluate('!!document.querySelector("#admin-profile-form")'), false)
+        await click('.admin-menu-toggle')
+        await click('.admin-nav-link[href="/admin/profil-masjid"]')
+        await waitFor('!!document.querySelector("#admin-profile-form")')
+        assert.equal(await evaluate('document.querySelector("#admin-profile-name").value'), 'Masjid Al-Hidayah')
+      }
+      await send('Page.navigate', { url: `${baseUrl}/admin/profil-masjid/` })
+      await waitFor('location.pathname.endsWith("/profil-masjid/") && !!document.querySelector("#admin-profile-form")')
+      assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'), 'Profil Masjid')
+      await send('Page.navigate', { url: `${baseUrl}/profil` })
+      await waitFor('!!document.querySelector(".profile-header h1")')
+      assert.match(await evaluate('document.querySelector(".profile-header h1").textContent'), /Al-Hidayah/)
+      assert.doesNotMatch(await evaluate('document.body.innerText'), /Sementara saja|Masjid untuk review UI|Alamat percobaan/)
+    })
+
+    const fixtures = fileURLToPath(new URL('../../tmp/admin15-photo-qa/fixtures/', import.meta.url))
+    await mkdir(fixtures, { recursive: true })
+    await copyFile(fileURLToPath(new URL('../public/assets/masjid-background.webp', import.meta.url)), `${fixtures}foto.webp`)
+    for (const [extension, type] of [['jpg', 'image/jpeg'], ['png', 'image/png']]) {
+      const data = await evaluate(`(() => {const c=document.createElement('canvas');c.width=8;c.height=8;const ctx=c.getContext('2d');ctx.fillStyle='#276a91';ctx.fillRect(0,0,8,8);return c.toDataURL('${type}').split(',')[1]})()`)
+      await writeFile(`${fixtures}foto.${extension}`, Buffer.from(data, 'base64'))
+    }
+    await writeFile(`${fixtures}besar.png`, Buffer.alloc(5 * 1024 * 1024 + 1))
+    await writeFile(`${fixtures}kosong.webp`, '')
+    await writeFile(`${fixtures}rusak.png`, 'Ini bukan gambar yang dapat dibaca.')
+    await writeFile(`${fixtures}foto.svg`, '<svg xmlns="http://www.w3.org/2000/svg"/>')
+
+    await t.test('Ganti Foto mendukung keyboard, tiga format, batal picker/pilihan, ukuran banner tetap dan cleanup URL di empat viewport', async () => {
+      await send('Page.setInterceptFileChooserDialog', { enabled: true })
+      for (const [width, height] of [[1728, 1080], [1366, 768], [768, 1024], [390, 844]]) {
+        await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false })
+        await open()
+        if (width < 1024) await click('.admin-menu-toggle')
+        await click('.admin-nav-link[href="/admin/profil-masjid"]')
+        await waitFor('!!document.querySelector("#admin-profile-form")')
+        await trackPhotoUrls()
+        const original = await evaluate('document.querySelector(".admin-profile-photo img").src')
+        const fields = await evaluate('[...document.querySelectorAll(".admin-profile-field input,.admin-profile-field textarea")].map(e=>e.value)')
+        const box = await evaluate('(() => {const r=document.querySelector(".admin-profile-photo img").getBoundingClientRect();return [r.width,r.height]})()')
+        const chooserBefore = fileChooserCount
+        await evaluate('document.querySelector("#admin-profile-photo").focus()')
+        assert.equal(await evaluate('getComputedStyle(document.querySelector(".admin-profile-photo-picker")).outlineStyle'), 'solid')
+        await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, text: '\r' })
+        await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 })
+        await choosePhoto([`${fixtures}foto.png`])
+        assert.equal(fileChooserCount, chooserBefore + 1)
+        await waitFor('document.querySelector(".admin-profile-photo img").src.startsWith("blob:") && document.querySelector(".admin-profile-photo img").complete && document.querySelector(".admin-profile-photo img").naturalWidth > 0')
+        const first = await evaluate('document.querySelector(".admin-profile-photo img").src')
+        await choosePhoto([])
+        assert.equal(await evaluate('document.querySelector(".admin-profile-photo img").src'), first)
+        assert.equal(await evaluate('!!document.querySelector(".admin-profile-feedback")'), false)
+        assert.deepEqual(await evaluate('(() => {const r=document.querySelector(".admin-profile-photo img").getBoundingClientRect();return [r.width,r.height]})()'), box)
+        assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-profile-field input,.admin-profile-field textarea")].map(e=>e.value)'), fields)
+        assert.equal(await evaluate('document.querySelector("#admin-profile-photo").multiple'), false)
+        assert.equal(await evaluate('document.querySelector("#admin-profile-photo").files.length'), 0)
+        await click('.admin-profile-save')
+        assert.match(await evaluate('document.querySelector(".admin-profile-feedback").textContent'), /Foto baru hanya dipratinjau dan belum tersimpan ke server/)
+        for (const extension of ['jpg', 'webp']) {
+          const previous = await evaluate('document.querySelector(".admin-profile-photo img").src')
+          await choosePhoto([`${fixtures}foto.${extension}`])
+          await waitFor(`document.querySelector('.admin-profile-photo img').src !== ${JSON.stringify(previous)} && document.querySelector('.admin-profile-photo img').complete && document.querySelector('.admin-profile-photo img').naturalWidth > 0`)
+          assert.equal(await evaluate(`photoUrls.revoked.includes(${JSON.stringify(previous)})`), true)
+        }
+        assert.equal(await evaluate('!!document.querySelector(".admin-profile-feedback")'), false)
+        assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
+        await evaluate('window.scrollTo(0,0)')
+        await screenshot(`ganti-foto-${width}-preview`, true, photoOutput)
+        await click('.admin-profile-photo-cancel')
+        await waitFor(`document.querySelector('.admin-profile-photo img').src === ${JSON.stringify(original)}`)
+        assert.deepEqual(await evaluate('photoUrls.revoked'), await evaluate('photoUrls.created'))
+        assert.equal(await evaluate('!!document.querySelector(".admin-profile-photo-cancel")'), false)
+        await choosePhoto([`${fixtures}foto.webp`])
+        await waitFor('document.querySelector(".admin-profile-photo img").src.startsWith("blob:")')
+        if (width < 1024) await click('.admin-menu-toggle')
+        await click('.admin-nav-link[href="/admin/dashboard"]')
+        await waitFor('!!document.querySelector(".admin-dashboard")')
+        assert.equal(await evaluate('photoUrls.created.length'), 4)
+        assert.deepEqual(await evaluate('photoUrls.revoked'), await evaluate('photoUrls.created'))
+      }
+      await send('Page.setInterceptFileChooserDialog', { enabled: false })
+    })
+
+    await t.test('foto menolak format/ukuran/jumlah/berkas rusak tanpa upload, mempertahankan preview valid dan melepas seluruh URL', async () => {
+      await click('.admin-menu-toggle')
+      await click('.admin-nav-link[href="/admin/profil-masjid"]')
+      await waitFor('!!document.querySelector("#admin-profile-form")')
+      await trackPhotoUrls()
+      await choosePhoto([`${fixtures}foto.webp`])
+      await waitFor('document.querySelector(".admin-profile-photo img").src.startsWith("blob:")')
+      const preview = await evaluate('document.querySelector(".admin-profile-photo img").src')
+      for (const [file, message] of [['foto.svg', /Format foto/], ['besar.png', /maksimal 5 MB/], ['kosong.webp', /kosong/]]) {
+        await choosePhoto([`${fixtures}${file}`])
+        await waitFor('!!document.querySelector("#admin-profile-photo-error")')
+        assert.match(await evaluate('document.querySelector("#admin-profile-photo-error").textContent'), message)
+        assert.equal(await evaluate('document.querySelector("#admin-profile-photo").getAttribute("aria-invalid")'), 'true')
+        assert.equal(await evaluate('document.querySelector(".admin-profile-photo img").src'), preview)
+      }
+      for (const [count, type, message] of [[2, 'image/png', /tepat satu/], [1, 'text/plain', /Format foto/]]) {
+        await evaluate(`(() => {const dt=new DataTransfer();for(let i=0;i<${count};i++)dt.items.add(new File(['data'],'foto.png',{type:'${type}'}));const input=document.querySelector('#admin-profile-photo');input.files=dt.files;input.dispatchEvent(new Event('change',{bubbles:true}))})()`)
+        assert.match(await evaluate('document.querySelector("#admin-profile-photo-error").textContent'), message)
+        assert.equal(await evaluate('document.querySelector(".admin-profile-photo img").src'), preview)
+      }
+      await choosePhoto([`${fixtures}rusak.png`])
+      await waitFor('!!document.querySelector("#admin-profile-photo-error") && document.querySelector("#admin-profile-photo-error").textContent.includes("tidak dapat dibaca")')
+      await waitFor('!document.querySelector(".admin-profile-photo img").src.startsWith("blob:")')
+      assert.deepEqual(await evaluate('photoUrls.revoked'), await evaluate('photoUrls.created'))
+      await evaluate('window.scrollTo(0,0)')
+      await screenshot('ganti-foto-mobile-validasi', true, photoOutput)
+      await choosePhoto([`${fixtures}foto.png`])
+      await waitFor('document.querySelector(".admin-profile-photo img").src.startsWith("blob:") && document.querySelector(".admin-profile-photo img").complete')
+      assert.equal(await evaluate('!!document.querySelector("#admin-profile-photo-error")'), false)
+      await click('.admin-profile-photo-cancel')
+      await waitFor('!document.querySelector(".admin-profile-photo img").src.startsWith("blob:")')
+      assert.deepEqual(await evaluate('photoUrls.revoked'), await evaluate('photoUrls.created'))
+      assert.deepEqual(await evaluate('({local:localStorage.length,session:sessionStorage.length,cookie:document.cookie})'), { local: 0, session: 0, cookie: '' })
+      assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
+    })
+
     await t.test('mode API tidak memakai mock diam-diam atau menghubungi endpoint admin karangan', async () => {
       for (const route of ['/admin/dashboard', '/admin/kelola-dana', '/admin/kategori-dana']) {
         await send('Page.navigate', { url: `${apiUrl}${route}` })
@@ -266,6 +473,11 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
         assert.match(await evaluate('document.querySelector(".admin-dashboard-state").textContent'), /Dashboard admin melalui API belum tersedia/)
         assert.equal(await evaluate('document.querySelectorAll(".admin-statistic,.admin-recent").length'), 0)
       }
+      await send('Page.navigate', { url: `${apiUrl}/admin/profil-masjid` })
+      await waitFor('!!document.querySelector(".admin-profile [role=alert]")')
+      assert.match(await evaluate('document.querySelector(".admin-profile [role=alert]").textContent'), /Profil admin melalui API belum tersedia/)
+      assert.equal(await evaluate('document.querySelector(".admin-profile-save").disabled'), true)
+      assert.equal(await evaluate('!!document.querySelector("#admin-profile-form")'), false)
       assert.deepEqual(requests, [])
       assert.deepEqual(failures, [])
     })

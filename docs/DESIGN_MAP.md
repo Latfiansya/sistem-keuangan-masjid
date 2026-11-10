@@ -305,3 +305,16 @@ Referensi final: `design-references/user/13-admin-kategori-dana.png` (1856 × 11
 - Desktop: heading/tombol sejajar, gap 24 px, tabel kategori sekitar 44 px header dan 76 px per baris, radius kartu 24 px. Tablet/mobile mengikuti menu yang ada; pada smartphone heading/tombol bertumpuk. Badge tetap utuh dengan scroll tabel lokal dan akses keyboard. Area aksi 44 px untuk kenyamanan target.
 
 QA pada 1728×1080, 1366×768, 768×1024 dan 390×844; bukti di `tmp/admin14-qa/` tidak di-stage. Adaptasi mobile bukan frame resmi; kesetiaan visual merupakan pendekatan raster dan belum diuji pada perangkat fisik/Safari/Firefox.
+
+## Admin 1.5 — Profil Masjid
+
+Referensi final: `design-references/user/14-admin-profil-masjid.png` (1766 × 1405 px). Route `/admin/profil-masjid` memakai Sidebar/Topbar yang sama, menu Profil Masjid aktif. Margin hitam/bayangan luar gambar tidak menjadi bagian layout.
+
+- Heading bergaris oranye, subtitle dan Simpan Perubahan hijau dengan ikon Check. Form memakai kartu putih radius 24 px, shadow lembut, padding 24 px dan gap 20 px. Label/input mengikuti font lokal Plus Jakarta Sans dan palet admin.
+- Banner awal memakai `assets/masjid-background.webp` yang sudah ada, rasio desktop 2,8 dengan posisi bawah agar bangunan utuh. Nama Masjid wajib, Deskripsi Singkat dan Alamat berupa textarea, Kontak memakai ikon Phone; tidak ada crop atau bagian profil tambahan.
+- Isi nama/deskripsi/alamat mengikuti mock publik, bukan menyalin field kosong/nama berbeda di raster. Kontak tetap kosong karena nomor resmi belum terverifikasi. Catatan simulasi dan feedback ditambahkan untuk memperjelas batas penyimpanan; error memiliki label serta fokus field pertama. Data publik tidak berubah.
+- Tablet mengikuti menu collapsible dan input 16 px. Smartphone menumpuk heading/tombol, tombol selebar konten, padding kartu 20 px, banner rasio 1,6 dan textarea lebih tinggi; tidak memerlukan scroll horizontal halaman.
+
+QA Chrome development/preview production pada 1728×1080, 1366×768, 768×1024 dan 390×844. Screenshot di `tmp/admin15-qa/` tidak di-stage. Mobile merupakan adaptasi desktop; belum perangkat fisik, Safari/Firefox atau klaim identik piksel.
+
+Refinement Ganti Foto atas permintaan pengguna setelah implementasi awal: kontrol putih semi-transparan dengan ikon Camera/shadow di kanan bawah gambar, target 44 px dan fokus keyboard yang terlihat. Ukuran, rasio, posisi objek dan radius gambar tetap. Petunjuk format/5 MB, Batalkan Foto serta status preview/error berada di bawah gambar dan membungkus pada mobile. Pemilihan native hanya preview lokal, tanpa galeri/drag-and-drop/crop/upload server atau perubahan banner publik. Bukti pada empat viewport di `tmp/admin15-photo-qa/` tidak di-stage.
