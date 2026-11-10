@@ -271,3 +271,15 @@ Referensi resmi pengguna: `design-references/user/10-admin-login.png` (3456 × 2
 - Loading/error/validasi mendukung alur form. Tidak ada login berhasil semu, token, session, lupa password atau registrasi. Batas integrasi dan status endpoint mengikuti README Admin 1.1; kontrak API tidak diubah.
 
 Screenshot QA lokal disimpan di `tmp/admin11-qa/` dan tidak masuk Git. Kemiripan dinilai dari susunan, proporsi, crop, warna dan tipografi; belum diklaim identik piksel atau diuji pada perangkat fisik/lintas browser.
+
+## Admin 1.2 — Dashboard Keuangan
+
+Referensi final pengguna: `design-references/user/11-admin-dashboard.png` (1766 × 2013 px). Implementasi pada `/admin/dashboard` memakai AdminLayout dengan sidebar/topbar sendiri; tidak mengubah desain Login Pengurus atau PublicLayout. Margin hitam dan bayangan di luar aplikasi pada screenshot tidak dibuat sebagai bingkai halaman.
+
+- Desktop: sidebar hijau 240–288 px, logo lokal, tiga kelompok navigasi, dashboard aktif, akun contoh di bawah. Topbar putih, notifikasi nonaktif dan avatar SA. Hero hijau dengan foto masjid, judul serta dua tombol transaksi, diikuti indikator update dan empat kartu saldo.
+- Resume tiga kategori memakai satu sumber angka bersama kartu. Kolom numerik pertama ditulis **Saldo Awal**, mengoreksi label Saldo Akhir yang berulang pada screenshot. Saldo akhir kategori/total dihitung melalui service, bukan angka presentasi terpisah. Nilai mengikuti contoh 20 Oktober 2026, terpisah dari mock publik April.
+- Banner oranye, lima transaksi terbaru dan tiga shortcut mengikuti urutan referensi. Klaim realtime diganti kalimat netral karena data statis; keterangan Data contoh terlihat. Akun/nama/email pada sidebar merupakan konten fixture, bukan kredensial atau sesi nyata. Fitur belum dibuat tetap nonaktif dengan title/keterangan yang jelas.
+- Tablet 768 px: sidebar collapsible di bawah topbar, kartu dua kolom. Mobile 390 px: kartu/shortcut satu kolom, banner bertumpuk, teks/area klik menyesuaikan. Menu mendukung Escape, backdrop, fokus awal/kembali dan penutupan saat fokus keluar. Tabel memiliki petunjuk dan scroll horizontal lokal dengan akses keyboard.
+- Foto/logo/font memakai aset lokal yang sudah ada, ikon Lucide React. CSS baru dibatasi `.admin-*` di AdminLayout.css. Halaman tidak menggunakan screenshot sebagai konten dan tidak membuat menu, transaksi, laporan, notifikasi atau akun fiktif yang berfungsi.
+
+QA Chrome development/preview build mencakup 1728×1080, 1366×768, 768×1024 dan 390×844. Screenshot/top/full/menu dan metrik disimpan di `tmp/admin12-qa/`, tidak di-stage. Kesetiaan visual merupakan pendekatan raster; belum ada frame mobile resmi, pengujian perangkat fisik atau verifikasi Safari/Firefox pada milestone ini.

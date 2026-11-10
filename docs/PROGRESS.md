@@ -769,3 +769,29 @@ Usulan pesan commit: `feat: tambahkan halaman login pengurus dan batas integrasi
 - Perubahan Footer/README/DESIGN_MAP dari tindak lanjut sebelumnya dipertahankan. Footer memakai Link ke `/admin/login`; kini ikut staging sesuai instruksi pengguna. Tidak mengubah autentikasi, service, kontrak API, backend atau dependency dan tidak menambah halaman/komponen.
 - Verifikasi: lint PASS tanpa peringatan, `npm test` PASS (42 test frontend dan 18 backend; dua suite browser opsional dilewati), build PASS. Suite Chrome login dijalankan terpisah: 6 skenario PASS (7 hasil termasuk induk), termasuk toggle mouse/keyboard, hover/fokus, nilai/validasi/geometri input tetap, loading/submit ganda, dan navigasi Footer pada lima halaman publik × desktop/mobile. Layout diperiksa pada tujuh viewport; screenshot desktop/mobile ditinjau, tanpa overflow atau error runtime/HTTP aplikasi. QA terbatas pada Chrome/emulasi viewport.
 - README dan DESIGN_MAP mencatat perilaku terbaru. Staging diperbarui hanya untuk file terkait, mempertahankan pekerjaan login terdahulu. Referensi desain, hasil build, screenshot dan profil Chrome di tmp tetap tidak di-stage. Tidak melakukan commit, push atau merge. Usulan commit gabungan: `feat: lengkapi login pengurus dengan toggle password dan tautan footer`.
+
+## Admin 1.2 — Dashboard Keuangan (10 November 2026)
+
+Status: implementasi dan QA selesai pada `feature/frontend-admin`, baseline commit `28b4fef`. Awal pekerjaan tanpa perubahan tracked/staged; `design-references/` tetap untracked. Referensi final `11-admin-dashboard.png` baru tersedia setelah dikonfirmasi pengguna, lalu digunakan sebagai acuan implementasi.
+
+### Implementasi dan keputusan
+
+- Menambahkan `/admin/dashboard` dalam React yang sama dengan AdminLayout sederhana (sidebar/topbar dan Outlet). Sidebar memuat logo, tiga kelompok navigasi, dashboard aktif dan akun contoh di bawah; topbar memakai judul, ikon Bell nonaktif dan avatar SA. Tidak mengubah PublicLayout, CSS/komponen publik atau desain login.
+- Konten mengikuti referensi: hero hijau/foto masjid dan dua tombol transaksi, tanggal update, empat kartu, resume tiga kategori/total, banner oranye, lima transaksi terbaru dan tiga shortcut. Memakai aset/font lokal serta Lucide yang tersedia, tanpa dependency baru.
+- Data baru di `mocks/adminDashboard.js`, hanya diakses melalui `adminDashboardService`. Saldo akhir dihitung per kategori dan total diturunkan dari kategori untuk kartu/tabel. Rekonsiliasi: 16.864.200 + 1.791.500 − 1.427.500 = 17.228.200. Saldo akhir kategori 12.718.200 / 3.654.000 / 856.000; lima transaksi terakhir merupakan cuplikan, bukan seluruh mutasi periode. Mock laporan publik April tidak diubah.
+- Kolom numerik pertama tabel diperjelas menjadi Saldo Awal, mengoreksi label Saldo Akhir ganda pada raster. Klaim realtime diganti teks netral dan penanda data contoh ditampilkan. Nama/email Super Admin hanya fixture tampilan dari referensi, bukan kredensial, role atau sesi pengguna.
+- Dashboard dapat dibuka langsung/refresh untuk review mock, tanpa mengubah login menjadi sukses palsu atau menerapkan proteksi route. Mode API menampilkan error integrasi tanpa HTTP atau fallback mock. Autentikasi backend belum tersedia; tidak membuat backend, database atau perubahan kontrak API.
+- Seluruh menu/aksi fitur lain nonaktif dengan keterangan: transaksi, laporan admin, kategori, kwitansi, activity log, konten, akun, kode akses, notifikasi dan logout. Tidak membuat route/halaman fiktif.
+- Tablet/mobile: sidebar collapsible dengan fokus awal/kembali, Escape/backdrop/penutupan saat fokus keluar; kartu 2/1 kolom. Tabel memakai petunjuk dan scroll lokal dengan keyboard. Nominal tetap utuh, shortcut/bannernya menyesuaikan. Iterasi visual merapikan pemenggalan kategori dan ruang akun pada sidebar laptop.
+
+### Verifikasi aktual
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 48 test frontend unit/SSR (6 baru untuk dashboard) dan 18 test backend. Tiga suite browser opsional dilewati pada perintah standar, kemudian dijalankan terpisah.
+- Chrome development: 46 skenario browser PASS (49 hasil termasuk 3 induk): 5 dashboard, 6 login dan 35 publik. Mencakup angka/aset/route/refresh, menu dan tabel keyboard, kontrol nonaktif, error mode API tanpa request, toggle/login, serta regresi alur publik/gate/filter dan ekspor PDF/PNG/ZIP nyata.
+- `npm run build`: PASS. Suite dashboard pada preview production: 5 skenario PASS (6 hasil termasuk induk), termasuk fokus navigasi dan akses langsung/refresh dengan atau tanpa trailing slash.
+- Visual/top/full pada 1728×1080, 1366×768, 768×1024 dan 390×844 ditinjau terhadap raster final. Hero desktop 1392×386 / 1078×386 px; kartu 4/4/2/1 kolom. Tidak ada overflow horizontal halaman, nominal kartu terpotong, font/logo gagal, HTTP gagal atau exception runtime aplikasi. Scroll tabel lokal diuji sampai kolom terakhir; tabel mempertahankan semua angka/baris.
+- Screenshot dan metrik ada di `tmp/admin12-qa/development/` serta `tmp/admin12-qa/production/`, termasuk menu mobile. File QA, build dan referensi tidak masuk Git. QA terbatas Chrome/emulasi viewport; belum perangkat fisik/Safari/Firefox dan tidak mengklaim identik piksel atau kesiapan autentikasi produksi.
+
+README dan DESIGN_MAP diperbarui untuk route/layout, mock, batasan dan cara QA. Setelah review status, diff, daftar file, whitespace dan staged diff, hanya 11 file Admin 1.2 disiapkan untuk commit manual. Tidak melakukan commit, push atau merge. Pekerjaan berhenti setelah dashboard selesai.
+
+Usulan pesan commit: `feat: tambahkan dashboard keuangan admin dengan layout dan data mock`.

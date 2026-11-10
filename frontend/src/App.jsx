@@ -7,6 +7,8 @@ import ContactPage from './pages/ContactPage.jsx'
 import FinancialReportPage from './pages/FinancialReportPage.jsx'
 import NotFoundPage from './pages/NotFoundPage.jsx'
 import AdminLoginPage from './pages/AdminLoginPage.jsx'
+import AdminLayout from './components/AdminLayout.jsx'
+import AdminDashboardPage from './pages/AdminDashboardPage.jsx'
 
 export default function App() {
   return (
@@ -20,6 +22,9 @@ export default function App() {
       </Route>
       <Route path="laporan-keuangan" element={<FinancialReportPage />} />
       <Route path="admin/login" element={<AdminLoginPage />} />
+      <Route path="admin" element={<AdminLayout />}>
+        <Route path="dashboard" element={<AdminDashboardPage />} />
+      </Route>
     </Routes>
   )
 }

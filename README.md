@@ -75,6 +75,22 @@ ADMIN_BROWSER_QA_URL=http://127.0.0.1:5173 ADMIN_BROWSER_API_QA_URL=http://127.0
 
 Suite memakai tab QA sendiri, memeriksa desktop/tablet/mobile/layar pendek, validasi/fokus, Enter/loading/submit ganda, refresh, password kosong setelah kegagalan, tidak ada penyimpanan kredensial atau HTTP autentikasi. Screenshot hanya di `tmp/admin11-qa/` yang diabaikan Git. Jalankan suite browser publik dan login secara berurutan agar input keyboard QA tidak saling mengganggu.
 
+## Dashboard Keuangan — Admin 1.2
+
+Dashboard dapat direview langsung di `/admin/dashboard` dengan `VITE_DATA_SOURCE=mock`, tanpa login atau backend. Ini tampilan data contoh, bukan bukti autentikasi/otorisasi; login tetap belum terhubung. `AdminLayout` menyediakan sidebar/topbar terpisah dari PublicLayout dan login. Menu tablet/mobile dapat dibuka, ditutup melalui Escape/backdrop, dan mengelola fokus keyboard. Tabel bergeser lokal; halaman tidak meluap horizontal.
+
+`adminDashboardService.getAdminDashboard({ signal })` mengambil mock admin terpisah, menghitung saldo akhir tiap kategori dan total untuk empat kartu/tabel. Data 20 Oktober 2026 mengikuti referensi: saldo awal Rp16.864.200 + pemasukan Rp1.791.500 − pengeluaran Rp1.427.500 = saldo akhir Rp17.228.200. Lima transaksi terbaru hanyalah cuplikan. Mock laporan publik April 2026 tidak diubah. Nama/email Super Admin hanya konten akun contoh dari desain, bukan akun login atau penerapan role.
+
+Menu/aksi selain Dashboard dinonaktifkan dengan keterangan belum tersedia: transaksi, kategori, laporan admin, kwitansi, activity log, konten website, akun, kode akses, notifikasi dan logout. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
+
+Test unit/SSR dashboard ikut `npm test`. Setelah server mock/API dan Chrome QA dijalankan sesuai bagian browser, jalankan dari root:
+
+```sh
+ADMIN_BROWSER_QA_URL=http://127.0.0.1:5173 ADMIN_BROWSER_API_QA_URL=http://127.0.0.1:5174 REPORT_BROWSER_CDP_URL=http://127.0.0.1:9228 node --test --test-concurrency=1 frontend/test/admin-dashboard.browser.test.js frontend/test/admin-login.browser.test.js frontend/test/report-access.browser.test.js
+```
+
+Screenshot dashboard serta metrik empat viewport disimpan di `tmp/admin12-qa/development/`. Untuk QA dashboard pada preview build mock, arahkan `ADMIN_BROWSER_QA_URL` ke preview dan set `ADMIN_DASHBOARD_QA_PHASE=production`; jalankan hanya suite dashboard (simulasi loading login memerlukan server development). Artefak QA dan build diabaikan Git.
+
 ## Mock dan integrasi API
 
 Konfigurasi `frontend/.env`:
