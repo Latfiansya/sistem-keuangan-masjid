@@ -374,3 +374,16 @@ Referensi final: `design-references/user/19-admin-activity-log.png` (1766 × 354
 - Smartphone memperkecil marker menjadi 32 px, membungkus header/badge, menumpuk label/nilai detail serta menjaga teks panjang di dalam kartu. Tidak ada tombol edit/hapus log, dialog, ekspor atau pencatatan aktivitas sungguhan.
 
 Visual Chrome development/preview production diperiksa pada 1728×1080, 1366×768, 768×1024 dan 390×844. Bukti di `tmp/admin110-qa/`, tidak di-stage. Mobile merupakan adaptasi desktop; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.
+
+## Admin 1.11 — Kwitansi dan Buat Kwitansi
+
+Referensi final halaman/modal: `design-references/user/20-admin-kwitansi.png` (1766×1057 px) dan `21-admin-buat-kwitansi.png` (524×641 px). Route `/admin/kwitansi` memakai AdminLayout; menu aktif dan Topbar Kwitansi. Margin hitam/shadow luar raster bukan layout aplikasi.
+
+- Heading beraksen oranye, tombol Buat Kwitansi hijau, kartu putih/radius 24 px, header foto berlapis hijau dengan ikon Building2 serta judul masjid dua baris, detail berbaris, terbilang berbingkai hijau, tanggal Yogyakarta, label generated dan Unduh PNG selebar konten mengikuti referensi. Font/foto/ikon yang sudah ada digunakan kembali.
+- Nomor 0 pada gambar diganti **Belum diterbitkan**, terbilang menjadi kata Indonesia dan label draft ditambahkan pada dokumen. Pratinjau awal tidak memakai identitas/nominal contoh resmi. Penambahan label dan teks panjang dapat memperbesar tinggi kartu; tidak memotong konten demi tinggi raster.
+- Modal putih selebar 448 px, radius 16 px, header/X, lima kontrol berlabel, tanda wajib merah, tombol Batal/Simpan dan catatan state lokal. Native dialog membatasi interaksi latar; fokus/Tab/Shift+Tab, Enter, Escape, return focus dan scroll viewport pendek didukung. Smartphone memakai input 16 px, target minimum 44 px dan dialog mengikuti visual viewport saat keyboard muncul.
+- Halaman mobile menumpuk heading/tombol serta label/nilai kwitansi. Render PNG menggunakan komponen dokumen yang sama pada salinan tetap 1120 px, resolusi 2×/tinggi otomatis; aturan responsive layar tidak mengubah format unduhan. Tidak menyertakan Sidebar, form, tombol atau toast dalam PNG.
+- Referensi tambahan toast yang disebut pengguna: `22-admin-notifikasi-unduh-kwitansi.png`, belum ditemukan saat pemeriksaan workspace. Sementara mengikuti spesifikasi tertulis pengguna: toast hijau, ikon Download, teks sukses persis, radius/shadow lembut, kanan bawah, role status, auto-dismiss tiga detik; error merah. Pada mobile tersedia ruang bawah dan tombol unduh dibawa ke tengah viewport agar tidak tertutup toast; toast tidak menangkap pointer.
+- Refinement pengguna: Buat Kwitansi mengikuti Tambah Kategori/Agenda, tinggi minimum 40 px desktop/44 px tablet-mobile, font 14 px, padding 10×18 px dan radius 16 px. Warna/ikon/fungsi tetap; Unduh PNG tidak berubah. Tanggal modal memakai kalender native dengan default tanggal lokal perangkat, tanpa batas tanggal lampau. Format input mengikuti browser; preview/PNG tetap dd/mm/yyyy dan draft tersimpan dipertahankan saat modal dibuka ulang.
+
+Bukti screenshot empat viewport dan berkas PNG hasil unduhan di `tmp/admin111-qa/`, tidak di-stage. QA terbatas Chrome/emulasi; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.

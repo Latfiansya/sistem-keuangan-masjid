@@ -10,7 +10,7 @@ const navigation = [
     { label: 'Kelola Dana', title: 'Kelola Dana Keuangan', icon: ArrowRightLeft, to: '/admin/kelola-dana' },
     { label: 'Kategori Dana', icon: Folder, to: '/admin/kategori-dana' },
     { label: 'Laporan', icon: FileText },
-    { label: 'Kwitansi', icon: Receipt },
+    { label: 'Kwitansi', icon: Receipt, to: '/admin/kwitansi' },
     { label: 'Activity Log', icon: ClipboardList, to: '/admin/activity-log' },
   ] },
   { label: 'Konten Website', items: [
