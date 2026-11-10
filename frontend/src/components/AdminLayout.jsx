@@ -11,7 +11,7 @@ const navigation = [
     { label: 'Kategori Dana', icon: Folder, to: '/admin/kategori-dana' },
     { label: 'Laporan', icon: FileText },
     { label: 'Kwitansi', icon: Receipt },
-    { label: 'Activity Log', icon: ClipboardList },
+    { label: 'Activity Log', icon: ClipboardList, to: '/admin/activity-log' },
   ] },
   { label: 'Konten Website', items: [
     { label: 'Profil Masjid', icon: Building2, to: '/admin/profil-masjid' },

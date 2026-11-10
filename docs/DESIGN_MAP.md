@@ -362,3 +362,15 @@ Referensi final: `design-references/user/18-admin-kode-akses-laporan.png` (1766 
 - Status/tanggal/pengubah diberi catatan data contoh. Smartphone membungkus judul, daftar dan metadata; tombol selebar kartu dengan target minimum 44 px. Area kode dan Simulasi dapat menyesuaikan ruang tanpa memotong teks.
 
 QA Chrome development/preview production pada 1728×1080, 1366×768, 768×1024 dan 390×844. Bukti di `tmp/admin19-qa/`, tidak di-stage. Mobile merupakan adaptasi desktop; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.
+
+## Admin 1.10 — Activity Log
+
+Referensi final: `design-references/user/19-admin-activity-log.png` (1766 × 3540 px). Route `/admin/activity-log` memakai AdminLayout, menu aktif dan Topbar Activity Log; Sidebar/Topbar tidak dibuat ulang. Margin hitam/bayangan luar raster bukan bagian layout.
+
+- Hero hijau memakai foto masjid yang sudah ada, radius 24 px, badge APPEND-ONLY · TIDAK DAPAT DIHAPUS dan judul 36 px. Deskripsi serta banner Sistem Append-Only diperjelas sebagai data contoh/konsep, tanpa klaim integritas atau kelengkapan yang sudah ditegakkan.
+- Panel filter putih memakai empat kontrol native berlabel dan pencarian selebar panel. Grid empat kolom desktop menjadi dua pada tablet dan satu pada smartphone; ukuran input mobile 16 px dengan target minimum 44 px. Filter bekerja langsung tanpa tombol submit tambahan.
+- Tujuh grup tanggal memakai pill kalender, garis horizontal dan jumlah hasil. Timeline vertikal, marker berwarna 40 px, avatar/inisial, badge jenis/modul, kartu putih admin-panel, radius 24 px dan detail perubahan mengikuti proporsi referensi. Badge menggunakan warna teks lebih gelap agar mudah dibaca; nominal lama dicoret merah dan baru hijau.
+- Sembilan skenario bersifat mandiri. Kartu 11 Juni memakai tanggal 11 Juni dan contoh akun Siti, menggantikan duplikasi kartu/timestamp 12 Juni pada raster. Skenario 9 Juni berupa penonaktifan akun Budi; tidak menyalin rincian reset password. Perubahan kode hanya metadata contoh tanpa nilai asli dan tetap menyebut gate UI. Contoh tidak mengubah mock transaksi, akun atau agenda halaman lain.
+- Smartphone memperkecil marker menjadi 32 px, membungkus header/badge, menumpuk label/nilai detail serta menjaga teks panjang di dalam kartu. Tidak ada tombol edit/hapus log, dialog, ekspor atau pencatatan aktivitas sungguhan.
+
+Visual Chrome development/preview production diperiksa pada 1728×1080, 1366×768, 768×1024 dan 390×844. Bukti di `tmp/admin110-qa/`, tidak di-stage. Mobile merupakan adaptasi desktop; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.

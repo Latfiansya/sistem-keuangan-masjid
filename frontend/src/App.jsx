@@ -16,6 +16,7 @@ import AdminAgendaPage from './pages/AdminAgendaPage.jsx'
 import AdminWebsiteSettingsPage from './pages/AdminWebsiteSettingsPage.jsx'
 import AdminAccountsPage from './pages/AdminAccountsPage.jsx'
 import AdminReportAccessPage from './pages/AdminReportAccessPage.jsx'
+import AdminActivityLogPage from './pages/AdminActivityLogPage.jsx'
 
 export default function App() {
   return (
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="kontak-pengaturan" element={<AdminWebsiteSettingsPage />} />
         <Route path="kelola-akun" element={<AdminAccountsPage />} />
         <Route path="kode-akses-laporan" element={<AdminReportAccessPage />} />
+        <Route path="activity-log" element={<AdminActivityLogPage />} />
       </Route>
     </Routes>
   )

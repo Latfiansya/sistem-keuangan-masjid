@@ -81,7 +81,7 @@ Dashboard dapat direview langsung di `/admin/dashboard` dengan `VITE_DATA_SOURCE
 
 `adminDashboardService.getAdminDashboard({ signal })` mengambil mock admin terpisah, menghitung saldo akhir tiap kategori dan total untuk empat kartu/tabel. Data 20 Oktober 2026 mengikuti referensi: saldo awal Rp16.864.200 + pemasukan Rp1.791.500 − pengeluaran Rp1.427.500 = saldo akhir Rp17.228.200. Lima transaksi terbaru hanyalah cuplikan. Mock laporan publik April 2026 tidak diubah. Nama/email Super Admin hanya konten akun contoh dari desain, bukan akun login atau penerapan role.
 
-Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/kategori/agenda, operasi akun, perubahan kode akses, laporan admin, kwitansi, activity log, notifikasi dan logout. Dashboard, Kelola Dana, Kategori Dana, Profil Masjid, Agenda, Kontak & Pengaturan, Kelola Akun serta Kode Akses Laporan dapat dibuka melalui Sidebar. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
+Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/kategori/agenda, operasi akun, perubahan kode akses, laporan admin, kwitansi, notifikasi dan logout. Dashboard, Kelola Dana, Kategori Dana, Activity Log, Profil Masjid, Agenda, Kontak & Pengaturan, Kelola Akun serta Kode Akses Laporan dapat dibuka melalui Sidebar. Shortcut Dashboard di luar lingkup milestone awalnya tetap nonaktif. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
 
 Test unit/SSR dashboard ikut `npm test`. Setelah server mock/API dan Chrome QA dijalankan sesuai bagian browser, jalankan dari root:
 
@@ -166,6 +166,16 @@ Cara Kerja mempertahankan **M1.8b**: tombol/CTA laporan pada Beranda/Footer memb
 Backend publik sudah memiliki `POST /api/public/report/check-password` dengan hasil `{ valid: boolean }`, sementara adapter frontend publik belum dihubungkan. Integrasi berikutnya perlu menyepakati API metadata/perubahan kode, sumber/persistensi kode backend yang sama dengan mekanisme pemeriksaan tersebut, metadata pengubah/waktu serta autentikasi/izin Super Admin untuk pengelolaannya. Respons status admin tidak perlu mengirim kode asli/hash. Penggantian kode nantinya hanya mengganti kode yang diperiksa gate; autentikasi Super Admin tetap mekanisme terpisah dan akses langsung laporan tetap diperbolehkan. Tidak menetapkan endpoint admin baru atau mengubah API_CONTRACT.
 
 Test metadata/route/copy ikut `npm test`. Suite browser admin memeriksa dua kartu, placeholder, Simulasi, aksi nonaktif, empat viewport, refresh/trailing slash dan navigasi tujuh halaman sebelumnya. Suite publik juga dijalankan untuk memverifikasi gate CTA serta akses langsung/refresh tetap sesuai. Screenshot di `tmp/admin19-qa/`, tidak di-stage; QA terbatas Chrome/emulasi viewport.
+
+## Activity Log — Admin 1.10
+
+Route `/admin/activity-log` memakai AdminLayout dan menu Sidebar aktif, dengan Topbar Activity Log. Banner hijau/foto, filter, informasi konsep append-only dan timeline mengikuti `19-admin-activity-log.png`. Sembilan aktivitas contoh dalam tujuh tanggal meliputi tambah/edit/hapus transaksi, akun, perubahan kode gate, cetak kwitansi dan agenda; seluruh detail hanya dibaca.
+
+`adminActivityLogService.getAdminActivityLog({ signal })` mengembalikan salinan fixture terpisah `mocks/adminActivityLog.js`. Empat filter admin/jenis/tanggal/modul dan pencarian nama/judul langsung bekerja secara lokal dengan hubungan AND. Pencarian mengabaikan kapital dan spasi luar. Kelompok tanggal diurutkan terbaru dahulu, urutan kartu dalam tanggal mengikuti fixture. Empty state tersedia. Filter tidak dipersist dan kembali kosong setelah keluar/refresh. Mode API memberi error integrasi tanpa HTTP atau fallback mock.
+
+Data ini bukan riwayat nyata dan tidak terhubung dengan perubahan halaman admin lain. Tidak ada pencatat aktivitas frontend, tombol mutasi log, kode/password asli, token, penyimpanan, ekspor atau realtime. Banner menjelaskan konsep **append-only yang belum ditegakkan secara teknis**, bukan jaminan integritas. Backend nantinya perlu menetapkan pencatatan, kelengkapan/integritas, pembatasan akses serta penyaringan data sensitif. Tidak menetapkan endpoint atau mengubah kontrak sepihak. Contoh perubahan kode tetap hanya untuk gate UI laporan sesuai M1.8b.
+
+Unit test memeriksa salinan fixture, kombinasi filter, pengelompokan, abort, route dan error API tanpa HTTP. Suite browser memeriksa empat viewport, seluruh filter/pencarian, hasil kosong, pemulihan hasil, navigasi, refresh/trailing slash dan regresi admin sebelumnya. Screenshot di `tmp/admin110-qa/`, tidak di-stage; QA terbatas Chrome/emulasi viewport.
 
 ## Mock dan integrasi API
 

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { mockAgenda } from '../src/mocks/agenda.js'
 import { mockPublicContent } from '../src/mocks/publicContent.js'
 import { mockAdminAccounts } from '../src/mocks/adminAccounts.js'
+import { mockAdminActivityLog } from '../src/mocks/adminActivityLog.js'
 
 const baseUrl = process.env.ADMIN_BROWSER_QA_URL
 const apiUrl = process.env.ADMIN_BROWSER_API_QA_URL
@@ -13,7 +14,7 @@ const phase = process.env.ADMIN_DASHBOARD_QA_PHASE === 'production' ? 'productio
 
 test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Chrome QA', {
   skip: !baseUrl || !apiUrl || !cdpUrl ? 'Jalankan server mock/API dan Chrome QA sesuai README.' : false,
-  timeout: 30000,
+  timeout: 45000,
 }, async (t) => {
   const target = await (await fetch(`${cdpUrl}/json/new?about:blank`, { method: 'PUT' })).json()
   const ws = new WebSocket(target.webSocketDebuggerUrl)
@@ -36,6 +37,7 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
   const settingsOutput = fileURLToPath(new URL(`../../tmp/admin17-qa/${phase}/`, import.meta.url))
   const accountsOutput = fileURLToPath(new URL(`../../tmp/admin18-qa/${phase}/`, import.meta.url))
   const reportAccessOutput = fileURLToPath(new URL(`../../tmp/admin19-qa/${phase}/`, import.meta.url))
+  const activityOutput = fileURLToPath(new URL(`../../tmp/admin110-qa/${phase}/`, import.meta.url))
   await mkdir(output, { recursive: true })
   await mkdir(fundsOutput, { recursive: true })
   await mkdir(categoriesOutput, { recursive: true })
@@ -45,6 +47,7 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
   await mkdir(settingsOutput, { recursive: true })
   await mkdir(accountsOutput, { recursive: true })
   await mkdir(reportAccessOutput, { recursive: true })
+  await mkdir(activityOutput, { recursive: true })
   ws.addEventListener('message', ({ data }) => {
     const message = JSON.parse(data)
     if (message.id) {
@@ -97,6 +100,9 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
     const { root } = await send('DOM.getDocument')
     const { nodeId } = await send('DOM.querySelector', { nodeId: root.nodeId, selector: '#admin-profile-photo' })
     await send('DOM.setFileInputFiles', { nodeId, files })
+  }
+  const activityFilter = async (name, value) => {
+    await evaluate(`(() => {const e=document.querySelector('#admin-activity-${name}');const prototype=e.tagName==='SELECT'?HTMLSelectElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(prototype,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}))})()`)
   }
   const trackPhotoUrls = () => evaluate(`(() => {
     window.photoUrls = {created:[],revoked:[]}
@@ -191,7 +197,7 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
     await t.test('fitur di luar lingkup nonaktif, akun contoh tidak menjadi autentikasi dan refresh tetap membuka dashboard', async () => {
       assert.equal(await evaluate('[...document.querySelectorAll(".admin-dashboard button, .admin-nav-group button, .admin-account button, .admin-topbar-actions button")].every(e=>e.disabled&&!!e.title)'), true)
       assert.match(await evaluate('document.querySelector(".admin-dashboard-status").textContent'), /Data contoh/)
-      assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-shell a[href]")].map(e=>e.getAttribute("href"))'), ['#admin-content', '/admin/dashboard', '/admin/kelola-dana', '/admin/kategori-dana', '/admin/profil-masjid', '/admin/agenda', '/admin/kontak-pengaturan', '/admin/kelola-akun', '/admin/kode-akses-laporan'])
+      assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-shell a[href]")].map(e=>e.getAttribute("href"))'), ['#admin-content', '/admin/dashboard', '/admin/kelola-dana', '/admin/kategori-dana', '/admin/activity-log', '/admin/profil-masjid', '/admin/agenda', '/admin/kontak-pengaturan', '/admin/kelola-akun', '/admin/kode-akses-laporan'])
       assert.deepEqual(await evaluate('({local:localStorage.length,session:sessionStorage.length,cookie:document.cookie})'), { local: 0, session: 0, cookie: '' })
       await reload('!!document.querySelector(".admin-dashboard")')
       await open(baseUrl, '/')
@@ -735,6 +741,73 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
       assert.equal(await evaluate('document.querySelector(".admin-report-access-code .admin-report-access-badge").textContent'), 'Simulasi')
     })
 
+    await t.test('Activity Log di empat viewport menampilkan sembilan contoh, kelompok tanggal dan kombinasi filter lokal tanpa mutasi', async () => {
+      const expectedTitles = mockAdminActivityLog.map((activity) => `${activity.admin} ${activity.title}`)
+      for (const [width, height] of [[1728, 1080], [1366, 768], [768, 1024], [390, 844]]) {
+        await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false })
+        await open()
+        await evaluate('window.adminActivityNavigation = true')
+        if (width < 1024) await click('.admin-menu-toggle')
+        await click('.admin-nav-link[href="/admin/activity-log"]')
+        await waitFor('document.querySelectorAll(".admin-activity-card").length === 9')
+        assert.equal(await evaluate('window.adminActivityNavigation'), true)
+        assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'), 'Activity Log')
+        assert.equal(await evaluate('document.querySelector(".admin-nav-link[aria-current=page]").getAttribute("href")'), '/admin/activity-log')
+        assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-activity-card h4")].map(e=>e.textContent)'), expectedTitles)
+        assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-activity-date-group")].map(e=>e.querySelectorAll(".admin-activity-card").length)'), [2, 1, 1, 1, 2, 1, 1])
+        assert.equal(await evaluate('[...document.querySelectorAll(".admin-activity-date-group")].every(g=>[...g.querySelectorAll(".admin-activity-author time")].every(e=>e.dateTime.startsWith(g.querySelector("h3 time").dateTime)))'), true)
+        assert.match(await evaluate('document.querySelector(".admin-activity-system").textContent'), /hanya data contoh.*belum ditegakkan/)
+        assert.equal(await evaluate('document.querySelectorAll(".admin-activity button,.admin-activity form,.admin-activity dialog,.admin-activity input[type=password]").length'), 0)
+        assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
+        assert.equal(await evaluate('[...document.querySelectorAll(".admin-activity-card,.admin-activity-details,.admin-activity-filter-grid input,.admin-activity-filter-grid select")].every(e=>{const r=e.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&e.scrollWidth<=e.clientWidth})'), true)
+        await evaluate('document.fonts.ready;window.scrollTo(0,0)')
+        await screenshot(`activity-log-${width}-top`, false, activityOutput)
+        await screenshot(`activity-log-${width}-full`, true, activityOutput)
+        await activityFilter('admin', 'Ahmad')
+        assert.equal(await evaluate('document.querySelectorAll(".admin-activity-card").length'), 3)
+        await fill('query', ' KONSUMSI ', 'admin-activity')
+        assert.equal(await evaluate('document.querySelectorAll(".admin-activity-card").length'), 1)
+        for (const [name, value] of [['type', 'edit'], ['date', '2026-06-14'], ['module', 'Keuangan']]) await activityFilter(name, value)
+        assert.equal(await evaluate('document.querySelectorAll(".admin-activity-card").length'), 1)
+        await activityFilter('admin', 'Siti')
+        assert.equal(await evaluate('document.querySelectorAll(".admin-activity-card").length'), 0)
+        assert.match(await evaluate('document.querySelector(".admin-activity .admin-dashboard-state").textContent'), /Tidak ada aktivitas yang sesuai/)
+        await evaluate('window.scrollTo(0,0)')
+        await screenshot(`activity-log-${width}-kosong`, true, activityOutput)
+        for (const name of ['admin', 'type', 'date', 'module', 'query']) await activityFilter(name, '')
+        assert.equal(await evaluate('document.querySelectorAll(".admin-activity-card").length'), 9)
+        for (const [name, value, count] of [['type', 'code', 1], ['module', 'Akun', 3], ['date', '2026-06-13', 1], ['admin', 'Super Admin', 4], ['query', 'SITI', 2], ['query', 'donasi pembangunan', 1]]) {
+          await activityFilter(name, value)
+          assert.equal(await evaluate('document.querySelectorAll(".admin-activity-card").length'), count)
+          await activityFilter(name, '')
+        }
+        assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-activity-card h4")].map(e=>e.textContent)'), expectedTitles)
+        if (width === 390) {
+          await evaluate('document.querySelector(".admin-activity-card").scrollIntoView({block:"start"});window.scrollBy(0,-84)')
+          await screenshot('activity-log-mobile-detail', false, activityOutput)
+        }
+      }
+    })
+
+    await t.test('filter Activity Log tidak dipersist, refresh/trailing slash serta navigasi delapan halaman admin tetap berfungsi', async () => {
+      assert.deepEqual(await evaluate('({local:localStorage.length,session:sessionStorage.length,cookie:document.cookie})'), { local: 0, session: 0, cookie: '' })
+      assert.equal(await evaluate('location.search'), '')
+      await activityFilter('type', 'code')
+      await reload('document.querySelectorAll(".admin-activity-card").length === 9')
+      assert.equal(await evaluate('document.querySelector("#admin-activity-type").value'), '')
+      for (const [route, selector] of [['dashboard', '.admin-dashboard'], ['kelola-dana', '.admin-funds'], ['kategori-dana', '.admin-categories'], ['profil-masjid', '#admin-profile-form'], ['agenda', '.admin-agenda-card'], ['kontak-pengaturan', '#admin-settings-form'], ['kelola-akun', '.admin-accounts-card'], ['kode-akses-laporan', '.admin-report-access-status']]) {
+        await click('.admin-menu-toggle')
+        await click(`.admin-nav-link[href="/admin/${route}"]`)
+        await waitFor(`!!document.querySelector('${selector}')`)
+        await click('.admin-menu-toggle')
+        await click('.admin-nav-link[href="/admin/activity-log"]')
+        await waitFor('document.querySelectorAll(".admin-activity-card").length === 9')
+      }
+      await send('Page.navigate', { url: `${baseUrl}/admin/activity-log/` })
+      await waitFor('document.querySelectorAll(".admin-activity-card").length === 9')
+      assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'), 'Activity Log')
+    })
+
     await t.test('mode API tidak memakai mock diam-diam atau menghubungi endpoint admin karangan', async () => {
       for (const route of ['/admin/dashboard', '/admin/kelola-dana', '/admin/kategori-dana']) {
         await send('Page.navigate', { url: `${apiUrl}${route}` })
@@ -765,6 +838,11 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
       await waitFor('!!document.querySelector(".admin-report-access [role=alert]")')
       assert.match(await evaluate('document.querySelector(".admin-report-access [role=alert]").textContent'), /Status kode akses admin melalui API belum tersedia/)
       assert.equal(await evaluate('!!document.querySelector(".admin-report-access-status")'), false)
+      await send('Page.navigate', { url: `${apiUrl}/admin/activity-log` })
+      await waitFor('!!document.querySelector(".admin-activity [role=alert]")')
+      assert.match(await evaluate('document.querySelector(".admin-activity [role=alert]").textContent'), /Activity Log melalui API belum tersedia/)
+      assert.equal(await evaluate('document.querySelectorAll(".admin-activity-card").length'), 0)
+      assert.equal(await evaluate('document.querySelectorAll(".admin-activity-filters [disabled]").length'), 5)
       assert.deepEqual(requests, [])
       assert.deepEqual(failures, [])
     })

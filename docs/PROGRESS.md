@@ -964,3 +964,26 @@ Status: selesai pada `feature/frontend-admin`, baseline commit `72def82`. Awal k
 Sebelas file terkait Admin 1.9 di-stage setelah review status, diff, daftar file dan staged diff. Aset referensi, log, screenshot, profil Chrome dan build tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah halaman ini selesai.
 
 Usulan pesan commit: `feat: tambahkan halaman kode akses laporan dengan status simulasi`.
+
+## Admin 1.10 — Activity Log (10 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline commit `a1e4ed8`. Awal kerja tanpa perubahan tracked/staged; `design-references/` tetap untracked. AGENTS, AdminLayout, routing, pola halaman/service/test admin dan raster final `19-admin-activity-log.png` (1766×3540 px) diperiksa sebelum implementasi.
+
+- Route `/admin/activity-log` dan menu Sidebar memakai AdminLayout yang sama. Topbar/menu aktif mengikuti route. Hero hijau/foto, badge append-only, empat filter dan pencarian, banner informasi serta timeline mengikuti referensi. CSS dibatasi `.admin-activity*`; tidak mengubah markup/CSS halaman lama.
+- Fixture lokal mandiri berisi sembilan contoh dalam tujuh tanggal: tambah/edit/hapus transaksi, pembuatan/penonaktifan akun, perubahan kode gate, cetak kwitansi dan agenda. Rincian read-only tanpa kode/password asli, token atau rahasia. Perbedaan contoh dengan raster dicatat di DESIGN_MAP; tidak mengubah sumber data halaman lain.
+- Service memberi salinan fixture, filter murni gabungan AND dan pengelompokan tanggal terbaru dahulu tanpa mutasi. Admin/jenis/tanggal/modul serta pencarian nama/judul langsung bekerja; query mengabaikan kapital dan spasi luar. Tersedia loading/error/kosong, abort saat unmount dan pengumuman jumlah hasil. Filter hilang saat keluar/refresh, tanpa persistensi URL/storage/cookie.
+- Tidak membuat pencatat audit di frontend atau aksi ubah/hapus log. Banner menyebut konsep yang belum ditegakkan; integritas, kelengkapan, keamanan pencatatan, pembatasan akses dan penyaringan data sensitif menjadi kebutuhan backend. Perubahan kode contoh tetap hanya untuk gate UI sesuai M1.8b. Mode API memberi error belum tersedia tanpa HTTP/fallback mock; tidak mengarang endpoint.
+- Filter empat kolom menjadi dua pada tablet dan satu pada smartphone. Header/badge membungkus, detail label/nilai menumpuk di mobile, marker dan garis timeline tetap terbaca. Lebar label detail desktop diperbaiki dan kontras badge ditingkatkan dari tinjauan visual.
+- Tidak mengubah backend, API_CONTRACT, frontend publik, halaman admin sebelumnya, autentikasi, sumber mock lama, dependency atau lockfile. Penyesuaian bersama hanya registrasi route, tautan Sidebar dan perluasan test. README dan DESIGN_MAP diperbarui.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 76 frontend unit/SSR (5 baru) dan 18 backend; tiga suite browser opsional dilewati pada perintah standar dan admin/login dijalankan terpisah.
+- Chrome development: 23 skenario admin dan 6 Login PASS (31 hasil termasuk dua induk). Activity Log diuji untuk jumlah/sumber contoh, tujuh grup tanggal, posisi setiap tanggal, empat filter terpisah/gabungan, pencarian kapital/spasi/nama/judul, empty state, pemulihan hasil tanpa mutasi, tanpa aksi log/persistensi, refresh/trailing slash dan navigasi delapan halaman sebelumnya. Regresi admin/Login lama lulus.
+- Pengujian browser awal bersamaan dengan test SSR mengalami kegagalan pemuatan dua dependency Vite dan timeout Dashboard. Setelah lint/unit/build selesai, browser diulang secara berurutan dan seluruhnya lulus tanpa menyembunyikan kegagalan. Tidak ditemukan error runtime aplikasi pada pengulangan.
+- `npm run build`: PASS. Preview production: 23 skenario admin PASS (24 hasil termasuk induk), termasuk error mode API tanpa HTTP. Visual ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844, tanpa overflow horizontal halaman atau rincian kartu bertabrakan. QA terbatas Chrome/emulasi viewport; belum perangkat fisik/Safari/Firefox.
+- Screenshot development/production di `tmp/admin110-qa/`, tidak di-stage. Activity Log tetap data contoh; API, autentikasi/pembatasan akses dan penegakan audit backend belum diintegrasikan.
+
+Sebelas file terkait Admin 1.10 di-stage setelah pemeriksaan status, diff, daftar file dan staged diff. Referensi, screenshot, log, profil Chrome serta hasil build tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah Activity Log selesai.
+
+Usulan pesan commit: `feat: tambahkan activity log admin dengan filter lokal`.
