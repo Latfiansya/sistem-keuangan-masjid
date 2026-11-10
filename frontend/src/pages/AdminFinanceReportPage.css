@@ -17,9 +17,6 @@
 .admin-report-balance dt { font-size: 11px; }
 .admin-report-balance dd { margin: 3px 0 0; font-size: 16px; font-weight: 750; }
 .admin-report-category-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-.admin-report-category--green { --category-color: #008b43; --category-soft: #ecfdf5; }
-.admin-report-category--blue { --category-color: #2460de; --category-soft: #eff6ff; }
-.admin-report-category--orange { --category-color: #ce5700; --category-soft: #fff7ed; }
 .admin-report-category-card { display: grid; gap: 6px; min-width: 0; padding: 20px; border: 0; border-radius: 20px; color: #34465f; background: #fff; text-align: left; box-shadow: 0 6px 18px #345d8308; cursor: pointer; }
 .admin-report-category-card > span { display: grid; place-items: center; width: 38px; height: 38px; margin-bottom: 4px; border-radius: 12px; color: var(--category-color); background: var(--category-soft); }
 .admin-report-category-card small { color: #758aa5; font-size: 12px; }

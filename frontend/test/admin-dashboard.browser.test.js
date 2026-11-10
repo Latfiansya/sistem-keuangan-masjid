@@ -264,7 +264,7 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
         assert.equal(await evaluate('document.querySelector(".admin-nav-link[aria-current=page]").getAttribute("href")'), '/admin/kategori-dana')
         assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-categories-table tbody th")].map(e=>e.textContent)'), labels)
         assert.equal(await evaluate('document.querySelector(".admin-balance-table").outerHTML'), original)
-        assert.equal(await evaluate('document.querySelectorAll(".admin-categories button:disabled").length'), 7)
+        assert.equal(await evaluate('document.querySelectorAll(".admin-categories button:disabled").length'), 0)
         assert.equal(await evaluate('document.querySelectorAll(".admin-categories form,.admin-categories dialog,.admin-categories input").length'), 0)
         assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
         await evaluate('document.fonts.ready')
@@ -281,7 +281,7 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
       }
     })
 
-    await t.test('Kategori Dana mendukung scroll lokal kedua tabel, refresh dan trailing slash tanpa CRUD', async () => {
+    await t.test('Kategori Dana mendukung scroll lokal kedua tabel, refresh dan trailing slash dengan state mock awal', async () => {
       await send('Page.navigate', { url: `${baseUrl}/admin/kategori-dana/` })
       await waitFor('!!document.querySelector(".admin-categories")')
       for (const selector of ['.admin-categories-list .admin-table-scroll', '.admin-categories .admin-balance .admin-table-scroll']) {

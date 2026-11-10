@@ -6,6 +6,7 @@ import { buildAdminFinanceReport, buildAdminMonthlyRecap, filterAdminFinanceTran
 import { createAdminFinanceSummaryPng } from '../services/adminFinanceExportService.js'
 import { downloadReportFile } from '../services/reportExportService.js'
 import { formatReportDate, formatReportMonth, formatReportNumber, formatRupiah } from '../utils/reportFormatters.js'
+import { adminCategoryColorStyle } from '../utils/adminCategoryColors.js'
 import './AdminFinanceReportPage.css'
 
 function TransactionActions({ transaction }) {
@@ -22,7 +23,7 @@ function TransactionPanel({ type, transactions, categories }) {
     <div className="admin-report-column-labels" aria-hidden="true"><span>Tanggal</span><span>Kategori</span><span>Uraian</span><span>Jumlah</span></div>
     {items.length ? <ul>{items.map((transaction) => {
       const category = categories.find((item) => item.id === transaction.categoryId)
-      return <li key={transaction.id} data-transaction-id={transaction.id}><div><h4>{transaction.description}</h4><p><time dateTime={transaction.date}>{formatReportDate(transaction.date)}</time><span className={`admin-report-category-label admin-report-category--${category.color}`}>• {category.label}</span></p></div><strong>{formatRupiah(transaction.amount)}</strong><TransactionActions transaction={transaction} /></li>
+      return <li key={transaction.id} data-transaction-id={transaction.id}><div><h4>{transaction.description}</h4><p><time dateTime={transaction.date}>{formatReportDate(transaction.date)}</time><span style={adminCategoryColorStyle(category.color)} className={`admin-report-category-label admin-report-category--${category.color}`}>• {category.label}</span></p></div><strong>{formatRupiah(transaction.amount)}</strong><TransactionActions transaction={transaction} /></li>
     })}</ul> : <p className="admin-report-empty">Tidak ada transaksi mock {title.toLowerCase()} pada rentang ini.</p>}
   </section>
 }
@@ -45,7 +46,7 @@ function LedgerTable({ transactions, categories, type }) {
           const category = categories.find((item) => item.id === transaction.categoryId)
           return <tr key={transaction.id} data-transaction-id={transaction.id}>
             <td><time dateTime={transaction.date}>{formatReportDate(transaction.date)}</time></td>
-            <td><span className={`admin-report-category-label admin-report-category--${category.color}`}>• {category.label}</span></td>
+            <td><span style={adminCategoryColorStyle(category.color)} className={`admin-report-category-label admin-report-category--${category.color}`}>• {category.label}</span></td>
             <td>{transaction.description}</td>
             <td className={`admin-report-amount--${transaction.type}`}>{formatReportNumber(transaction.amount)}</td>
             <td><TransactionActions transaction={transaction} /></td>
@@ -67,7 +68,7 @@ function MonthlyRecap({ months }) {
         {months.map(({ month, categories, totals }) => <tbody key={month} data-month={month}>
           {categories.map((category, index) => <tr key={category.id} data-category-id={category.id}>
             {index === 0 && <th className="admin-report-month" rowSpan={categories.length + 1} scope="rowgroup"><span>{formatReportMonth(month).slice(0, 3).toUpperCase()}</span><div>{formatReportMonth(month).split(' ')[0]}<small>{month.slice(0, 4)}</small></div></th>}
-            <th scope="row"><span className={`admin-report-category-label admin-report-category--${category.color}`}>• {category.label}</span></th>
+            <th scope="row"><span style={adminCategoryColorStyle(category.color)} className={`admin-report-category-label admin-report-category--${category.color}`}>• {category.label}</span></th>
             <td>{formatReportNumber(category.openingBalance)}</td><td className="admin-report-amount--income">{formatReportNumber(category.income)}</td><td className="admin-report-amount--expense">{formatReportNumber(category.expense)}</td><td>{formatReportNumber(category.closingBalance)}</td>
           </tr>)}
           <tr className="admin-report-month-total" data-month-total={month}><th scope="row">TOTAL</th><td>{formatReportNumber(totals.openingBalance)}</td><td className="admin-report-amount--income">{formatReportNumber(totals.income)}</td><td className="admin-report-amount--expense">{formatReportNumber(totals.expense)}</td><td>{formatReportNumber(totals.closingBalance)}</td></tr>
@@ -150,7 +151,7 @@ function AdminFinanceReportContent({ report }) {
   return <div className="admin-report">
     <header className="admin-report-hero"><span><Landmark size={14} aria-hidden="true" />MASJID AL-HIDAYAH</span><h2>LAPORAN<br />KEUANGAN</h2><p>Ringkasan pemasukan, pengeluaran, dan saldo<br className="admin-desktop-break" /> dana masjid dalam satu tampilan.</p><div><button type="button" disabled title="Tambah pemasukan belum tersedia"><ArrowDownCircle size={16} aria-hidden="true" />Tambah Pemasukan</button><button type="button" disabled title="Tambah pengeluaran belum tersedia"><ArrowUpCircle size={16} aria-hidden="true" />Tambah Pengeluaran</button></div></header>
     <section className="admin-report-balance" aria-label="Total saldo seluruh dana"><p>TOTAL SALDO SELURUH DANA</p><span><i aria-hidden="true" />{periodLabel} · snapshot {snapshotLabel}</span><h2>{formatRupiah(report.totals.closingBalance)}</h2><dl>{[['openingBalance', 'Saldo Awal'], ['income', 'Pemasukan'], ['expense', 'Pengeluaran']].map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{formatRupiah(report.totals[key])}</dd></div>)}</dl></section>
-    <div className="admin-report-category-cards">{report.categories.map((category) => <button key={category.id} type="button" className={`admin-report-category-card admin-report-category--${category.color}`} onClick={() => { selectTab('monthly'); tabPanel.current?.scrollIntoView({ block: 'start' }) }} aria-label={`Lihat rincian ${category.label}`}><span><Wallet size={21} aria-hidden="true" /></span><small>{category.label}</small><strong>{formatRupiah(category.closingBalance)}</strong><footer>Saldo snapshot <ChevronRight size={16} aria-hidden="true" /></footer></button>)}</div>
+    <div className="admin-report-category-cards">{report.categories.map((category) => <button key={category.id} type="button" style={adminCategoryColorStyle(category.color)} className={`admin-report-category-card admin-report-category--${category.color}`} onClick={() => { selectTab('monthly'); tabPanel.current?.scrollIntoView({ block: 'start' }) }} aria-label={`Lihat rincian ${category.label}`}><span><Wallet size={21} aria-hidden="true" /></span><small>{category.label}</small><strong>{formatRupiah(category.closingBalance)}</strong><footer>Saldo snapshot <ChevronRight size={16} aria-hidden="true" /></footer></button>)}</div>
     <section className="admin-report-detail" aria-labelledby="admin-report-detail-title"><div className="admin-report-detail-heading"><div><h2 id="admin-report-detail-title">Detail {range.startDate.slice(0, 7) === report.month ? periodLabel : 'Riwayat Mock'}</h2><p>Rincian pemasukan dan pengeluaran simulasi untuk rentang terpilih.</p></div><div className="admin-report-presets"><button type="button" onClick={() => applyPreset('week')}>Minggu terakhir</button><button type="button" onClick={() => applyPreset('month')}>Bulan berjalan</button><button type="button" disabled title="Preset tiga bulan belum diaktifkan">3 bulan terakhir</button><span><CalendarDays size={14} aria-hidden="true" />{periodLabel}</span></div></div>
       <form className="admin-report-filters" noValidate onSubmit={applyRange} aria-label="Filter tanggal transaksi mock"><span><CalendarDays size={16} aria-hidden="true" />Rentang transaksi:</span>{[['startDate', 'Dari tanggal'], ['endDate', 'Sampai tanggal']].map(([key, label]) => <label key={key}><span>{label}</span><input name={key} type="date" min={report.coverage.startDate} max={report.updatedDate} required value={draftRange[key]} onChange={(event) => { setDraftRange((previous) => ({ ...previous, [key]: event.target.value })); setRangeError('') }} aria-invalid={Boolean(rangeError)} aria-describedby={rangeError ? 'admin-report-range-error' : undefined} /></label>)}<button type="submit">Terapkan</button><p>{transactions.length} dari {report.transactions.length} transaksi mock</p></form>
       {rangeError && <p className="admin-report-error" id="admin-report-range-error" role="alert">{rangeError}</p>}

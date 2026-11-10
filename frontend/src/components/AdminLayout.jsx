@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { ArrowRightLeft, Bell, Building2, CalendarDays, ClipboardList, Contact, FileText, Folder, KeyRound, LayoutDashboard, LogOut, Menu, Receipt, Users, X } from 'lucide-react'
 import { getAdminDashboard } from '../services/adminDashboardService.js'
+import { deleteMockAdminCategory, saveMockAdminCategory } from '../services/adminCategoryService.js'
 import './AdminLayout.css'
 
 const navigation = [
@@ -64,6 +65,14 @@ export default function AdminLayout() {
     }
   }, [menuOpen])
 
+  function saveCategory(values, id) {
+    setDashboard(saveMockAdminCategory(dashboard, values, id))
+  }
+
+  function deleteCategory(id) {
+    setDashboard(deleteMockAdminCategory(dashboard, id))
+  }
+
   const account = dashboard?.account
   return (
     <div className="admin-shell">
@@ -94,7 +103,7 @@ export default function AdminLayout() {
             <span className="admin-avatar" aria-label="Inisial akun contoh">{account?.initials || '—'}</span>
           </div>
         </header>
-        <main id="admin-content" className="admin-content" tabIndex={-1}><Outlet context={{ dashboard, error }} /></main>
+        <main id="admin-content" className="admin-content" tabIndex={-1}><Outlet context={{ dashboard, error, saveCategory, deleteCategory }} /></main>
       </div>
     </div>
   )

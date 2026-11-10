@@ -11,7 +11,6 @@
 .admin-categories-table tbody td, .admin-categories-table tbody th { height: 76px; padding-top: 16px; padding-bottom: 16px; border-color: #dcebdd; text-align: center; }
 .admin-categories-table tbody td:first-child { width: 16%; color: #087d13; font-size: 20px; font-weight: 600; }
 .admin-categories-table tbody td:last-child { width: 17%; }
-.admin-categories-table .admin-category-badge--blue { border-color: #e0b731; color: #b48b0e; background: #fcf9f1; }
 .admin-category-actions { display: flex; justify-content: center; align-items: center; }
 .admin-category-actions button { display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; color: #00a775; background: transparent; }
 .admin-category-actions button + button { color: #ff2138; }
@@ -25,4 +24,57 @@
   .admin-categories-heading { align-items: flex-start; flex-direction: column; gap: 18px; }
   .admin-categories-heading h2 { font-size: 28px; }
   .admin-categories-add { width: 100%; }
+}
+
+.admin-categories-add, .admin-category-actions button { cursor: pointer; }
+.admin-categories-add:hover { background: #005b00; }
+.admin-category-actions button:hover { background: #e9f8ef; }
+.admin-category-actions button + button:hover { background: #fff1f3; }
+.admin-category-session-note { margin: -12px 0 0; color: #61748e; font-size: 12px; line-height: 1.5; }
+.admin-category-dialog { width: min(720px, calc(100% - 32px)); max-height: calc(100dvh - 32px); margin: auto; padding: 24px; overflow-y: auto; border: 0; border-radius: 32px; color: #253247; background: #e5f0e5; box-shadow: 0 20px 64px #0b201a40; font-family: "Plus Jakarta Sans", Arial, sans-serif; }
+.admin-category-dialog::backdrop { background: #14281e80; }
+.admin-category-dialog *, .admin-category-dialog *::before, .admin-category-dialog *::after { box-sizing: border-box; }
+.admin-category-dialog :focus-visible { outline: 3px solid #d58b00; outline-offset: 3px; }
+.admin-category-dialog > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 24px; }
+.admin-category-dialog h2 { margin: 0; font-size: 26px; font-weight: 750; line-height: 1.3; }
+.admin-category-dialog header button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; color: #526479; background: transparent; cursor: pointer; }
+.admin-category-dialog header button:hover { background: #ffffff80; }
+.admin-category-dialog form { display: grid; gap: 20px; padding: 24px; border: 1px solid #83917f; border-radius: 24px; background: #fff; }
+.admin-category-field > label, .admin-category-dialog legend { display: block; margin-bottom: 6px; color: #34465f; font-size: 14px; font-weight: 650; }
+.admin-category-field input { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid #e1e9f4; border-radius: 16px; color: #34465f; background: #f7f9fc; font: inherit; font-size: 14px; }
+.admin-category-field input[aria-invalid="true"] { border-color: #d0183e; }
+.admin-category-dialog fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.admin-category-dialog legend { padding: 0; }
+.admin-category-swatches { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 8px; }
+.admin-category-swatches label { position: relative; display: block; min-width: 0; cursor: pointer; }
+.admin-category-swatches input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.admin-category-swatches label > span { display: grid; place-items: center; min-height: 46px; border: 1px solid #71869a50; border-radius: 14px; pointer-events: none; }
+.admin-category-swatches input:checked + span { outline: 2px solid #253247; outline-offset: 2px; }
+.admin-category-swatches input:focus-visible + span { outline: 3px solid #d58b00; outline-offset: 3px; }
+.admin-category-swatches svg { padding: 3px; border-radius: 999px; color: #253247; background: #ffffffe6; }
+.admin-category-note { margin: 0; color: #61748e; font-size: 11px; line-height: 1.5; }
+.admin-category-error { margin: 6px 0 0; color: #b81b35; font-size: 12px; line-height: 1.5; }
+.admin-category-dialog footer { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px; }
+.admin-category-dialog footer button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 10px 16px; border: 1px solid #e1e9f4; border-radius: 16px; color: #34465f; background: #f7f9fc; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.admin-category-dialog footer .admin-category-save { color: #fff; border-color: #00a83d; background: #00a83d; }
+.admin-category-dialog footer .admin-category-save:hover { background: #008a32; }
+.admin-category-dialog--delete { width: min(480px, calc(100% - 32px)); padding: 24px; border-radius: 16px; background: #fff; }
+.admin-category-dialog--delete > header { margin-bottom: 16px; }
+.admin-category-dialog--delete h2 { font-size: 20px; }
+.admin-category-dialog--delete form { gap: 16px; padding: 0; border: 0; border-radius: 0; }
+.admin-category-warning { display: flex; align-items: flex-start; gap: 12px; padding: 16px; border-radius: 14px; color: #526479; background: #fff2f4; }
+.admin-category-warning > svg { flex-shrink: 0; margin-top: 2px; color: #ff2138; }
+.admin-category-warning p { margin: 0; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
+.admin-category-dialog footer .admin-category-delete-confirm { color: #e61d36; border-color: #ffc6cf; background: #fff3f5; }
+.admin-category-dialog button:disabled { opacity: .55; cursor: not-allowed; }
+@media (max-width: 639px) {
+  .admin-category-dialog { padding: 20px; border-radius: 24px; }
+  .admin-category-dialog > header { margin-bottom: 16px; }
+  .admin-category-dialog h2 { font-size: 22px; }
+  .admin-category-dialog form { padding: 16px; gap: 16px; }
+  .admin-category-field input { font-size: 16px; }
+  .admin-category-swatches { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .admin-category-dialog footer button { min-height: 44px; }
+  .admin-category-dialog--delete h2 { font-size: 20px; }
+  .admin-category-dialog--delete form { padding: 0; }
 }

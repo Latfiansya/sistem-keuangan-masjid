@@ -81,7 +81,7 @@ Dashboard dapat direview langsung di `/admin/dashboard` dengan `VITE_DATA_SOURCE
 
 `adminDashboardService.getAdminDashboard({ signal })` mengambil mock admin terpisah, menghitung saldo akhir tiap kategori dan total untuk empat kartu/tabel. Data 20 Oktober 2026 mengikuti referensi: saldo awal Rp16.864.200 + pemasukan Rp1.791.500 − pengeluaran Rp1.427.500 = saldo akhir Rp17.228.200. Lima transaksi terbaru hanyalah cuplikan. Mock laporan publik April 2026 tidak diubah. Nama/email Super Admin hanya konten akun contoh dari desain, bukan akun login atau penerapan role.
 
-Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/kategori/agenda, operasi akun, perubahan kode akses, notifikasi dan logout. Dashboard, Kelola Dana, Kategori Dana, Laporan, Kwitansi, Activity Log, Profil Masjid, Agenda, Kontak & Pengaturan, Kelola Akun serta Kode Akses Laporan dapat dibuka melalui Sidebar. Shortcut Dashboard di luar lingkup milestone awalnya tetap nonaktif. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock pada halaman yang membutuhkan data admin. Kwitansi hanya menggunakan state lokal. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
+Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/agenda, operasi akun, perubahan kode akses, notifikasi dan logout. Dashboard, Kelola Dana, Kategori Dana, Laporan, Kwitansi, Activity Log, Profil Masjid, Agenda, Kontak & Pengaturan, Kelola Akun serta Kode Akses Laporan dapat dibuka melalui Sidebar. Shortcut Dashboard di luar lingkup milestone awalnya tetap nonaktif. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock pada halaman yang membutuhkan data admin. Kwitansi hanya menggunakan state lokal. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
 
 Test unit/SSR dashboard ikut `npm test`. Setelah server mock/API dan Chrome QA dijalankan sesuai bagian browser, jalankan dari root:
 
@@ -101,11 +101,27 @@ Suite `admin-dashboard.browser.test.js` pada perintah QA Admin 1.2 juga mencakup
 
 ## Kategori Dana — Admin 1.4
 
-Route `/admin/kategori-dana` memakai AdminLayout yang sama, dengan menu aktif dan judul Topbar Kategori Dana. Heading beraksen oranye, tombol Tambah Kategori, tabel tiga kategori serta resume mengikuti referensi `13-admin-kategori-dana.png`. Tambah/Edit/Hapus tetap nonaktif dengan keterangan belum tersedia; tidak ada form, dialog, penghapusan atau endpoint baru.
+Route `/admin/kategori-dana` memakai AdminLayout yang sama, dengan menu aktif dan judul Topbar Kategori Dana. Heading beraksen oranye, tombol Tambah Kategori, tabel tiga kategori serta resume mengikuti referensi `13-admin-kategori-dana.png`. Baseline Admin 1.4 menampilkan daftar; interaksi Tambah/Edit/Hapus sesi mock kini tersedia melalui patch Admin 1.13 di bawah, tanpa endpoint baru.
 
-Kategori, saldo dan tanggal update berasal dari `adminDashboardService` melalui konteks layout yang sama. `AdminBalanceSummary` dipakai Dashboard dan Kategori Dana; kolom pertama tetap Saldo Awal. Pada Kategori Dana, deskripsi tambahan di atas resume disembunyikan sesuai referensi. Badge Jum'at Berkah dalam daftar kategori berwarna emas, sedangkan titik resume tetap biru; ini styling khusus tabel, bukan perubahan data. Saldo dan transaksi tidak berubah.
+Kategori, saldo dan tanggal update berasal dari `adminDashboardService` melalui konteks layout yang sama. `AdminBalanceSummary` dipakai Dashboard dan Kategori Dana; kolom pertama tetap Saldo Awal. Pada Kategori Dana, deskripsi tambahan di atas resume disembunyikan sesuai referensi. Patch Admin 1.13 menghapus override emas pada badge Jum'at Berkah agar mengikuti definisi warna kategori bersama, sama seperti titik/aksen di halaman lainnya. Saldo dan transaksi tidak berubah.
 
-Suite `admin-dashboard.browser.test.js` juga memeriksa navigasi tiga halaman, kesamaan resume, aksi nonaktif, refresh/trailing slash dan scroll lokal pada empat viewport. Screenshot kategori di `tmp/admin14-qa/development/` atau `tmp/admin14-qa/production/` tidak di-stage. Mode API/autentikasi dan batas QA mengikuti milestone sebelumnya.
+Suite `admin-dashboard.browser.test.js` juga memeriksa navigasi tiga halaman, kesamaan resume, aksi mock aktif, refresh/trailing slash dan scroll lokal pada empat viewport. Screenshot kategori di `tmp/admin14-qa/development/` atau `tmp/admin14-qa/production/` tidak di-stage. Mode API/autentikasi dan batas QA mengikuti milestone sebelumnya.
+
+## Patch Kategori Dana — Admin 1.13
+
+Referensi `26-admin-hapus-kategori.png` dan `27-admin-tambah-edit-kategori.png`. Satu `AdminCategoryDialog` melayani form Tambah/Edit dan konfirmasi Hapus. Form memakai nama controlled serta sembilan pilihan radio warna (merah, oranye, emas, kuning, limau, hijau, biru, toska, ungu), indikator terpilih, Batal/Simpan/X, Escape, trap fokus dan pengembalian fokus. Nama wajib, maksimal 100 karakter tanpa karakter kontrol; duplikat ditolak setelah NFKC, trim, penggabungan spasi dan pembandingan tanpa kapital. Warna wajib dari daftar yang tersedia.
+
+`adminCategoryService` melakukan operasi immutable dalam mode mock saja. State berada di AdminLayout dan bertahan ketika berpindah halaman admin; refresh atau keluar dari layout admin mengembalikan sumber awal. Tambah memberi ID mock unik dan saldo nol; edit mempertahankan ID dan semua nilai keuangan; hapus hanya untuk kategori tanpa transaksi maupun saldo. Pemeriksaan mencakup seluruh **249 transaksi** laporan serta saldo kategori, bukan hanya lima transaksi terbaru. Kategori awal semuanya dilindungi; kategori baru kosong dapat dihapus setelah konfirmasi. Tidak ada HTTP, localStorage, mutasi fixture/backend atau Activity Log palsu. Feedback selalu menjelaskan perubahan sesi mock dan belum tersimpan ke server.
+
+`utils/adminCategoryColors.js` menjadi definisi sembilan warna bersama: swatch referensi, varian teks yang terbaca, titik, badge dan latar lembut. Definisi ini dipakai daftar kategori, resume Dashboard dan badge Kelola Dana, kartu/label/tabel/rekap Laporan dan titik pada PNG melalui AdminBalanceSummary. Nama/warna mengikuti relasi ID. Warna jenis transaksi tetap terpisah: Kas Masuk hijau, Kas Keluar rose, Rekap hijau. Saldo snapshot tetap **Rp17.228.200**, seluruh nominal/transaksi dan algoritma ekspor tidak diubah.
+
+Unit/SSR ikut `npm test`; QA browser dapat dijalankan dengan konfigurasi server mock/API dan Chrome yang sama:
+
+```sh
+ADMIN_BROWSER_QA_URL=http://127.0.0.1:5173 ADMIN_BROWSER_API_QA_URL=http://127.0.0.1:5174 REPORT_BROWSER_CDP_URL=http://127.0.0.1:9228 node --test frontend/test/admin-categories.browser.test.js
+```
+
+Screenshot/log di `tmp/admin113-qa/`, tidak di-stage. QA Chrome/emulasi empat viewport. Integrasi berikutnya memerlukan API kategori dengan ID stabil, metadata nama/warna, validasi ulang duplikat dan relasi transaksi, serta otorisasi backend. Proteksi mock tidak menggantikan pemeriksaan server; kontrak API belum diubah.
 
 ## Profil Masjid — Admin 1.5
 

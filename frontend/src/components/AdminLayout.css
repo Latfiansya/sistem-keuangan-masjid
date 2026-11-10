@@ -64,9 +64,7 @@
 .admin-balance-table tbody th { position: relative; width: 44%; min-width: 230px; padding-left: 40px; text-align: left; font-weight: 600; color: #43546b; }
 .admin-balance-table th:first-child { text-align: left; }
 .admin-balance-table tbody td, .admin-balance-table tfoot { font-weight: 750; }
-.admin-category-dot { position: absolute; top: 50%; left: 24px; width: 8px; height: 8px; border-radius: 50%; background: #148447; }
-.admin-category-dot--blue { background: #0ea5e9; }
-.admin-category-dot--orange { background: #e78200; }
+.admin-category-dot { position: absolute; top: 50%; left: 24px; width: 8px; height: 8px; border-radius: 50%; background: var(--category-dot, #148447); }
 .admin-category-name { display: block; max-width: 245px; }
 .admin-panel .admin-money-income { color: #00a775; }
 .admin-panel .admin-money-expense { color: #ff2138; }
@@ -88,8 +86,6 @@
 .admin-recent-table td:last-child { font-size: 20px; font-weight: 750; }
 .admin-recent-table td:nth-child(4) { min-width: 290px; text-align: left; }
 .admin-category-badge, .admin-type-badge { display: inline-block; padding: 6px 16px; border: 1px solid #59a946; border-radius: 999px; color: #087c11; background: #fbfff0; font-size: 15px; font-weight: 650; line-height: 1.5; white-space: nowrap; }
-.admin-category-badge--orange { border-color: #ff8b35; color: #f16b00; background: #fff6e9; }
-.admin-category-badge--blue { border-color: #54b8e6; color: #0e749d; background: #f0fbff; }
 .admin-type-badge--expense { border-color: #ffa2a8; color: #ff6471; background: #fff3f4; font-weight: 500; }
 .admin-shortcuts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 .admin-shortcuts button { display: flex; align-items: center; gap: 16px; min-height: 80px; padding: 16px 20px; border: 0; border-radius: 18px; text-align: left; color: #40516a; background: #fff; }
@@ -154,3 +150,5 @@
   .admin-recent-heading button { padding: 6px 8px; font-size: 12px; }
   .admin-shortcuts { grid-template-columns: 1fr; gap: 12px; }
 }
+
+.admin-category-badge { border-color: var(--category-badge-border, #59a946); color: var(--category-badge-color, #087c11); background: var(--category-badge-soft, #fbfff0); }

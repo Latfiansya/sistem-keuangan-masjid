@@ -403,3 +403,16 @@ Referensi final: `23-admin-laporan-01.png` (1766×10490 px), `24-admin-laporan-0
 - Tablet/mobile menumpuk panel/kartu/tab, input 16 px dan target aksi minimum 44 px. Tabel tetap scroll lokal dengan petunjuk dan caption beracuan pada kontainer. Kas Masuk/Kas Keluar menampilkan seluruh baris sesuai filter; rekap memiliki 30 baris kategori dan 10 total bulanan pada rentang awal. Data tidak dipotong demi menyerupai jumlah baris Figma. Tidak menambah dependency atau mekanisme daftar kompleks.
 
 Bukti koreksi navigasi di `tmp/admin112-navigation-qa/`; screenshot empat viewport 1728×1080, 1366×768, 768×1024 dan 390×844 tidak di-stage. QA Chrome/emulasi, belum perangkat fisik/Safari/Firefox atau klaim identik piksel. Semua data historis tetap contoh pengembangan, terpisah dari laporan publik April dan sumber Dashboard.
+
+
+## Admin 1.13 — Patch interaksi Kategori Dana
+
+Referensi final `26-admin-hapus-kategori.png` (524×311 px) dan `27-admin-tambah-edit-kategori.png` (768×433 px). Satu halaman `/admin/kategori-dana` dan AdminLayout yang sama, tanpa route atau halaman baru.
+
+- Form Tambah/Edit memakai satu komponen dengan judul dinamis, panel hijau muda, kartu putih berborder/radius, Nama Kategori, sembilan swatch berurutan sesuai raster dan footer Batal/Simpan. Indikator centang/outline dan radio native membantu keyboard/aksesibilitas; modal 720 px desktop, sembilan kolom warna, tiga kolom di smartphone. Warna memakai varian teks lebih gelap untuk keterbacaan tanpa menambah color picker.
+- Konfirmasi Hapus memakai kartu putih, peringatan merah dan judul **Hapus Kategori?**. Label **Ya, Hapus Kategori** mengoreksi Hapus Transaksi pada raster. Kalimat database/Activity Log dari raster diganti penjelasan sesi mock. Kategori terpakai/saldo bukan nol menampilkan alasan serta konfirmasi nonaktif; kategori mock kosong dapat dikonfirmasi. Batal/X/Escape tidak mengubah state.
+- Patch ini menggantikan aksi nonaktif Admin 1.4. Badge emas Jum'at Berkah pada baseline daftar dihapus sebagai override lokal; badge/titik/aksen kini mengikuti definisi warna bersama di `adminCategoryColors.js`. Varian dasar hijau/biru/oranye di Dashboard/Laporan dipertahankan; mengubah warna kategori tidak mewarnai jenis transaksi, saldo pemasukan/pengeluaran atau tab laporan.
+- State kategori pada AdminLayout dipakai seluruh halaman admin selama layout aktif. Nama/warna berubah berdasarkan ID yang tetap; kategori baru memiliki saldo nol. Jumlah kategori pada resume/rekap dapat bertambah tanpa mengubah total. Tidak mengubah fixture 249 transaksi, snapshot, backend, autentikasi, frontend publik maupun algoritma ekspor.
+- Native dialog membatasi tinggi viewport dan dapat digulir; Escape, fokus awal, trap Tab/Shift+Tab dan fokus kembali tersedia. Mobile memakai input 16 px serta area interaksi minimum 44 px. Feedback menyebut mock/belum ke server; tidak meniru penyimpanan permanen atau log asli.
+
+Bukti desktop/tablet/mobile dan warna pada Laporan di `tmp/admin113-qa/`, tidak di-stage. Backend nantinya harus memvalidasi nama, pilihan warna, izin serta relasi transaksi sebelum penghapusan; belum menetapkan URL/kontrak baru.
