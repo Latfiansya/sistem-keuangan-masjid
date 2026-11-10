@@ -1,10 +1,10 @@
 import { formatReportDate, formatReportNumber } from '../utils/reportFormatters.js'
 
-export default function AdminBalanceSummary({ categories, totals, updatedDate, showDescription = true }) {
+export default function AdminBalanceSummary({ categories, totals, updatedDate, showDescription = true, title = 'Resume Saldo per Kategori', titleId = 'admin-balance-title' }) {
   const updatedLabel = formatReportDate(updatedDate)
   return (
-    <section className="admin-panel admin-balance" aria-labelledby="admin-balance-title">
-      <div className="admin-panel-heading"><h2 id="admin-balance-title">Resume Saldo per Kategori</h2><span className="admin-updated"><i aria-hidden="true" />Terakhir Update: {updatedLabel}</span>{showDescription && <p>Rekap pemasukan, pengeluaran, dan saldo akhir semua kotak dana.</p>}</div>
+    <section className="admin-panel admin-balance" aria-labelledby={titleId}>
+      <div className="admin-panel-heading"><h2 id={titleId}>{title}</h2><span className="admin-updated"><i aria-hidden="true" />Terakhir Update: {updatedLabel}</span>{showDescription && <p>Rekap pemasukan, pengeluaran, dan saldo akhir semua kotak dana.</p>}</div>
       <p className="admin-table-hint">Geser tabel untuk melihat seluruh kolom.</p>
       <div className="admin-table-scroll" role="region" aria-label="Resume saldo per kategori, dapat digeser pada layar kecil" tabIndex={0}>
         <table className="admin-balance-table">

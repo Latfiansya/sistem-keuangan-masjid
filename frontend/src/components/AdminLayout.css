@@ -1,4 +1,4 @@
-.admin-shell { --admin-green: #006b00; min-height: 100svh; color: #253247; background: #f1f6fc; font-family: "Plus Jakarta Sans", Arial, Helvetica, sans-serif; }
+.admin-shell { --admin-green: #006b00; --admin-finance-hero-overlay: linear-gradient(90deg, #1b6b42 0%, #258961e8 44%, #30947199 68%, #4fa68426 100%); min-height: 100svh; color: #253247; background: #f1f6fc; font-family: "Plus Jakarta Sans", Arial, Helvetica, sans-serif; }
 .admin-shell *, .admin-shell *::before, .admin-shell *::after { box-sizing: border-box; }
 .admin-shell button:disabled { cursor: not-allowed; }
 .admin-shell :focus-visible { outline: 3px solid #d58b00; outline-offset: 3px; }

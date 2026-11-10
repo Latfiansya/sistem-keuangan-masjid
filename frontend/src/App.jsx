@@ -18,6 +18,7 @@ import AdminAccountsPage from './pages/AdminAccountsPage.jsx'
 import AdminReportAccessPage from './pages/AdminReportAccessPage.jsx'
 import AdminActivityLogPage from './pages/AdminActivityLogPage.jsx'
 import AdminReceiptPage from './pages/AdminReceiptPage.jsx'
+import AdminFinanceReportPage from './pages/AdminFinanceReportPage.jsx'
 
 export default function App() {
   return (
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="kode-akses-laporan" element={<AdminReportAccessPage />} />
         <Route path="activity-log" element={<AdminActivityLogPage />} />
         <Route path="kwitansi" element={<AdminReceiptPage />} />
+        <Route path="laporan" element={<AdminFinanceReportPage />} />
       </Route>
     </Routes>
   )

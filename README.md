@@ -81,7 +81,7 @@ Dashboard dapat direview langsung di `/admin/dashboard` dengan `VITE_DATA_SOURCE
 
 `adminDashboardService.getAdminDashboard({ signal })` mengambil mock admin terpisah, menghitung saldo akhir tiap kategori dan total untuk empat kartu/tabel. Data 20 Oktober 2026 mengikuti referensi: saldo awal Rp16.864.200 + pemasukan Rp1.791.500 − pengeluaran Rp1.427.500 = saldo akhir Rp17.228.200. Lima transaksi terbaru hanyalah cuplikan. Mock laporan publik April 2026 tidak diubah. Nama/email Super Admin hanya konten akun contoh dari desain, bukan akun login atau penerapan role.
 
-Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/kategori/agenda, operasi akun, perubahan kode akses, laporan admin, notifikasi dan logout. Dashboard, Kelola Dana, Kategori Dana, Kwitansi, Activity Log, Profil Masjid, Agenda, Kontak & Pengaturan, Kelola Akun serta Kode Akses Laporan dapat dibuka melalui Sidebar. Shortcut Dashboard di luar lingkup milestone awalnya tetap nonaktif. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock pada halaman yang membutuhkan data admin. Kwitansi hanya menggunakan state lokal. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
+Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/kategori/agenda, operasi akun, perubahan kode akses, notifikasi dan logout. Dashboard, Kelola Dana, Kategori Dana, Laporan, Kwitansi, Activity Log, Profil Masjid, Agenda, Kontak & Pengaturan, Kelola Akun serta Kode Akses Laporan dapat dibuka melalui Sidebar. Shortcut Dashboard di luar lingkup milestone awalnya tetap nonaktif. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock pada halaman yang membutuhkan data admin. Kwitansi hanya menggunakan state lokal. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
 
 Test unit/SSR dashboard ikut `npm test`. Setelah server mock/API dan Chrome QA dijalankan sesuai bagian browser, jalankan dari root:
 
@@ -194,6 +194,28 @@ ADMIN_BROWSER_QA_URL=http://127.0.0.1:5173 REPORT_BROWSER_CDP_URL=http://127.0.0
 ```
 
 Untuk preview build gunakan URL preview dan `ADMIN_DASHBOARD_QA_PHASE=production`. Bukti screenshot/PNG nyata disimpan di `tmp/admin111-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport; belum perangkat fisik/Safari/Firefox. Penyimpanan/penerbitan/penomoran resmi dan otorisasi menunggu integrasi backend.
+
+## Laporan Keuangan Admin — Admin 1.12
+
+Route `/admin/laporan` memakai AdminLayout, menu Laporan aktif dan Topbar Laporan Keuangan. Referensi: `23-admin-laporan-01.png`, `24-admin-laporan-02.png`, dan `25-admin-laporan-03.png`. Navigasi tetap hanya **Kas Masjid**, **Kotak Jum'at Berkah**, dan **Kotak Pembangunan & Pemeliharaan**; tidak membuat tab/halaman Laporan Bulanan atau Rekap Bulanan.
+
+Agregat snapshot tetap dari `getAdminDashboard`: Rp16.864.200 + Rp1.791.500 − Rp1.427.500 = **Rp17.228.200**, per 20 Oktober 2026. Saldo akhir kategori tetap Rp12.718.200 / Rp3.654.000 / Rp856.000. Resume memakai AdminBalanceSummary dengan judul/ID opsional; default halaman lama tidak berubah. Gradient hero Laporan/Kelola Dana memakai token bersama `--admin-finance-hero-overlay`, dengan nilai asli Kelola Dana. Geometri kedua hero tetap. Tombol Terapkan setinggi 36 px desktop/44 px tablet-mobile dan rata bawah dengan input tanggal. Ikon hero memakai CircleArrowDown/Up, panel memakai ArrowUpRight/ArrowDownRight, serta tiga tab memakai ArrowUpRight/ArrowDownRight/FileText sesuai bentuk kontrol pada raster, dengan label kategori tetap.
+
+Fixture terpisah `mocks/adminFinanceReport.js` menambah riwayat tanpa mengubah mock Dashboard. Model service menggabungkan **249 transaksi mock**: Kas Masjid **172**, Jum'at Berkah **38**, Pembangunan & Pemeliharaan **39**. Semua bertanda `mock: true`; asal contoh ditandai `reference` (163 baris dari bagian raster yang terbaca), `simulation` (81 baris tambahan/penyesuaian/bagian yang belum terverifikasi), atau `dashboard` (5 salinan cuplikan lama). Data tidak diklaim seluruhnya identik Figma atau resmi. Transaksi berulang seperti infaq Jumat memiliki tanggal/nominal berbeda; tidak membuat ratusan duplikasi identik. Riwayat April dalam fixture admin ini berasal dari referensi admin, tidak mengimpor atau mengubah mock laporan publik April.
+
+Bagian atas awalnya menampilkan **13 transaksi Oktober**: 6 pemasukan Rp1.791.500 dan 7 pengeluaran Rp1.427.500. Per kategori jumlahnya 10/1/2. Dua entri pemasukan kategori biru/oranye disesuaikan dan satu entri tambahan diperlukan karena pemetaan nominal pada Figma bertentangan dengan baseline serta cuplikan Dashboard yang harus dipertahankan. Pengeluaran Oktober kategori biru/oranye tetap nol; variasi pengeluaran keduanya ada di bulan sebelumnya. Saldo awal riwayat Januari diturunkan dari saldo awal Oktober dan mutasi historis simulasi; rekonsiliasi tiap bulan/kategori diuji, termasuk saldo berjalan tidak negatif. Total historis tidak diklaim sama dengan tabel tahunan Figma.
+
+Seperti komposisi referensi, panel atas mula-mula berisi Oktober sedangkan tabel kategori di bawah berisi riwayat **1 Januari–20 Oktober**. Terapkan/preset menyaring kedua bagian menggunakan rentang yang dipilih; judul detail menyesuaikan bila rentang melintasi bulan snapshot. Validasi tanggal kosong/tidak valid/terbalik/tidak tercakup tetap berlaku, dengan cakupan diperluas ke riwayat mock. Minggu terakhir mengacu 14–20 Oktober, bulan berjalan mengembalikan Oktober; preset tiga bulan tetap belum diaktifkan. Saldo snapshot/resume tidak berubah oleh filter. Pencarian uraian langsung mengabaikan kapital/spasi luar dan dibersihkan saat kategori berganti. Empty state, jumlah hasil, keyboard panah/Home/End dan scroll tabel lokal tersedia. Seluruh baris sesuai filter ditampilkan tanpa dependency/pagination baru; Edit/Hapus dan tombol transaksi hero tetap nonaktif.
+
+**Ekspor tidak diubah.** Unduh PNG tetap merender ringkasan snapshot seluruh kategori, terlepas dari tab/filter, melalui html-to-image dan downloadReportFile yang sudah tersedia. Hasil 2240×1326 px memuat nilai baseline, label data contoh dan keterbatasan sumber, tanpa riwayat panjang atau seluruh halaman. Toast sukses/error, auto-dismiss, loading, abort dan cleanup tetap. PDF belum dibuat. QA membandingkan berkas desktop/mobile sebelum/sesudah refinement: identik.
+
+Unit/SSR ikut `npm test`. QA browser setelah server mock/API dan Chrome siap:
+
+```sh
+ADMIN_BROWSER_QA_URL=http://127.0.0.1:5173 ADMIN_BROWSER_API_QA_URL=http://127.0.0.1:5174 REPORT_BROWSER_CDP_URL=http://127.0.0.1:9228 node --test frontend/test/admin-finance-report.browser.test.js
+```
+
+Untuk preview build gunakan URL preview dan `ADMIN_DASHBOARD_QA_PHASE=production`. Bukti terbaru di `tmp/admin112-refinement-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport. Backend, API_CONTRACT, autentikasi, mock Dashboard dan frontend publik tetap; fixture/asal/saldo historis hanya untuk review UI dan perlu diganti data backend yang disepakati.
 
 ## Mock dan integrasi API
 
