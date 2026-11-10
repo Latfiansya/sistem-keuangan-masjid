@@ -294,3 +294,14 @@ Referensi final: `design-references/user/12-admin-kelola-dana.png` (1856 × 1395
 - Desktop mempertahankan geometri Sidebar/Topbar, spacing 24 px dan tabel penuh. Tablet memakai menu collapsible yang sudah ada; mobile menumpuk tombol, menyesuaikan hero/teks dan mempertahankan scroll tabel lokal. Menu fokus ke tautan aktif ketika dibuka; pergantian halaman mereset scroll.
 
 QA Chrome dilakukan pada 1728×1080, 1366×768, 768×1024 dan 390×844, development dan preview production. Screenshot di `tmp/admin13-qa/` tidak di-stage. Desain mobile merupakan adaptasi desktop; belum frame mobile resmi, perangkat fisik, Safari/Firefox atau klaim identik piksel.
+
+## Admin 1.4 — Kategori Dana
+
+Referensi final: `design-references/user/13-admin-kategori-dana.png` (1856 × 1172 px). Route `/admin/kategori-dana` menggunakan AdminLayout yang sama, tanpa menyalin margin hitam/bayangan luar screenshot. Sidebar Kategori Dana aktif; Dashboard dan Kelola Dana tetap dapat dinavigasi.
+
+- Heading Kategori Dana dengan garis oranye vertikal, subtitle, dan Tambah Kategori hijau di kanan. Kartu putih menampilkan NO/KATEGORI/AKSI, tiga badge serta ikon Pencil/Trash2 dari Lucide. Aksi nonaktif diberi title/label aksesibilitas per kategori; tidak membuat form/dialog/CRUD.
+- Badge Kas Masjid hijau, Jum'at Berkah emas, serta Pembangunan & Pemeliharaan oranye. Warna emas hanya override dalam tabel kategori; ID, label, warna sumber dan saldo tidak diubah, sehingga titik Jum'at Berkah pada resume tetap biru seperti referensi.
+- Resume diekstrak dari Dashboard menjadi AdminBalanceSummary. Dashboard mempertahankan markup/visual awal; Kategori Dana menghilangkan deskripsi tambahan di atas resume sesuai raster. Tabel/nominal memakai sumber dan styling yang sama. Label nominal pertama **Saldo Awal**, mengoreksi pengulangan Saldo Akhir pada gambar.
+- Desktop: heading/tombol sejajar, gap 24 px, tabel kategori sekitar 44 px header dan 76 px per baris, radius kartu 24 px. Tablet/mobile mengikuti menu yang ada; pada smartphone heading/tombol bertumpuk. Badge tetap utuh dengan scroll tabel lokal dan akses keyboard. Area aksi 44 px untuk kenyamanan target.
+
+QA pada 1728×1080, 1366×768, 768×1024 dan 390×844; bukti di `tmp/admin14-qa/` tidak di-stage. Adaptasi mobile bukan frame resmi; kesetiaan visual merupakan pendekatan raster dan belum diuji pada perangkat fisik/Safari/Firefox.

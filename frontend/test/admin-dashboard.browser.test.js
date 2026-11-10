@@ -25,8 +25,10 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
   const metrics = []
   const output = fileURLToPath(new URL(`../../tmp/admin12-qa/${phase}/`, import.meta.url))
   const fundsOutput = fileURLToPath(new URL(`../../tmp/admin13-qa/${phase}/`, import.meta.url))
+  const categoriesOutput = fileURLToPath(new URL(`../../tmp/admin14-qa/${phase}/`, import.meta.url))
   await mkdir(output, { recursive: true })
   await mkdir(fundsOutput, { recursive: true })
+  await mkdir(categoriesOutput, { recursive: true })
   ws.addEventListener('message', ({ data }) => {
     const message = JSON.parse(data)
     if (message.id) {
@@ -60,6 +62,11 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
     await send('Page.navigate', { url: `${origin}/admin/dashboard${suffix}` })
     await waitFor('document.readyState === "complete" && !!document.querySelector(".admin-dashboard")')
     await evaluate('document.fonts.ready')
+  }
+  const reload = async (expression) => {
+    await evaluate('window.adminReloadMarker = true')
+    await send('Page.reload')
+    await waitFor(`window.adminReloadMarker !== true && document.readyState === 'complete' && (${expression})`)
   }
   const click = async (selector) => {
     const point = await evaluate(`(() => { const e=document.querySelector(${JSON.stringify(selector)}); e.scrollIntoView({block:'center'}); const r=e.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2} })()`)
@@ -152,10 +159,9 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
     await t.test('fitur di luar lingkup nonaktif, akun contoh tidak menjadi autentikasi dan refresh tetap membuka dashboard', async () => {
       assert.equal(await evaluate('[...document.querySelectorAll(".admin-dashboard button, .admin-nav-group button, .admin-account button, .admin-topbar-actions button")].every(e=>e.disabled&&!!e.title)'), true)
       assert.match(await evaluate('document.querySelector(".admin-dashboard-status").textContent'), /Data contoh/)
-      assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-shell a[href]")].map(e=>e.getAttribute("href"))'), ['#admin-content', '/admin/dashboard', '/admin/kelola-dana'])
+      assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-shell a[href]")].map(e=>e.getAttribute("href"))'), ['#admin-content', '/admin/dashboard', '/admin/kelola-dana', '/admin/kategori-dana'])
       assert.deepEqual(await evaluate('({local:localStorage.length,session:sessionStorage.length,cookie:document.cookie})'), { local: 0, session: 0, cookie: '' })
-      await send('Page.reload')
-      await waitFor('!!document.querySelector(".admin-dashboard")')
+      await reload('!!document.querySelector(".admin-dashboard")')
       await open(baseUrl, '/')
       assert.equal(await evaluate('document.querySelector(".admin-nav-link").getAttribute("aria-current")'), 'page')
     })
@@ -201,13 +207,60 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
       await evaluate(`document.querySelector('${selector}').scrollLeft = 9999`)
       assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
       await screenshot('kelola-dana-mobile-tabel', false, fundsOutput)
-      await send('Page.reload')
-      await waitFor('document.querySelectorAll(".admin-recent-table tbody tr").length === 5')
+      await reload('document.querySelectorAll(".admin-recent-table tbody tr").length === 5')
       assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'), 'Kelola Dana Keuangan')
     })
 
+    await t.test('Kategori Dana memakai saldo Dashboard yang sama dan navigasi tiga halaman berfungsi pada empat viewport', async () => {
+      for (const [width, height] of [[1728, 1080], [1366, 768], [768, 1024], [390, 844]]) {
+        await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false })
+        await open()
+        const original = await evaluate('document.querySelector(".admin-balance-table").outerHTML')
+        const labels = await evaluate('[...document.querySelectorAll(".admin-balance-table tbody th")].map(e=>e.textContent)')
+        await evaluate('window.adminCategoriesNavigation = true')
+        if (width < 1024) await click('.admin-menu-toggle')
+        await click('.admin-nav-link[href="/admin/kategori-dana"]')
+        await waitFor('!!document.querySelector(".admin-categories")')
+        assert.equal(await evaluate('window.adminCategoriesNavigation'), true)
+        assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'), 'Kategori Dana')
+        assert.equal(await evaluate('document.querySelector(".admin-nav-link[aria-current=page]").getAttribute("href")'), '/admin/kategori-dana')
+        assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-categories-table tbody th")].map(e=>e.textContent)'), labels)
+        assert.equal(await evaluate('document.querySelector(".admin-balance-table").outerHTML'), original)
+        assert.equal(await evaluate('document.querySelectorAll(".admin-categories button:disabled").length'), 7)
+        assert.equal(await evaluate('document.querySelectorAll(".admin-categories form,.admin-categories dialog,.admin-categories input").length'), 0)
+        assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
+        await evaluate('document.fonts.ready')
+        await screenshot(`kategori-dana-${width}-top`, false, categoriesOutput)
+        await screenshot(`kategori-dana-${width}-full`, true, categoriesOutput)
+        if (width < 1024) await click('.admin-menu-toggle')
+        await click('.admin-nav-link[href="/admin/kelola-dana"]')
+        await waitFor('!!document.querySelector(".admin-funds")')
+        assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'), 'Kelola Dana Keuangan')
+        if (width < 1024) await click('.admin-menu-toggle')
+        await click('.admin-nav-link[href="/admin/dashboard"]')
+        await waitFor('!!document.querySelector(".admin-dashboard")')
+        assert.equal(await evaluate('document.querySelector(".admin-balance-table").outerHTML'), original)
+      }
+    })
+
+    await t.test('Kategori Dana mendukung scroll lokal kedua tabel, refresh dan trailing slash tanpa CRUD', async () => {
+      await send('Page.navigate', { url: `${baseUrl}/admin/kategori-dana/` })
+      await waitFor('!!document.querySelector(".admin-categories")')
+      for (const selector of ['.admin-categories-list .admin-table-scroll', '.admin-categories .admin-balance .admin-table-scroll']) {
+        await evaluate(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'center'});document.querySelector(${JSON.stringify(selector)}).focus()`)
+        await send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowRight', code: 'ArrowRight', windowsVirtualKeyCode: 39 })
+        await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowRight', code: 'ArrowRight', windowsVirtualKeyCode: 39 })
+        await waitFor(`document.querySelector(${JSON.stringify(selector)}).scrollLeft > 0`)
+        await evaluate(`document.querySelector(${JSON.stringify(selector)}).scrollLeft = 9999`)
+        assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
+      }
+      await screenshot('kategori-dana-mobile-tabel', false, categoriesOutput)
+      await reload('document.querySelectorAll(".admin-categories-table tbody tr").length === 3')
+      assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'), 'Kategori Dana')
+    })
+
     await t.test('mode API tidak memakai mock diam-diam atau menghubungi endpoint admin karangan', async () => {
-      for (const route of ['/admin/dashboard', '/admin/kelola-dana']) {
+      for (const route of ['/admin/dashboard', '/admin/kelola-dana', '/admin/kategori-dana']) {
         await send('Page.navigate', { url: `${apiUrl}${route}` })
         await waitFor('!!document.querySelector(".admin-dashboard-state[role=alert]")')
         assert.match(await evaluate('document.querySelector(".admin-dashboard-state").textContent'), /Dashboard admin melalui API belum tersedia/)

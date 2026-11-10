@@ -816,3 +816,25 @@ Status: halaman selesai dan tervalidasi pada `feature/frontend-admin`, baseline 
 README dan DESIGN_MAP diperbarui untuk route, reuse dan batasan. Setelah review status, diff, daftar file, whitespace dan staged diff, hanya 11 file Admin 1.3 disiapkan untuk commit manual. Referensi, hasil build, screenshot dan profil Chrome tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah Kelola Dana selesai.
 
 Usulan pesan commit: `feat: tambahkan halaman kelola dana dengan tabel transaksi bersama`.
+
+## Admin 1.4 — Kategori Dana (10 November 2026)
+
+Status: implementasi dan QA selesai pada `feature/frontend-admin`, baseline commit `58f0710`. Awal kerja tanpa perubahan tracked/staged; `design-references/` tetap untracked. Referensi final `13-admin-kategori-dana.png` (1856×1172 px) dibaca sebelum implementasi.
+
+- Route `/admin/kategori-dana` memakai AdminLayout yang sama. Kategori Dana menjadi Link aktif pada Sidebar dan judul Topbar mengikuti route. Navigasi Dashboard ↔ Kelola Dana ↔ Kategori Dana memakai pola menu/fokus/scroll yang sudah ada, tanpa layout baru.
+- Heading bergaris oranye, subtitle, Tambah Kategori hijau, kartu NO/KATEGORI/AKSI dan tiga kategori mengikuti referensi. Badge hijau/emas/oranye; ikon Pencil/Trash2 memiliki label per kategori dan target 44 px. Semua tujuh aksi nonaktif dengan keterangan belum tersedia, tanpa form, dialog atau operasi CRUD.
+- Resume lama diekstrak menjadi `AdminBalanceSummary`. Dashboard tetap memakai markup/visual semula; Kategori Dana menghilangkan deskripsi tambahan sesuai raster. Tabel memakai Saldo Awal pada kolom nominal pertama, kategori/nominal/tanggal yang sama, dan total akhir tetap 17.228.200. Badge emas Jum'at Berkah hanya styling daftar kategori, bukan perubahan warna sumber atau titik biru resume.
+- Tidak membuat mock/service kedua atau mengubah saldo/transaksi. Seluruh markup konten Dashboard dan Kelola Dana sesudah ekstraksi dibandingkan dengan baseline sebelum perubahan dan identik. Desain Login/publik, CSS Dashboard/Kelola Dana, backend, kontrak API, autentikasi, dependency dan lockfile tidak diubah.
+- CSS baru dibatasi halaman kategori. Tablet memakai Sidebar yang sama; mobile menumpuk heading/tombol. Tabel kategori/resume memiliki scroll lokal, petunjuk dan dukungan keyboard; badge tidak memaksa halaman meluap. API tetap belum terhubung dan tidak dipanggil.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 54 test frontend unit/SSR (3 baru) dan 18 test backend; tiga suite browser opsional dilewati pada perintah standar, lalu dijalankan terpisah.
+- Browser Chrome: 9 skenario admin, 6 login dan 35 publik PASS (50 skenario total), termasuk kesamaan DOM resume, kategori/nilai tidak termutasi, navigasi tiga halaman, menu aktif/judul, scroll tabel sampai kolom terakhir, aksi nonaktif, refresh/trailing slash dan mode API tanpa HTTP/fallback. Regresi publik mencakup modal/gate/filter dan unduhan PDF/PNG/ZIP nyata.
+- Pemeriksaan awal refresh membaca DOM lama sebelum dokumen baru siap; sinkronisasi suite QA diperbaiki memakai penanda dokumen dan readyState. Suite admin kemudian diulang dan 9 skenario lulus; ini perbaikan pengujian, bukan perubahan perilaku aplikasi.
+- `npm run build`: PASS. Preview production juga lulus 9 skenario admin (10 hasil termasuk induk). Visual pada 1728×1080, 1366×768, 768×1024 dan 390×844 ditinjau: tanpa overflow horizontal halaman, font/logo gagal, HTTP gagal atau exception runtime aplikasi. Label Saldo Awal dan total kategori konsisten dengan Dashboard.
+- Screenshot development/production di `tmp/admin14-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport; belum perangkat fisik, Safari/Firefox atau klaim identik piksel. Aksi kategori dan autentikasi nyata tetap belum tersedia.
+
+README dan DESIGN_MAP diperbarui. Setelah review status, diff, daftar file, whitespace dan staged diff, hanya 11 file Admin 1.4 disiapkan untuk commit manual. Referensi, build, screenshot dan profil Chrome tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah halaman Kategori Dana selesai.
+
+Usulan pesan commit: `feat: tambahkan halaman kategori dana dengan resume saldo bersama`.

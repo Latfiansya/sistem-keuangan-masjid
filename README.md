@@ -81,7 +81,7 @@ Dashboard dapat direview langsung di `/admin/dashboard` dengan `VITE_DATA_SOURCE
 
 `adminDashboardService.getAdminDashboard({ signal })` mengambil mock admin terpisah, menghitung saldo akhir tiap kategori dan total untuk empat kartu/tabel. Data 20 Oktober 2026 mengikuti referensi: saldo awal Rp16.864.200 + pemasukan Rp1.791.500 − pengeluaran Rp1.427.500 = saldo akhir Rp17.228.200. Lima transaksi terbaru hanyalah cuplikan. Mock laporan publik April 2026 tidak diubah. Nama/email Super Admin hanya konten akun contoh dari desain, bukan akun login atau penerapan role.
 
-Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi, kategori, laporan admin, kwitansi, activity log, konten website, akun, kode akses, notifikasi dan logout. Dashboard dan Kelola Dana dapat dibuka melalui Sidebar. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
+Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/kategori, laporan admin, kwitansi, activity log, konten website, akun, kode akses, notifikasi dan logout. Dashboard, Kelola Dana dan Kategori Dana dapat dibuka melalui Sidebar. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
 
 Test unit/SSR dashboard ikut `npm test`. Setelah server mock/API dan Chrome QA dijalankan sesuai bagian browser, jalankan dari root:
 
@@ -98,6 +98,14 @@ Route `/admin/kelola-dana` memakai AdminLayout yang sama dengan Dashboard. Sideb
 Dashboard dan Kelola Dana menggunakan `AdminRecentTransactions` serta data dari `adminDashboardService` melalui konteks layout yang sama. Tidak menambah salinan mock transaksi, mengubah nilai/saldo atau mengambil data baru ketika berpindah halaman. Tabel, badge, warna nominal, tombol Lihat Semua nonaktif, dan scroll lokal tetap konsisten. Mode mock mandiri dan mode API yang belum terhubung tetap mengikuti batas Admin 1.2; login/publik tidak diubah.
 
 Suite `admin-dashboard.browser.test.js` pada perintah QA Admin 1.2 juga mencakup Kelola Dana: empat viewport, navigasi tanpa reload, judul/menu aktif, tabel identik, scroll lokal, refresh/trailing slash dan error API. Screenshot Kelola Dana disimpan di `tmp/admin13-qa/development/` atau `tmp/admin13-qa/production/`; artefak ini tidak masuk staging.
+
+## Kategori Dana — Admin 1.4
+
+Route `/admin/kategori-dana` memakai AdminLayout yang sama, dengan menu aktif dan judul Topbar Kategori Dana. Heading beraksen oranye, tombol Tambah Kategori, tabel tiga kategori serta resume mengikuti referensi `13-admin-kategori-dana.png`. Tambah/Edit/Hapus tetap nonaktif dengan keterangan belum tersedia; tidak ada form, dialog, penghapusan atau endpoint baru.
+
+Kategori, saldo dan tanggal update berasal dari `adminDashboardService` melalui konteks layout yang sama. `AdminBalanceSummary` dipakai Dashboard dan Kategori Dana; kolom pertama tetap Saldo Awal. Pada Kategori Dana, deskripsi tambahan di atas resume disembunyikan sesuai referensi. Badge Jum'at Berkah dalam daftar kategori berwarna emas, sedangkan titik resume tetap biru; ini styling khusus tabel, bukan perubahan data. Saldo dan transaksi tidak berubah.
+
+Suite `admin-dashboard.browser.test.js` juga memeriksa navigasi tiga halaman, kesamaan resume, aksi nonaktif, refresh/trailing slash dan scroll lokal pada empat viewport. Screenshot kategori di `tmp/admin14-qa/development/` atau `tmp/admin14-qa/production/` tidak di-stage. Mode API/autentikasi dan batas QA mengikuti milestone sebelumnya.
 
 ## Mock dan integrasi API
 
