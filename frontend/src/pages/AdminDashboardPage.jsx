@@ -1,3 +1,4 @@
+import { getAdminRecentTransactions } from '../services/adminTransactionService.js'
 import { ArrowDownCircle, ArrowUpCircle, ClipboardList, FileText, TrendingDown, TrendingUp, Users, Wallet } from 'lucide-react'
 import { useOutletContext } from 'react-router'
 import { formatReportDate, formatRupiah } from '../utils/reportFormatters.js'
@@ -20,7 +21,7 @@ export default function AdminDashboardPage() {
   const { dashboard, error } = useOutletContext()
   if (error) return <p className="admin-dashboard-state" role="alert">{error}</p>
   if (!dashboard) return <p className="admin-dashboard-state" role="status">Memuat dashboard keuangan…</p>
-  const { categories, totals, recentTransactions, updatedDate } = dashboard
+  const { categories, totals, updatedDate } = dashboard
   const updatedLabel = formatReportDate(updatedDate)
   return (
     <div className="admin-dashboard">
@@ -45,7 +46,7 @@ export default function AdminDashboardPage() {
       </section>
       <AdminBalanceSummary categories={categories} totals={totals} updatedDate={updatedDate} />
       <section className="admin-transparency" aria-labelledby="admin-transparency-title"><div><h2 id="admin-transparency-title">Transparansi &amp; Akuntabilitas Keuangan</h2><p>Pantau dan ekspor laporan keuangan masjid dengan mudah.</p></div><button type="button" disabled title="Laporan admin belum tersedia"><FileText size={16} aria-hidden="true" />Lihat Laporan</button></section>
-      <AdminRecentTransactions transactions={recentTransactions} categories={categories} />
+      <AdminRecentTransactions transactions={getAdminRecentTransactions(dashboard)} categories={categories} />
       <div className="admin-shortcuts" aria-label="Pintasan admin belum tersedia">{shortcuts.map(({ label, description, icon: Icon, color }) => <button key={label} type="button" disabled title={`${label} belum tersedia`}><span className={`admin-shortcut-icon admin-shortcut-icon--${color}`}><Icon size={21} aria-hidden="true" /></span><span><strong>{label}</strong><small>{description}</small></span></button>)}</div>
     </div>
   )

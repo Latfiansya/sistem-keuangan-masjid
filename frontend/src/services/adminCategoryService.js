@@ -32,7 +32,7 @@ export function saveMockAdminCategory(dashboard, values, id) {
 
 export function isAdminCategoryUsed(dashboard, id) {
   const category = dashboard.categories.find((item) => item.id === id)
-  return Boolean(category && (['openingBalance', 'income', 'expense', 'closingBalance'].some((key) => category[key] !== 0) || buildAdminFinanceReport(dashboard).transactions.some((transaction) => transaction.categoryId === id)))
+  return Boolean(category && ((dashboard.sessionTransactions || []).some((transaction) => transaction.categoryId === id) || ['openingBalance', 'income', 'expense', 'closingBalance'].some((key) => category[key] !== 0) || buildAdminFinanceReport(dashboard).transactions.some((transaction) => transaction.categoryId === id)))
 }
 
 export function deleteMockAdminCategory(dashboard, id) {

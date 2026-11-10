@@ -416,3 +416,16 @@ Referensi final `26-admin-hapus-kategori.png` (524×311 px) dan `27-admin-tambah
 - Native dialog membatasi tinggi viewport dan dapat digulir; Escape, fokus awal, trap Tab/Shift+Tab dan fokus kembali tersedia. Mobile memakai input 16 px serta area interaksi minimum 44 px. Feedback menyebut mock/belum ke server; tidak meniru penyimpanan permanen atau log asli.
 
 Bukti desktop/tablet/mobile dan warna pada Laporan di `tmp/admin113-qa/`, tidak di-stage. Backend nantinya harus memvalidasi nama, pilihan warna, izin serta relasi transaksi sebelum penghapusan; belum menetapkan URL/kontrak baru.
+
+
+## Admin 1.14 — Form Tambah Pemasukan dan Pengeluaran
+
+Nama referensi yang diminta: `28-admin-tambah-pemasukan.png`, belum tersedia saat pemeriksaan. File yang berisi frame Tambah Pemasukan sesuai rincian pengguna ditemukan sebagai `design-references/user/Pasted 2026-11-11 at 1.49.23 AM.png` (768×906). Frame tersebut dipakai tanpa mengganti nama atau memasukkan aset ke staging; tidak mengarang frame/URL lain.
+
+- Satu `AdminTransactionForm` dengan parameter income/expense. Header memakai tombol kembali, judul dan subtitle; surface pemasukan hijau muda, kartu putih berborder/radius, label di atas field, checkbox dalam panel lembut, Keterangan dan footer Batal/Simpan mengikuti raster. Modal 720 px desktop, radius 32 px, panel/form padding 24 px. Tablet/mobile menyesuaikan lebar, input 16 px, tinggi dibatasi visual viewport dan scroll lokal; posisi ikut perubahan viewport dengan cleanup listener.
+- Pengeluaran memakai struktur enam field yang sama, label Uraian Pengeluaran dan Nama Penerima; checkbox nama publik tidak dirender. Surface #fff0f3, tombol/aksen #ca003a. Tombol Pengeluaran pada panel Kelola Dana menjadi rose, Pemasukan tetap hijau. Warna kategori oranye maupun tab jenis transaksi tidak diubah.
+- Tanggal native diawali hari ini menurut kalender lokal perangkat, bukan UTC; form baru selalu kosong selain tanggal. Validasi error/fokus, Batal/Escape/kembali, trap Tab/Shift+Tab dan pengembalian fokus tersedia. Tidak menambahkan form edit/hapus, metode pembayaran, unggahan, atau fitur transaksi lain.
+- Tambahan ada di state sesi bersama, terpisah dari 249 baris historis dan lima cuplikan snapshot. Daftar Kelola Dana/Dashboard memperlihatkan tambahan dengan label Sesi mock serta penjelasan belum termasuk saldo/laporan. Pemberitahuan Laporan menyebut jumlah tambahan tanpa mengubah tabel/agregat historis; total Rp17.228.200 tetap. Copy hero/panel yang sebelumnya mengklaim edit/hapus dan pembaruan otomatis seluruh laporan diganti agar sesuai perilaku mock.
+- Kategori dari sumber bersama, ID stabil, nama/warna mengikuti metadata. Proteksi hapus kategori mencakup tambahan sesi. Preferensi nama donatur hanya untuk pemasukan/default false, belum memengaruhi laporan publik. State hilang setelah refresh/keluar admin, tanpa storage, request, backend atau log palsu.
+
+Bukti kedua modal di 1728×1080, 1366×768, 768×1024 dan 390×844 serta screenshot simpan/integrasi di `tmp/admin114-qa/`, tidak di-stage. Perbedaan tanggal mengikuti locale kalender native; screenshot pendukung yang dipakai tetap bernama Pasted. Sinkronisasi agregat periode serta otorisasi/validasi server menunggu backend; tidak mengubah kontrak API.

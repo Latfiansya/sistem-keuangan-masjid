@@ -81,7 +81,7 @@ Dashboard dapat direview langsung di `/admin/dashboard` dengan `VITE_DATA_SOURCE
 
 `adminDashboardService.getAdminDashboard({ signal })` mengambil mock admin terpisah, menghitung saldo akhir tiap kategori dan total untuk empat kartu/tabel. Data 20 Oktober 2026 mengikuti referensi: saldo awal Rp16.864.200 + pemasukan Rp1.791.500 − pengeluaran Rp1.427.500 = saldo akhir Rp17.228.200. Lima transaksi terbaru hanyalah cuplikan. Mock laporan publik April 2026 tidak diubah. Nama/email Super Admin hanya konten akun contoh dari desain, bukan akun login atau penerapan role.
 
-Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/agenda, operasi akun, perubahan kode akses, notifikasi dan logout. Dashboard, Kelola Dana, Kategori Dana, Laporan, Kwitansi, Activity Log, Profil Masjid, Agenda, Kontak & Pengaturan, Kelola Akun serta Kode Akses Laporan dapat dibuka melalui Sidebar. Shortcut Dashboard di luar lingkup milestone awalnya tetap nonaktif. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock pada halaman yang membutuhkan data admin. Kwitansi hanya menggunakan state lokal. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
+Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: edit/hapus transaksi, form agenda, operasi akun, perubahan kode akses, notifikasi dan logout. Tambah transaksi sesi mock tersedia dari Kelola Dana; pemicu transaksi pada Dashboard/Laporan tetap di luar lingkup. Dashboard, Kelola Dana, Kategori Dana, Laporan, Kwitansi, Activity Log, Profil Masjid, Agenda, Kontak & Pengaturan, Kelola Akun serta Kode Akses Laporan dapat dibuka melalui Sidebar. Shortcut Dashboard di luar lingkup milestone awalnya tetap nonaktif. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock pada halaman yang membutuhkan data admin. Kwitansi hanya menggunakan state lokal. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
 
 Test unit/SSR dashboard ikut `npm test`. Setelah server mock/API dan Chrome QA dijalankan sesuai bagian browser, jalankan dari root:
 
@@ -93,11 +93,31 @@ Screenshot dashboard serta metrik empat viewport disimpan di `tmp/admin12-qa/dev
 
 ## Kelola Dana Keuangan — Admin 1.3
 
-Route `/admin/kelola-dana` memakai AdminLayout yang sama dengan Dashboard. Sidebar menandai menu aktif dan Topbar menampilkan judul sesuai halaman; navigasi bolak-balik mengembalikan scroll ke atas. Hero dan panel Kelola Transaksi mengikuti `design-references/user/12-admin-kelola-dana.png`, dengan tombol Pemasukan/Pengeluaran nonaktif dan penjelasan fitur belum tersedia. Tidak ada form, modal, CRUD atau endpoint baru.
+Route `/admin/kelola-dana` memakai AdminLayout yang sama dengan Dashboard. Sidebar menandai menu aktif dan Topbar menampilkan judul sesuai halaman; navigasi bolak-balik mengembalikan scroll ke atas. Hero dan panel Kelola Transaksi mengikuti `design-references/user/12-admin-kelola-dana.png`, dengan tombol Pemasukan/Pengeluaran. Sejak Admin 1.14 kedua tombol membuka form tambah sesi mock; tombol Pengeluaran memakai rose. Edit/hapus transaksi dan integrasi API belum dibuat.
 
 Dashboard dan Kelola Dana menggunakan `AdminRecentTransactions` serta data dari `adminDashboardService` melalui konteks layout yang sama. Tidak menambah salinan mock transaksi, mengubah nilai/saldo atau mengambil data baru ketika berpindah halaman. Tabel, badge, warna nominal, tombol Lihat Semua nonaktif, dan scroll lokal tetap konsisten. Mode mock mandiri dan mode API yang belum terhubung tetap mengikuti batas Admin 1.2; login/publik tidak diubah.
 
 Suite `admin-dashboard.browser.test.js` pada perintah QA Admin 1.2 juga mencakup Kelola Dana: empat viewport, navigasi tanpa reload, judul/menu aktif, tabel identik, scroll lokal, refresh/trailing slash dan error API. Screenshot Kelola Dana disimpan di `tmp/admin13-qa/development/` atau `tmp/admin13-qa/production/`; artefak ini tidak masuk staging.
+
+## Tambah Pemasukan dan Pengeluaran — Admin 1.14
+
+`AdminTransactionForm` digunakan bersama oleh kedua tombol di `/admin/kelola-dana`. Referensi permintaan adalah `28-admin-tambah-pemasukan.png`; file dengan nama tersebut belum ada saat pengerjaan. Screenshot yang cocok ditemukan sebagai `design-references/user/Pasted 2026-11-11 at 1.49.23 AM.png` (768×906), digunakan tanpa mengganti nama/men-stage aset. Pemasukan memakai surface hijau muda/panel putih; Pengeluaran memakai struktur sama dengan surface, aksen dan tombol rose. Nama orang pada Pengeluaran adalah **Nama Penerima**, tanpa checkbox nama publik.
+
+Form controlled memiliki tanggal native/default kalender lokal setiap pembukaan, kategori wajib dari state bersama, uraian wajib, nominal rupiah bulat positif, nama opsional dan keterangan multiline opsional. Nama maksimum 100 karakter, uraian/keterangan 500, nominal maksimum Rp999.999.999.999 tanpa pemisah/desimal. Kalender, kategori dan karakter kontrol divalidasi; tahun/tanggal tidak valid ditolak. Batal/tombol kembali/Escape membuang draft, Tab/Shift+Tab terjaga dalam modal, fokus kembali ke pemicu dan tinggi modal mengikuti visual viewport agar dapat digulir pada mobile.
+
+`adminTransactionService.addMockAdminTransaction` menyimpan tambahan secara immutable pada `dashboard.sessionTransactions` di AdminLayout, bertanda `source: session`, `mock: true`, ID mock unik dan ID kategori tetap. Tidak mengubah lima cuplikan atau fixture historis **249 transaksi**. `getAdminRecentTransactions` menggabungkan tambahan dengan lima cuplikan untuk daftar Kelola Dana dan Dashboard, diurutkan tanggal menurun. Tambahan diberi label **Sesi mock**; kategori/nama/warna mengikuti sumber bersama, termasuk kategori baru dari Admin 1.13. Kategori yang dipakai tambahan sesi juga dilindungi dari penghapusan.
+
+**Batas sinkronisasi:** tambahan sesi belum dimasukkan ke agregat atau laporan historis. Snapshot Rp17.228.200 dan seluruh rincian Januari–Oktober tetap; tidak menampilkan saldo baru dari mutasi yang belum disepakati periode/pembukuannya. UI Kelola Dana, daftar bersama dan pemberitahuan Laporan menjelaskan batas ini. Sinkronisasi daftar antarhalaman berjalan selama layout admin aktif; refresh/keluar layout menghapus tambahan. Tidak ada storage permanen, HTTP admin, database, Activity Log, autentikasi baru atau perubahan frontend publik.
+
+Checkbox Pemasukan dimulai tidak dicentang. Pilihan disimpan sebagai `showDonorNamePublic` pada tambahan sesi saja; Pengeluaran selalu false. Pilihan belum menerbitkan/menyembunyikan nama di frontend publik dan tidak mengirim nama ke server. Form menjelaskan bahwa data serta preferensi publik masih simulasi. Field nama kosong tetap kosong, tanpa mengarang identitas resmi.
+
+Unit/SSR ikut `npm test`. QA browser menggunakan konfigurasi server mock/API dan Chrome yang sama:
+
+```sh
+ADMIN_BROWSER_QA_URL=http://127.0.0.1:5173 ADMIN_BROWSER_API_QA_URL=http://127.0.0.1:5174 REPORT_BROWSER_CDP_URL=http://127.0.0.1:9228 node --test frontend/test/admin-funds.browser.test.js
+```
+
+Screenshot/log di `tmp/admin114-qa/`, tidak di-stage. QA Chrome/emulasi desktop/tablet/mobile. Integrasi backend perlu menyepakati kontrak transaksi, validasi ulang, otorisasi, preferensi nama donatur dan penghitungan periode/agregat. Belum menentukan endpoint baru atau mengubah API_CONTRACT.
 
 ## Kategori Dana — Admin 1.4
 
