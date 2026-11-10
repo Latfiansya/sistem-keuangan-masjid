@@ -351,3 +351,14 @@ Referensi final: `design-references/user/17-admin-kelola-akun.png` (1766 × 1056
 - Pada tablet tombol aksi memiliki tinggi minimum 44 px; smartphone memindahkan aksi ke baris berikutnya dalam kartu, teks/email dapat membungkus, heading/tombol serta panel pencarian menyesuaikan lebar. Hasil pencarian tanpa kecocokan menampilkan pesan jelas, bukan kartu fiktif.
 
 Visual Chrome development/preview production ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844. Screenshot di `tmp/admin18-qa/` tidak di-stage. Mobile adalah adaptasi desktop; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.
+
+## Admin 1.9 — Kode Akses Laporan Publik
+
+Referensi final: `design-references/user/18-admin-kode-akses-laporan.png` (1766 × 1056 px). Route `/admin/kode-akses-laporan` memakai AdminLayout; menu dan Topbar Kode Akses Laporan aktif. Margin hitam/bayangan luar raster tidak menjadi layout aplikasi.
+
+- Label visual Super Admin Only berikon Shield, heading Kode Akses Laporan Publik beraksen oranye dan subtitle mengikuti pola admin. Dua kartu memakai admin-panel/radius 24 px, padding 24 px, shadow lembut dan jarak 20 px; tidak membuat layout baru.
+- Status Kode Akses: KeyRound hijau berlatar hijau pucat 48 px, badge Aktif, area abu muda, delapan simbol placeholder, chip **Simulasi**, metadata perubahan contoh dan Ubah Kode Akses nonaktif. Tidak menyimpan kode/hash dan tidak menyalin klaim Terenkripsi dari raster.
+- Cara Kerja memakai Info dan lima baris ChevronRight. Teks disesuaikan dengan M1.8b: CTA membuka gate, integrasi pemeriksaan direncanakan, kode sesuai menuju **/laporan-keuangan**, akses langsung/refresh tetap terbuka, serta autentikasi Super Admin untuk mengganti kode terpisah. Tidak menggunakan /laporan atau klaim realtime/perlindungan halaman/hash terenkripsi pada gambar.
+- Status/tanggal/pengubah diberi catatan data contoh. Smartphone membungkus judul, daftar dan metadata; tombol selebar kartu dengan target minimum 44 px. Area kode dan Simulasi dapat menyesuaikan ruang tanpa memotong teks.
+
+QA Chrome development/preview production pada 1728×1080, 1366×768, 768×1024 dan 390×844. Bukti di `tmp/admin19-qa/`, tidak di-stage. Mobile merupakan adaptasi desktop; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.

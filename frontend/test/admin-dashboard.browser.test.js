@@ -35,6 +35,7 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
   const agendaOutput = fileURLToPath(new URL(`../../tmp/admin16-qa/${phase}/`, import.meta.url))
   const settingsOutput = fileURLToPath(new URL(`../../tmp/admin17-qa/${phase}/`, import.meta.url))
   const accountsOutput = fileURLToPath(new URL(`../../tmp/admin18-qa/${phase}/`, import.meta.url))
+  const reportAccessOutput = fileURLToPath(new URL(`../../tmp/admin19-qa/${phase}/`, import.meta.url))
   await mkdir(output, { recursive: true })
   await mkdir(fundsOutput, { recursive: true })
   await mkdir(categoriesOutput, { recursive: true })
@@ -43,6 +44,7 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
   await mkdir(agendaOutput, { recursive: true })
   await mkdir(settingsOutput, { recursive: true })
   await mkdir(accountsOutput, { recursive: true })
+  await mkdir(reportAccessOutput, { recursive: true })
   ws.addEventListener('message', ({ data }) => {
     const message = JSON.parse(data)
     if (message.id) {
@@ -189,7 +191,7 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
     await t.test('fitur di luar lingkup nonaktif, akun contoh tidak menjadi autentikasi dan refresh tetap membuka dashboard', async () => {
       assert.equal(await evaluate('[...document.querySelectorAll(".admin-dashboard button, .admin-nav-group button, .admin-account button, .admin-topbar-actions button")].every(e=>e.disabled&&!!e.title)'), true)
       assert.match(await evaluate('document.querySelector(".admin-dashboard-status").textContent'), /Data contoh/)
-      assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-shell a[href]")].map(e=>e.getAttribute("href"))'), ['#admin-content', '/admin/dashboard', '/admin/kelola-dana', '/admin/kategori-dana', '/admin/profil-masjid', '/admin/agenda', '/admin/kontak-pengaturan', '/admin/kelola-akun'])
+      assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-shell a[href]")].map(e=>e.getAttribute("href"))'), ['#admin-content', '/admin/dashboard', '/admin/kelola-dana', '/admin/kategori-dana', '/admin/profil-masjid', '/admin/agenda', '/admin/kontak-pengaturan', '/admin/kelola-akun', '/admin/kode-akses-laporan'])
       assert.deepEqual(await evaluate('({local:localStorage.length,session:sessionStorage.length,cookie:document.cookie})'), { local: 0, session: 0, cookie: '' })
       await reload('!!document.querySelector(".admin-dashboard")')
       await open(baseUrl, '/')
@@ -678,6 +680,61 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
       assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'), 'Kelola Akun')
     })
 
+    await t.test('Kode Akses Laporan menampilkan metadata simulasi dan penjelasan UI gate tanpa kode asli di empat viewport', async () => {
+      for (const [width, height] of [[1728, 1080], [1366, 768], [768, 1024], [390, 844]]) {
+        await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false })
+        await open()
+        await evaluate('window.adminReportAccessNavigation = true')
+        if (width < 1024) await click('.admin-menu-toggle')
+        await click('.admin-nav-link[href="/admin/kode-akses-laporan"]')
+        await waitFor('!!document.querySelector(".admin-report-access-status button")')
+        assert.equal(await evaluate('window.adminReportAccessNavigation'), true)
+        assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'), 'Kode Akses Laporan')
+        assert.equal(await evaluate('document.querySelector(".admin-nav-link[aria-current=page]").getAttribute("href")'), '/admin/kode-akses-laporan')
+        assert.equal(await evaluate('document.querySelectorAll(".admin-report-access .admin-panel").length'), 2)
+        assert.equal(await evaluate('document.querySelector(".admin-report-access-badge--active").textContent'), 'Aktif')
+        assert.equal(await evaluate('document.querySelector(".admin-report-access-mask").textContent'), '••••••••')
+        assert.match(await evaluate('document.querySelector(".admin-report-access-code").textContent'), /Simulasi/)
+        assert.match(await evaluate('document.querySelector(".admin-report-access-history").textContent'), /10 Juni 2026, 09:00.*Super Admin/)
+        assert.equal(await evaluate('document.querySelectorAll(".admin-report-access input,.admin-report-access form,.admin-report-access dialog").length'), 0)
+        assert.equal(await evaluate('document.querySelector(".admin-report-access-status button").disabled'), true)
+        assert.equal(await evaluate('document.querySelectorAll(".admin-report-access-how li").length'), 5)
+        const explanation = await evaluate('document.querySelector(".admin-report-access-how").textContent')
+        assert.match(explanation, /Tombol laporan di Beranda atau Footer membuka gate \(permintaan kode\)/)
+        assert.match(explanation, /Setelah integrasi, sistem memeriksa kode yang dimasukkan pengunjung/)
+        assert.match(explanation, /Akses langsung dan refresh \/laporan-keuangan tetap tanpa gate/)
+        assert.match(explanation, /bukan autentikasi atau otorisasi laporan/)
+        assert.match(explanation, /Autentikasi Super Admin untuk mengelolanya terpisah/)
+        assert.doesNotMatch(explanation, /\/laporan(?!-keuangan)|realtime|Terenkripsi/)
+        const before = await evaluate('document.querySelector(".admin-report-access-status").innerHTML')
+        await evaluate('document.querySelector(".admin-report-access-status button").click()')
+        assert.equal(await evaluate('document.querySelector(".admin-report-access-status").innerHTML'), before)
+        assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
+        assert.equal(await evaluate('[...document.querySelectorAll(".admin-report-access .admin-panel")].every(e=>{const r=e.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&e.scrollWidth<=e.clientWidth})'), true)
+        await evaluate('document.fonts.ready;window.scrollTo(0,0)')
+        await screenshot(`kode-akses-${width}-top`, false, reportAccessOutput)
+        await screenshot(`kode-akses-${width}-full`, true, reportAccessOutput)
+      }
+    })
+
+    await t.test('halaman kode akses mendukung refresh/trailing slash dan navigasi ke tujuh halaman admin lama tanpa penyimpanan', async () => {
+      assert.deepEqual(await evaluate('({local:localStorage.length,session:sessionStorage.length,cookie:document.cookie})'), { local: 0, session: 0, cookie: '' })
+      assert.equal(await evaluate('location.search'), '')
+      await reload('!!document.querySelector(".admin-report-access-status button")')
+      for (const [route, selector] of [['dashboard', '.admin-dashboard'], ['kelola-dana', '.admin-funds'], ['kategori-dana', '.admin-categories'], ['profil-masjid', '#admin-profile-form'], ['agenda', '.admin-agenda-card'], ['kontak-pengaturan', '#admin-settings-form'], ['kelola-akun', '.admin-accounts-card']]) {
+        await click('.admin-menu-toggle')
+        await click(`.admin-nav-link[href="/admin/${route}"]`)
+        await waitFor(`!!document.querySelector('${selector}')`)
+        await click('.admin-menu-toggle')
+        await click('.admin-nav-link[href="/admin/kode-akses-laporan"]')
+        await waitFor('!!document.querySelector(".admin-report-access-status button")')
+        assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'), 'Kode Akses Laporan')
+      }
+      await send('Page.navigate', { url: `${baseUrl}/admin/kode-akses-laporan/` })
+      await waitFor('!!document.querySelector(".admin-report-access-status button")')
+      assert.equal(await evaluate('document.querySelector(".admin-report-access-code .admin-report-access-badge").textContent'), 'Simulasi')
+    })
+
     await t.test('mode API tidak memakai mock diam-diam atau menghubungi endpoint admin karangan', async () => {
       for (const route of ['/admin/dashboard', '/admin/kelola-dana', '/admin/kategori-dana']) {
         await send('Page.navigate', { url: `${apiUrl}${route}` })
@@ -704,6 +761,10 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
       assert.match(await evaluate('document.querySelector(".admin-accounts [role=alert]").textContent'), /Manajemen akun admin melalui API belum tersedia/)
       assert.equal(await evaluate('document.querySelectorAll(".admin-accounts-card").length'), 0)
       assert.equal(await evaluate('document.querySelector(".admin-accounts-search button").disabled'), true)
+      await send('Page.navigate', { url: `${apiUrl}/admin/kode-akses-laporan` })
+      await waitFor('!!document.querySelector(".admin-report-access [role=alert]")')
+      assert.match(await evaluate('document.querySelector(".admin-report-access [role=alert]").textContent'), /Status kode akses admin melalui API belum tersedia/)
+      assert.equal(await evaluate('!!document.querySelector(".admin-report-access-status")'), false)
       assert.deepEqual(requests, [])
       assert.deepEqual(failures, [])
     })

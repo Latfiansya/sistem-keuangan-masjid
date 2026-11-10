@@ -20,7 +20,7 @@ const navigation = [
   ] },
   { label: 'Pengaturan', items: [
     { label: 'Kelola Akun', icon: Users, to: '/admin/kelola-akun' },
-    { label: 'Kode Akses Laporan', icon: KeyRound },
+    { label: 'Kode Akses Laporan', icon: KeyRound, to: '/admin/kode-akses-laporan' },
   ] },
 ]
 

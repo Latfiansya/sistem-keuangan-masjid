@@ -1,0 +1,36 @@
+.admin-report-access { display: grid; gap: 20px; }
+.admin-report-access-intro { display: grid; gap: 8px; margin-bottom: 4px; }
+.admin-report-access-restriction { display: flex; align-items: center; gap: 10px; color: #f49a00; }
+.admin-report-access-restriction span { padding: 2px 10px; border-radius: 999px; color: #a64405; background: #fff3c4; font-size: 12px; line-height: 1.4; }
+.admin-report-access-heading { min-height: 64px; padding-left: 12px; border-left: 4px solid #f49a00; }
+.admin-report-access-heading h2 { margin: 0; font-size: 32px; font-weight: 750; line-height: 1.2; letter-spacing: -.7px; }
+.admin-report-access-heading > p { margin: 4px 0 0; color: #758aa5; font-size: 14px; line-height: 1.5; }
+.admin-report-access-status, .admin-report-access-how { padding: 24px; box-shadow: 0 8px 24px #345d8310; }
+.admin-report-access-status { display: grid; justify-items: start; gap: 16px; }
+.admin-report-access-status-heading { display: flex; align-items: center; gap: 12px; }
+.admin-report-access-key { display: grid; place-items: center; flex-shrink: 0; width: 48px; height: 48px; border-radius: 16px; color: #07863c; background: #ecfdf5; }
+.admin-report-access h3 { margin: 0; color: #34465f; font-size: 16px; font-weight: 700; line-height: 1.5; }
+.admin-report-access-badge { display: inline-block; padding: 2px 10px; border-radius: 999px; color: #61748e; background: #f1f5f9; font-size: 12px; line-height: 1.4; }
+.admin-report-access-badge--active { color: #087c32; background: #dcfce7; }
+.admin-report-access-code { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; width: 100%; min-height: 68px; padding: 12px 16px; border-radius: 16px; background: #f7f9fc; }
+.admin-report-access-code p { margin: 0; color: #8b9fbf; font-size: 12px; line-height: 1.5; }
+.admin-report-access-mask { display: block; color: #253247; font-size: 24px; font-weight: 700; letter-spacing: 3px; line-height: 1.2; }
+.admin-report-access-history p { margin: 0; color: #758aa5; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.admin-report-access-status button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 10px 16px; border: 0; border-radius: 14px; color: #fff; background: #14813b; font-size: 14px; font-weight: 600; line-height: 1.4; }
+.admin-report-access-status button:disabled { opacity: .8; }
+.admin-report-access-how h3 { display: flex; align-items: center; gap: 12px; font-size: 18px; }
+.admin-report-access-how h3 svg { flex-shrink: 0; color: #00a775; }
+.admin-report-access-how ul { display: grid; gap: 8px; margin: 12px 0 0; padding: 0; list-style: none; }
+.admin-report-access-how li { display: flex; align-items: flex-start; gap: 12px; color: #758aa5; font-size: 14px; line-height: 1.5; }
+.admin-report-access-how li > svg { flex-shrink: 0; margin-top: 3px; color: #00a775; }
+.admin-report-access-how li > span { min-width: 0; overflow-wrap: anywhere; }
+.admin-report-access-how code { font: inherit; font-weight: 650; }
+.admin-report-access-note { margin: 0; color: #61748e; font-size: 12px; line-height: 1.6; }
+@media (max-width: 1023px) {
+  .admin-report-access-status button { min-height: 44px; }
+}
+@media (max-width: 479px) {
+  .admin-report-access-heading h2 { font-size: 28px; }
+  .admin-report-access-status, .admin-report-access-how { padding: 20px; }
+  .admin-report-access-status button { width: 100%; }
+}

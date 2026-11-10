@@ -81,7 +81,7 @@ Dashboard dapat direview langsung di `/admin/dashboard` dengan `VITE_DATA_SOURCE
 
 `adminDashboardService.getAdminDashboard({ signal })` mengambil mock admin terpisah, menghitung saldo akhir tiap kategori dan total untuk empat kartu/tabel. Data 20 Oktober 2026 mengikuti referensi: saldo awal Rp16.864.200 + pemasukan Rp1.791.500 − pengeluaran Rp1.427.500 = saldo akhir Rp17.228.200. Lima transaksi terbaru hanyalah cuplikan. Mock laporan publik April 2026 tidak diubah. Nama/email Super Admin hanya konten akun contoh dari desain, bukan akun login atau penerapan role.
 
-Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/kategori/agenda, operasi akun, laporan admin, kwitansi, activity log, kode akses, notifikasi dan logout. Dashboard, Kelola Dana, Kategori Dana, Profil Masjid, Agenda, Kontak & Pengaturan serta Kelola Akun dapat dibuka melalui Sidebar. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
+Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/kategori/agenda, operasi akun, perubahan kode akses, laporan admin, kwitansi, activity log, notifikasi dan logout. Dashboard, Kelola Dana, Kategori Dana, Profil Masjid, Agenda, Kontak & Pengaturan, Kelola Akun serta Kode Akses Laporan dapat dibuka melalui Sidebar. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
 
 Test unit/SSR dashboard ikut `npm test`. Setelah server mock/API dan Chrome QA dijalankan sesuai bagian browser, jalankan dari root:
 
@@ -154,6 +154,18 @@ Tambah, Edit, Nonaktifkan, Hapus dan Aktifkan tetap nonaktif dengan keterangan b
 Super Admin Only serta field role hanya tampilan; tidak memberikan izin atau perlindungan route. Backend nantinya wajib memverifikasi pengguna terautentikasi dan izin Super Admin untuk akses daftar maupun setiap operasi akun. Kontrak/API autentikasi dan manajemen akun belum diintegrasikan; tidak membuat sistem role, form/modal CRUD, registrasi atau reset password.
 
 Test service/filter/route ikut `npm test`. Suite browser admin mencakup pencarian nama/email/kapital/spasi/Enter, empty state, status/aksi, empat viewport, refresh/trailing slash dan navigasi kembali dari enam halaman admin sebelumnya. Screenshot di `tmp/admin18-qa/` tidak di-stage; QA terbatas Chrome/emulasi viewport.
+
+## Kode Akses Laporan Publik — Admin 1.9
+
+Route `/admin/kode-akses-laporan` memakai AdminLayout, menu aktif dan Topbar Kode Akses Laporan. Label visual Super Admin Only, kartu Status Kode Akses dan Cara Kerja mengikuti `18-admin-kode-akses-laporan.png`. Badge Aktif, tanggal 10 Juni 2026 pukul 09:00 dan pengubah Super Admin hanya data contoh, bukan informasi backend yang sudah diverifikasi.
+
+`adminReportAccessService.getAdminReportAccessStatus({ signal })` hanya mengembalikan salinan metadata dari fixture baru. Halaman/fixture admin tidak menyimpan kode asli atau hash dan tidak membaca nilai sandi mock publik. Delapan simbol tetap hanya placeholder, bukan petunjuk panjang kode sebenarnya. Label penyimpanan **Simulasi** menggantikan Terenkripsi pada gambar. Ubah Kode Akses nonaktif; tidak ada form, perubahan kode, HTTP atau penyimpanan kredensial. Mode API memberi error metadata belum terintegrasi tanpa fallback mock.
+
+Cara Kerja mempertahankan **M1.8b**: tombol/CTA laporan pada Beranda/Footer membuka UI gate; setelah kode sesuai gate ditutup dan pengunjung menuju `/laporan-keuangan`. Akses langsung dan refresh route itu tetap tanpa gate. Kode hanya mengatur interaksi gate, bukan autentikasi/otorisasi atau pengamanan data laporan. Tidak membuat session, JWT, route guard atau penguncian laporan.
+
+Backend publik sudah memiliki `POST /api/public/report/check-password` dengan hasil `{ valid: boolean }`, sementara adapter frontend publik belum dihubungkan. Integrasi berikutnya perlu menyepakati API metadata/perubahan kode, sumber/persistensi kode backend yang sama dengan mekanisme pemeriksaan tersebut, metadata pengubah/waktu serta autentikasi/izin Super Admin untuk pengelolaannya. Respons status admin tidak perlu mengirim kode asli/hash. Penggantian kode nantinya hanya mengganti kode yang diperiksa gate; autentikasi Super Admin tetap mekanisme terpisah dan akses langsung laporan tetap diperbolehkan. Tidak menetapkan endpoint admin baru atau mengubah API_CONTRACT.
+
+Test metadata/route/copy ikut `npm test`. Suite browser admin memeriksa dua kartu, placeholder, Simulasi, aksi nonaktif, empat viewport, refresh/trailing slash dan navigasi tujuh halaman sebelumnya. Suite publik juga dijalankan untuk memverifikasi gate CTA serta akses langsung/refresh tetap sesuai. Screenshot di `tmp/admin19-qa/`, tidak di-stage; QA terbatas Chrome/emulasi viewport.
 
 ## Mock dan integrasi API
 

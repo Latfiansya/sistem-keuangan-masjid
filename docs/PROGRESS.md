@@ -942,3 +942,25 @@ Status: selesai pada `feature/frontend-admin`, HEAD awal `094caf2`. Saat mulai, 
 Sebelas file memuat perubahan Admin 1.8: App, AdminLayout, halaman/CSS akun, mock, service, dua test serta README/DESIGN_MAP/PROGRESS. Setelah pemeriksaan diff/status/staged diff, hanya perubahan terkait ini ditambahkan ke staging. Total staged menjadi 15 file karena Admin 1.7 yang sudah staged dipertahankan; empat file khusus Admin 1.7 tidak diedit. Aset referensi, log, screenshot, profil Chrome dan build tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah Kelola Akun selesai.
 
 Usulan pesan commit untuk staging gabungan Admin 1.7–1.8: `feat: tambahkan pengaturan website dan kelola akun admin`.
+
+## Admin 1.9 — Kode Akses Laporan Publik (10 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline commit `72def82`. Awal kerja tanpa perubahan tracked/staged; `design-references/` tetap untracked. Raster final `18-admin-kode-akses-laporan.png` (1766×1056 px), AdminLayout/routing, service/modal gate publik, kontrak API dan keberadaan endpoint pemeriksaan backend diperiksa sebelum implementasi.
+
+- Route `/admin/kode-akses-laporan` memakai AdminLayout; menu/Topbar Kode Akses Laporan mengikuti route. Label Super Admin Only, heading oranye, dua kartu status/cara kerja, ikon dan styling mengikuti referensi dengan CSS khusus `.admin-report-access*`.
+- Fixture/service baru hanya memuat metadata contoh active/changedDate/changedTime/changedBy. Status Aktif dan riwayat bukan data backend sebenarnya. Halaman menggunakan delapan simbol placeholder tetap, tanpa nilai kode asli/hash atau impor sandi mock publik. Chip Simulasi menggantikan klaim Terenkripsi; catatan data contoh ditampilkan.
+- Ubah Kode Akses nonaktif dengan keterangan belum tersedia. Tidak ada form perubahan kode, kredensial, HTTP, storage/cookie atau operasi simpan. Mode API memberikan error integrasi metadata tanpa fallback. Autentikasi Super Admin belum dibuat; label hanya visual.
+- Cara Kerja mengikuti koreksi penting M1.8b: gate hanya melalui CTA Beranda/Footer; kode sesuai menutup gate dan mengarah ke /laporan-keuangan. Akses langsung/refresh tetap tanpa gate. Kode bukan autentikasi, otorisasi atau pengamanan data keuangan; tidak membuat JWT, session, route guard atau penguncian laporan sekarang maupun sebagai usulan integrasi.
+- Endpoint publik POST /api/public/report/check-password sudah tersedia, frontend checker masih mock/belum dihubungkan. Integrasi mendatang harus menyatukan perubahan kode oleh Super Admin dengan sumber kode/verifikasi backend yang sama, menyepakati penyimpanan/metadata dan otorisasi pengelola secara terpisah. Respons status tidak mengirim kode/hash; perubahan kode hanya untuk kode yang diperiksa gate. Tidak mengarang endpoint admin baru.
+- Tidak mengubah backend, API_CONTRACT, alur/service/mock gate publik, sandi publik, halaman laporan, halaman admin lama, dependency atau lockfile. README dan DESIGN_MAP diperbarui.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 71 frontend unit/SSR (3 baru) dan 18 backend; tiga suite browser opsional dilewati dalam perintah standar, lalu dijalankan terpisah.
+- Chrome development: 21 skenario admin, 6 Login dan 35 publik PASS (62 skenario; 65 hasil termasuk tiga induk). Pemeriksaan baru mencakup menu/judul, kedua kartu/metadata/placeholder, chip Simulasi, tombol nonaktif, tanpa form/input kode, penjelasan M1.8b, empat viewport, refresh/trailing slash, navigasi tujuh halaman sebelumnya dan error API tanpa HTTP. Suite publik memverifikasi CTA gate, akses langsung/refresh, tanpa persistensi sandi/otorisasi, serta ekspor PDF/PNG/ZIP dan regresi publik lainnya.
+- Setelah teks Cara Kerja diringkas agar mudah dibaca, lint/test/build dan 21 skenario admin diulang dan lulus. `npm run build`: PASS; preview production lulus 21 skenario admin (22 hasil termasuk induk). Visual ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844, tanpa overflow halaman, elemen terpotong, aset gagal atau exception runtime aplikasi.
+- Screenshot di `tmp/admin19-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport; belum perangkat fisik/Safari/Firefox. Halaman tetap mock; metadata/perubahan kode dan autentikasi pengelola menunggu kesepakatan/integrasi backend.
+
+Sebelas file terkait Admin 1.9 di-stage setelah review status, diff, daftar file dan staged diff. Aset referensi, log, screenshot, profil Chrome dan build tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah halaman ini selesai.
+
+Usulan pesan commit: `feat: tambahkan halaman kode akses laporan dengan status simulasi`.
