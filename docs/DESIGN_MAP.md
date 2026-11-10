@@ -283,3 +283,14 @@ Referensi final pengguna: `design-references/user/11-admin-dashboard.png` (1766 
 - Foto/logo/font memakai aset lokal yang sudah ada, ikon Lucide React. CSS baru dibatasi `.admin-*` di AdminLayout.css. Halaman tidak menggunakan screenshot sebagai konten dan tidak membuat menu, transaksi, laporan, notifikasi atau akun fiktif yang berfungsi.
 
 QA Chrome development/preview build mencakup 1728×1080, 1366×768, 768×1024 dan 390×844. Screenshot/top/full/menu dan metrik disimpan di `tmp/admin12-qa/`, tidak di-stage. Kesetiaan visual merupakan pendekatan raster; belum ada frame mobile resmi, pengujian perangkat fisik atau verifikasi Safari/Firefox pada milestone ini.
+
+## Admin 1.3 — Kelola Dana Keuangan
+
+Referensi final: `design-references/user/12-admin-kelola-dana.png` (1856 × 1395 px). Margin hitam/bayangan di luar bingkai aplikasi tidak dijadikan bagian halaman. Route `/admin/kelola-dana` memakai Sidebar dan Topbar AdminLayout yang sama; Kelola Dana aktif, Dashboard tetap dapat dinavigasi, judul Topbar mengikuti route.
+
+- Hero hijau dengan foto masjid di kanan, badge MANAJEMEN TRANSAKSI, judul dan deskripsi referensi. Tinggi desktop sekitar 196 px, padding 28×40 px, radius 24 px; tidak mengubah hero Dashboard.
+- Panel Kelola Transaksi berisi deskripsi, tombol Pemasukan hijau dan Pengeluaran oranye. Keterangan Data contoh/Fitur transaksi belum tersedia memperjelas bahwa deskripsi referensi belum merupakan implementasi CRUD. Tombol tetap nonaktif tanpa form/modal/route karangan.
+- Tabel Transaksi Terbaru diekstrak dari Dashboard menjadi `AdminRecentTransactions` tanpa perubahan markup/styling. Kedua halaman memakai kategori dan lima transaksi yang sama melalui service/konteks layout, termasuk Lihat Semua nonaktif. Tidak membuat mock kedua atau mengubah saldo/laporan publik.
+- Desktop mempertahankan geometri Sidebar/Topbar, spacing 24 px dan tabel penuh. Tablet memakai menu collapsible yang sudah ada; mobile menumpuk tombol, menyesuaikan hero/teks dan mempertahankan scroll tabel lokal. Menu fokus ke tautan aktif ketika dibuka; pergantian halaman mereset scroll.
+
+QA Chrome dilakukan pada 1728×1080, 1366×768, 768×1024 dan 390×844, development dan preview production. Screenshot di `tmp/admin13-qa/` tidak di-stage. Desain mobile merupakan adaptasi desktop; belum frame mobile resmi, perangkat fisik, Safari/Firefox atau klaim identik piksel.

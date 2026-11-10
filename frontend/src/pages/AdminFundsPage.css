@@ -1,0 +1,29 @@
+.admin-funds { display: grid; gap: 24px; }
+.admin-funds-hero { min-height: 196px; padding: 28px 40px; border-radius: 24px; color: white; background: linear-gradient(90deg, #1b6b42 0%, #258961e8 44%, #30947199 68%, #4fa68426 100%), url("/assets/masjid-background.webp") center 47% / cover no-repeat; box-shadow: 0 8px 18px #17476c14; }
+.admin-funds-badge { display: inline-flex; align-items: center; gap: 8px; padding: 4px 12px; border: 1px solid #d2cb474d; border-radius: 999px; color: #ecdf74; background: #d2c33029; font-size: 12px; font-weight: 700; line-height: 1.5; letter-spacing: 1px; }
+.admin-funds-hero h2 { margin: 12px 0 8px; font-size: 36px; font-weight: 750; line-height: 1.2; letter-spacing: -.8px; }
+.admin-funds-hero p { margin: 0; color: #b8d6bf; font-size: 16px; line-height: 1.5; }
+.admin-funds-controls { box-shadow: 0 6px 20px #345d8308; }
+.admin-funds-controls-heading { padding: 16px 24px 14px; border-bottom: 1px solid #f1f5f9; }
+.admin-funds-controls-heading h2 { font-size: 20px; }
+.admin-funds-controls-heading p { margin: 2px 0 0; color: #8b9fbf; font-size: 13px; line-height: 1.5; }
+.admin-funds-controls-body { display: flex; align-items: center; flex-wrap: wrap; gap: 16px 24px; padding: 24px; }
+.admin-funds-controls-body > p { margin: 0 0 0 auto; color: #61768e; font-size: 12px; line-height: 1.5; }
+.admin-funds-buttons { display: flex; flex-wrap: wrap; gap: 12px; }
+.admin-funds-buttons button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 12px 20px; border: 0; border-radius: 14px; color: #fff; background: #148642; box-shadow: 0 4px 8px #203d2526; font-size: 16px; font-weight: 650; line-height: 1.5; }
+.admin-funds-buttons button + button { background: #f47700; }
+@media (max-width: 1023px) {
+  .admin-funds-hero { padding: 28px 32px; }
+  .admin-funds-hero h2 { font-size: 32px; }
+  .admin-funds-controls-body > p { margin-left: 0; }
+}
+@media (max-width: 479px) {
+  .admin-funds { gap: 20px; }
+  .admin-funds-hero { padding: 28px 24px; background-position: center, 65% center; }
+  .admin-funds-hero h2 { font-size: 30px; letter-spacing: -.4px; }
+  .admin-funds-hero p { font-size: 14px; }
+  .admin-funds-hero p br { display: none; }
+  .admin-funds-badge { padding: 4px 10px; font-size: 10px; }
+  .admin-funds-controls-heading, .admin-funds-controls-body { padding: 20px; }
+  .admin-funds-buttons { display: grid; grid-template-columns: 1fr; width: 100%; }
+}

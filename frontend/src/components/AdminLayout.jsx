@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet } from 'react-router'
+import { NavLink, Outlet, useLocation } from 'react-router'
 import { ArrowRightLeft, Bell, Building2, CalendarDays, ClipboardList, Contact, FileText, Folder, KeyRound, LayoutDashboard, LogOut, Menu, Receipt, Users, X } from 'lucide-react'
 import { getAdminDashboard } from '../services/adminDashboardService.js'
 import './AdminLayout.css'
@@ -7,7 +7,7 @@ import './AdminLayout.css'
 const navigation = [
   { label: 'Keuangan', items: [
     { label: 'Dashboard Keuangan', icon: LayoutDashboard, to: '/admin/dashboard' },
-    { label: 'Kelola Dana', icon: ArrowRightLeft },
+    { label: 'Kelola Dana', title: 'Kelola Dana Keuangan', icon: ArrowRightLeft, to: '/admin/kelola-dana' },
     { label: 'Kategori Dana', icon: Folder },
     { label: 'Laporan', icon: FileText },
     { label: 'Kwitansi', icon: Receipt },
@@ -24,7 +24,10 @@ const navigation = [
   ] },
 ]
 
-export default function AdminLayout({ title = 'Dashboard Keuangan' }) {
+export default function AdminLayout() {
+  const { pathname } = useLocation()
+  const currentPage = navigation.flatMap((group) => group.items).find((item) => item.to === pathname.replace(/\/$/, ''))
+  const title = currentPage?.title || currentPage?.label || 'Dashboard Keuangan'
   const [dashboard, setDashboard] = useState(null)
   const [error, setError] = useState('')
   const [menuOpen, setMenuOpen] = useState(false)
@@ -40,10 +43,14 @@ export default function AdminLayout({ title = 'Dashboard Keuangan' }) {
   }, [])
 
   useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+
+  useEffect(() => {
     if (!menuOpen) return
     const trigger = menuButton.current
     const isMobile = window.matchMedia('(max-width: 1023px)').matches
-    if (isMobile) navigationPanel.current?.querySelector('a')?.focus({ preventScroll: true })
+    if (isMobile) navigationPanel.current?.querySelector('a[aria-current="page"]')?.focus({ preventScroll: true })
     function closeOnEscape(event) {
       if (event.key === 'Escape') {
         setMenuOpen(false)

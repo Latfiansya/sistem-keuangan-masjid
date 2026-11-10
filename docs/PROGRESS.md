@@ -795,3 +795,24 @@ Status: implementasi dan QA selesai pada `feature/frontend-admin`, baseline comm
 README dan DESIGN_MAP diperbarui untuk route/layout, mock, batasan dan cara QA. Setelah review status, diff, daftar file, whitespace dan staged diff, hanya 11 file Admin 1.2 disiapkan untuk commit manual. Tidak melakukan commit, push atau merge. Pekerjaan berhenti setelah dashboard selesai.
 
 Usulan pesan commit: `feat: tambahkan dashboard keuangan admin dengan layout dan data mock`.
+
+## Admin 1.3 — Kelola Dana Keuangan (10 November 2026)
+
+Status: halaman selesai dan tervalidasi pada `feature/frontend-admin`, baseline commit `62d6fd2`. Awal kerja tanpa perubahan tracked/staged; referensi `12-admin-kelola-dana.png` baru dibaca setelah pengguna menambahkannya. `design-references/` tetap untracked.
+
+- Route `/admin/kelola-dana` memakai AdminLayout yang sama. Kelola Dana kini menjadi Link Sidebar, menu aktif dan judul Topbar mengikuti route; Dashboard tetap dapat diakses. Pergantian halaman mereset scroll, menu mobile fokus ke tautan aktif dan menutup seperti sebelumnya.
+- Hero hijau/foto masjid, badge MANAJEMEN TRANSAKSI, judul/deskripsi serta panel Kelola Transaksi mengikuti raster final 1856×1395 px, tanpa menyalin margin hitam/bayangan luar aplikasi. Tombol Pemasukan hijau, Pengeluaran oranye dan Lihat Semua nonaktif; status data contoh/fitur belum tersedia tetap jelas. Tidak membuat form/modal/CRUD atau tujuan fiktif.
+- Tabel lama diekstrak menjadi `AdminRecentTransactions`, dipakai Dashboard dan Kelola Dana. Kedua halaman menerima kategori/lima transaksi dari service dan konteks layout yang sama, tanpa mock/service baru atau perubahan nilai. Seluruh markup konten Dashboard setelah ekstraksi dibandingkan dengan baseline sebelum perubahan dan identik; CSS Dashboard tidak diubah.
+- CSS Kelola Dana terpisah dan dibatasi `.admin-funds*`. Tablet/mobile memakai pola menu/scroll tabel yang sudah ada; tombol bertumpuk pada smartphone, tipografi/spacing menyesuaikan. Iterasi visual merapatkan tinggi hero desktop menjadi sekitar 196 px, merapikan judul/deskripsi mobile dan memberi shadow lembut pada panel.
+- Tidak mengubah desain Login, frontend publik, mock laporan publik, backend, kontrak API, autentikasi, dependency atau lockfile. Mode API tetap melaporkan integrasi belum tersedia tanpa request admin dan tanpa fallback mock.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS, 51 test frontend unit/SSR (3 baru) serta 18 test backend; tiga suite browser opsional dilewati pada perintah standar dan dijalankan terpisah.
+- Chrome development: 48 skenario browser PASS (51 hasil termasuk induk), mencakup 7 Dashboard/Kelola Dana, 6 Login dan 35 publik. Navigasi Sidebar bolak-balik tidak reload dokumen, judul/menu aktif benar, scroll kembali atas, DOM tabel tetap identik, saldo Dashboard tetap, serta refresh/trailing slash dan error mode API diuji. Regresi publik termasuk modal/gate/filter serta ekspor PDF/PNG/ZIP nyata lulus.
+- `npm run build`: PASS. Preview build production: 7 skenario Dashboard/Kelola Dana PASS (8 hasil termasuk induk). Visual desktop 1728×1080 / 1366×768, tablet 768×1024 dan mobile 390×844 ditinjau. Tidak ada overflow horizontal halaman, font/logo gagal, HTTP gagal atau exception runtime aplikasi. Scroll tabel lokal dengan keyboard sampai kolom terakhir tetap berfungsi.
+- Screenshot development/production di `tmp/admin13-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport; belum perangkat fisik, Safari/Firefox atau klaim identik piksel. Fitur transaksi tetap belum tersedia dan tidak ada kredensial/autentikasi baru.
+
+README dan DESIGN_MAP diperbarui untuk route, reuse dan batasan. Setelah review status, diff, daftar file, whitespace dan staged diff, hanya 11 file Admin 1.3 disiapkan untuk commit manual. Referensi, hasil build, screenshot dan profil Chrome tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah Kelola Dana selesai.
+
+Usulan pesan commit: `feat: tambahkan halaman kelola dana dengan tabel transaksi bersama`.

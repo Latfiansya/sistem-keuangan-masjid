@@ -9,6 +9,7 @@ import NotFoundPage from './pages/NotFoundPage.jsx'
 import AdminLoginPage from './pages/AdminLoginPage.jsx'
 import AdminLayout from './components/AdminLayout.jsx'
 import AdminDashboardPage from './pages/AdminDashboardPage.jsx'
+import AdminFundsPage from './pages/AdminFundsPage.jsx'
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
       <Route path="admin/login" element={<AdminLoginPage />} />
       <Route path="admin" element={<AdminLayout />}>
         <Route path="dashboard" element={<AdminDashboardPage />} />
+        <Route path="kelola-dana" element={<AdminFundsPage />} />
       </Route>
     </Routes>
   )
