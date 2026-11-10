@@ -12,6 +12,7 @@ import AdminDashboardPage from './pages/AdminDashboardPage.jsx'
 import AdminFundsPage from './pages/AdminFundsPage.jsx'
 import AdminCategoriesPage from './pages/AdminCategoriesPage.jsx'
 import AdminProfilePage from './pages/AdminProfilePage.jsx'
+import AdminAgendaPage from './pages/AdminAgendaPage.jsx'
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="kelola-dana" element={<AdminFundsPage />} />
         <Route path="kategori-dana" element={<AdminCategoriesPage />} />
         <Route path="profil-masjid" element={<AdminProfilePage />} />
+        <Route path="agenda" element={<AdminAgendaPage />} />
       </Route>
     </Routes>
   )

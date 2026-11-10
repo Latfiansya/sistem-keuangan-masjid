@@ -81,7 +81,7 @@ Dashboard dapat direview langsung di `/admin/dashboard` dengan `VITE_DATA_SOURCE
 
 `adminDashboardService.getAdminDashboard({ signal })` mengambil mock admin terpisah, menghitung saldo akhir tiap kategori dan total untuk empat kartu/tabel. Data 20 Oktober 2026 mengikuti referensi: saldo awal Rp16.864.200 + pemasukan Rp1.791.500 − pengeluaran Rp1.427.500 = saldo akhir Rp17.228.200. Lima transaksi terbaru hanyalah cuplikan. Mock laporan publik April 2026 tidak diubah. Nama/email Super Admin hanya konten akun contoh dari desain, bukan akun login atau penerapan role.
 
-Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/kategori, laporan admin, kwitansi, activity log, agenda/kontak admin, akun, kode akses, notifikasi dan logout. Dashboard, Kelola Dana, Kategori Dana dan Profil Masjid dapat dibuka melalui Sidebar. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
+Menu/aksi yang belum dibuat dinonaktifkan dengan keterangan belum tersedia: form transaksi/kategori/agenda, laporan admin, kwitansi, activity log, kontak admin, akun, kode akses, notifikasi dan logout. Dashboard, Kelola Dana, Kategori Dana, Profil Masjid dan Agenda dapat dibuka melalui Sidebar. Tidak ada route fiktif atau login berhasil semu. Mode `api` menampilkan error integrasi tanpa HTTP maupun fallback mock. Autentikasi serta kontrak admin tetap menunggu backend; tidak menambah endpoint/dependency.
 
 Test unit/SSR dashboard ikut `npm test`. Setelah server mock/API dan Chrome QA dijalankan sesuai bagian browser, jalankan dari root:
 
@@ -120,6 +120,16 @@ Ganti Foto memakai file picker native yang dapat diakses melalui keyboard, satu 
 Kebutuhan backend: sepakati endpoint/metode dan field multipart untuk satu gambar, otorisasi pengurus, validasi ulang ekstensi/MIME/isi gambar/ukuran/jumlah, penyimpanan aman serta respons URL banner. URL tersebut perlu terhubung ke sumber konten publik setelah integrasi disepakati. Batas multipart harus khusus upload, tanpa memperbesar batas JSON umum 10 KB. Belum menetapkan endpoint atau mengubah kontrak API maupun banner publik.
 
 Test unit/service dan routing ikut `npm test`. Suite browser admin pada perintah di atas juga memeriksa form, validasi, Enter, simpan simulasi, reset saat keluar/refresh, data publik tetap dan empat viewport. Refinement foto menguji picker keyboard, format/ukuran/jumlah/berkas rusak, preview, pembatalan dan pelepasan object URL. Screenshot awal/validasi/simulasi di `tmp/admin15-qa/`, serta preview/validasi foto di `tmp/admin15-photo-qa/`, tidak di-stage. QA masih terbatas Chrome/emulasi viewport.
+
+## Kelola Agenda — Admin 1.6
+
+Route `/admin/agenda` memakai AdminLayout, menu aktif dan judul Topbar Agenda. Heading bergaris oranye, Tambah Agenda, kartu putih horizontal, ikon kalender, nama, frekuensi/jadwal dan aksi Edit/Hapus mengikuti `15-admin-agenda.png`. Semua 25 aksi nonaktif dengan label/keterangan belum tersedia; tidak ada form, dialog, CRUD atau notifikasi keberhasilan palsu.
+
+Halaman memanggil `agendaService.getAgenda({ signal })` yang sudah dipakai publik, tanpa service/fixture kedua. Seluruh 12 kegiatan tampil berurutan dalam kelompok Mingguan (5), Bulanan (2), Tahunan / PHBI (5). Nama/jadwal disalin dari sumber tanpa perubahan. Perbedaan penting dengan raster: Rabi’ul Awwal tetap bernama **Peringatan Maulid Nabi Muhammad SAW**, sedangkan gambar mengulang Peringatan Tahun Baru Islam; jadwal tahunan tetap memakai awalan **Bulan**. Ejaan/kapitalisasi lain juga mengikuti mock publik.
+
+Mode mock mandiri; loading/error/daftar kosong tersedia. Cabang API pada service agenda lama belum dihubungkan dan tetap memberi error integrasi tanpa HTTP/fallback. Pada smartphone heading/tombol bertumpuk, teks/jadwal membungkus dan aksi berpindah ke baris berikutnya agar tidak bertabrakan. Tidak mengubah halaman/service/mock publik atau halaman admin sebelumnya.
+
+Test route ikut `npm test`. Suite browser admin pada perintah di atas mencakup jumlah/isi identik dengan sumber, navigasi lima halaman, menu aktif, aksi nonaktif, empat viewport, refresh/trailing slash dan daftar publik tetap. Screenshot di `tmp/admin16-qa/development/` atau `tmp/admin16-qa/production/`, tidak di-stage. QA terbatas Chrome/emulasi viewport; CRUD dan integrasi API admin menunggu desain/kontrak berikutnya.
 
 ## Mock dan integrasi API
 

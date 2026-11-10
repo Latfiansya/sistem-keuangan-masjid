@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { copyFile, mkdir, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import { mockAgenda } from '../src/mocks/agenda.js'
 
 const baseUrl = process.env.ADMIN_BROWSER_QA_URL
 const apiUrl = process.env.ADMIN_BROWSER_API_QA_URL
@@ -29,11 +30,13 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
   const categoriesOutput = fileURLToPath(new URL(`../../tmp/admin14-qa/${phase}/`, import.meta.url))
   const profileOutput = fileURLToPath(new URL(`../../tmp/admin15-qa/${phase}/`, import.meta.url))
   const photoOutput = fileURLToPath(new URL(`../../tmp/admin15-photo-qa/${phase}/`, import.meta.url))
+  const agendaOutput = fileURLToPath(new URL(`../../tmp/admin16-qa/${phase}/`, import.meta.url))
   await mkdir(output, { recursive: true })
   await mkdir(fundsOutput, { recursive: true })
   await mkdir(categoriesOutput, { recursive: true })
   await mkdir(profileOutput, { recursive: true })
   await mkdir(photoOutput, { recursive: true })
+  await mkdir(agendaOutput, { recursive: true })
   ws.addEventListener('message', ({ data }) => {
     const message = JSON.parse(data)
     if (message.id) {
@@ -180,7 +183,7 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
     await t.test('fitur di luar lingkup nonaktif, akun contoh tidak menjadi autentikasi dan refresh tetap membuka dashboard', async () => {
       assert.equal(await evaluate('[...document.querySelectorAll(".admin-dashboard button, .admin-nav-group button, .admin-account button, .admin-topbar-actions button")].every(e=>e.disabled&&!!e.title)'), true)
       assert.match(await evaluate('document.querySelector(".admin-dashboard-status").textContent'), /Data contoh/)
-      assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-shell a[href]")].map(e=>e.getAttribute("href"))'), ['#admin-content', '/admin/dashboard', '/admin/kelola-dana', '/admin/kategori-dana', '/admin/profil-masjid'])
+      assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-shell a[href]")].map(e=>e.getAttribute("href"))'), ['#admin-content', '/admin/dashboard', '/admin/kelola-dana', '/admin/kategori-dana', '/admin/profil-masjid', '/admin/agenda'])
       assert.deepEqual(await evaluate('({local:localStorage.length,session:sessionStorage.length,cookie:document.cookie})'), { local: 0, session: 0, cookie: '' })
       await reload('!!document.querySelector(".admin-dashboard")')
       await open(baseUrl, '/')
@@ -466,6 +469,51 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
       assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
     })
 
+    await t.test('Agenda menampilkan seluruh data publik dalam tiga kelompok, aksi nonaktif dan navigasi lima halaman di empat viewport', async () => {
+      const expected = mockAgenda.groups.flatMap((group) => group.items.map((item) => ({ ...item, frequency: group.title })))
+      for (const [width, height] of [[1728, 1080], [1366, 768], [768, 1024], [390, 844]]) {
+        await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false })
+        await open()
+        await evaluate('window.adminAgendaNavigation = true')
+        if (width < 1024) await click('.admin-menu-toggle')
+        await click('.admin-nav-link[href="/admin/agenda"]')
+        await waitFor('document.querySelectorAll(".admin-agenda-card").length === 12')
+        assert.equal(await evaluate('window.adminAgendaNavigation'), true)
+        assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'), 'Agenda')
+        assert.equal(await evaluate('document.querySelector(".admin-nav-link[aria-current=page]").getAttribute("href")'), '/admin/agenda')
+        assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-agenda-group")].map(e=>e.querySelectorAll(".admin-agenda-card").length)'), [5, 2, 5])
+        assert.deepEqual(await evaluate(`[...document.querySelectorAll('.admin-agenda-card')].map(e=>({name:e.querySelector('h4').textContent,frequency:e.querySelector('.admin-agenda-details > span:first-child').textContent.replace(/^Frekuensi: /,''),schedule:e.querySelector('.admin-agenda-details > span:last-child').textContent.replace(/^Jadwal: /,'')}))`), expected)
+        assert.equal(await evaluate('document.querySelectorAll(".admin-agenda button:disabled").length'), 25)
+        assert.equal(await evaluate('[...document.querySelectorAll(".admin-agenda button")].every(e=>e.disabled&&!!e.title)'), true)
+        assert.equal(await evaluate('document.querySelectorAll(".admin-agenda form,.admin-agenda dialog,.admin-agenda input").length'), 0)
+        assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
+        assert.equal(await evaluate(`[...document.querySelectorAll('.admin-agenda-card')].every(e=>{const c=e.getBoundingClientRect(),t=e.querySelector('.admin-agenda-copy').getBoundingClientRect(),a=e.querySelector('.admin-agenda-actions').getBoundingClientRect();return c.left>=0&&c.right<=innerWidth&&e.querySelector('h4').scrollWidth<=e.querySelector('h4').clientWidth&&(a.left>=t.right||a.top>=t.bottom)&&a.right<=c.right})`), true)
+        await evaluate('document.fonts.ready;window.scrollTo(0,0)')
+        await screenshot(`agenda-${width}-top`, false, agendaOutput)
+        await screenshot(`agenda-${width}-full`, true, agendaOutput)
+        for (const [route, selector] of [['kelola-dana', '.admin-funds'], ['kategori-dana', '.admin-categories'], ['profil-masjid', '#admin-profile-form'], ['dashboard', '.admin-dashboard']]) {
+          if (width < 1024) await click('.admin-menu-toggle')
+          await click(`.admin-nav-link[href="/admin/${route}"]`)
+          await waitFor(`!!document.querySelector('${selector}')`)
+          assert.equal(await evaluate('document.querySelector(".admin-nav-link[aria-current=page]").getAttribute("href")'), `/admin/${route}`)
+        }
+      }
+    })
+
+    await t.test('Agenda mendukung refresh/trailing slash dan tidak mengubah daftar publik', async () => {
+      await send('Page.navigate', { url: `${baseUrl}/admin/agenda/` })
+      await waitFor('document.querySelectorAll(".admin-agenda-card").length === 12')
+      await reload('document.querySelectorAll(".admin-agenda-card").length === 12')
+      assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'), 'Agenda')
+      const names = await evaluate('[...document.querySelectorAll(".admin-agenda-card h4")].map(e=>e.textContent)')
+      const schedules = await evaluate(`[...document.querySelectorAll('.admin-agenda-details > span:last-child')].map(e=>e.textContent.replace(/^Jadwal: /,''))`)
+      await send('Page.navigate', { url: `${baseUrl}/agenda` })
+      await waitFor('document.querySelectorAll(".agenda-row").length === 12')
+      assert.deepEqual(await evaluate('[...document.querySelectorAll(".agenda-row-name")].map(e=>e.textContent)'), names)
+      assert.deepEqual(await evaluate('[...document.querySelectorAll(".agenda-row-time")].map(e=>e.textContent)'), schedules)
+      assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
+    })
+
     await t.test('mode API tidak memakai mock diam-diam atau menghubungi endpoint admin karangan', async () => {
       for (const route of ['/admin/dashboard', '/admin/kelola-dana', '/admin/kategori-dana']) {
         await send('Page.navigate', { url: `${apiUrl}${route}` })
@@ -478,6 +526,10 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
       assert.match(await evaluate('document.querySelector(".admin-profile [role=alert]").textContent'), /Profil admin melalui API belum tersedia/)
       assert.equal(await evaluate('document.querySelector(".admin-profile-save").disabled'), true)
       assert.equal(await evaluate('!!document.querySelector("#admin-profile-form")'), false)
+      await send('Page.navigate', { url: `${apiUrl}/admin/agenda` })
+      await waitFor('!!document.querySelector(".admin-agenda [role=alert]")')
+      assert.match(await evaluate('document.querySelector(".admin-agenda [role=alert]").textContent'), /Agenda melalui API belum tersedia/)
+      assert.equal(await evaluate('document.querySelectorAll(".admin-agenda-card").length'), 0)
       assert.deepEqual(requests, [])
       assert.deepEqual(failures, [])
     })

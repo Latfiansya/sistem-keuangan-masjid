@@ -876,3 +876,25 @@ Verifikasi lanjutan: lint tanpa peringatan; `npm test` lulus 59 test frontend un
 Setelah pemeriksaan diff dan staging, total tetap 10 file Admin 1.5; hanya delapan file terkait refinement diperbarui dalam staging. Aset referensi, fixture, log dan hasil build tidak disertakan. Tidak melakukan commit, push atau merge.
 
 Usulan pesan commit yang mencakup hasil akhir: `feat: tambahkan profil masjid admin dengan simulasi simpan dan preview foto`.
+
+## Admin 1.6 — Kelola Agenda (10 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline commit `e51629c`. Awal kerja tanpa perubahan tracked/staged; `design-references/` tetap untracked. Referensi final `15-admin-agenda.png` (1766×1505 px) dibaca sebelum implementasi.
+
+- Route `/admin/agenda` dan tautan Agenda pada Sidebar memakai AdminLayout yang sama. Judul Topbar/menu aktif mengikuti route, navigasi lima halaman admin berfungsi. Tidak mengubah markup/CSS halaman admin lama atau frontend publik.
+- Heading beraksen oranye, Tambah Agenda hijau, 12 kartu putih horizontal dengan kalender, nama, frekuensi/jadwal dan ikon Edit/Hapus mengikuti raster. Menggunakan admin-panel, font dan ikon yang sudah tersedia; CSS tambahan dibatasi `.admin-agenda*`. Aksi ikon 44 px. Pada smartphone tombol heading selebar konten, nama/jadwal membungkus dan aksi berpindah baris agar tetap nyaman.
+- Memakai `getAgenda({ signal })` dari service publik yang sudah ada, tanpa service/fixture baru. Seluruh kelompok/items dipertahankan: 5 Mingguan, 2 Bulanan dan 5 Tahunan / PHBI. Tidak mengubah nilai sumber atau membatasi jumlah berdasarkan screenshot. Jadwal tetap string berulang, bukan tanggal/jam hasil asumsi.
+- Perbedaan referensi dipertahankan sesuai data: mock memakai Peringatan Maulid Nabi Muhammad SAW untuk Bulan Rabi’ul Awwal, sementara raster mengulang nama Peringatan Tahun Baru Islam. Semua jadwal tahunan memakai awalan Bulan; ejaan/kapitalisasi lainnya tetap mengikuti sumber, termasuk Al-Qur’an dan Ibu-Ibu.
+- Semua 25 aksi Tambah/Edit/Hapus nonaktif, memiliki title/label dan catatan belum tersedia. Tidak membuat form/dialog/CRUD/notifikasi sukses. Halaman memiliki loading/error/kosong, pembatalan saat unmount, dan tidak menghubungi API admin. Mode API memakai error adapter agenda lama yang belum dihubungkan, tanpa request/fallback mock.
+- Backend, kontrak API, sumber agenda publik, autentikasi, dependency dan lockfile tidak berubah. README dan DESIGN_MAP diperbarui untuk route serta keputusan perbedaan data.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 60 frontend unit/SSR (1 route baru), 18 backend; tiga suite browser opsional dilewati dalam perintah standar, admin/login dijalankan terpisah.
+- Chrome development: 15 skenario admin dan 6 Login PASS (23 hasil termasuk dua induk). Pengujian baru membandingkan seluruh nama/frekuensi/jadwal dengan mock sumber, jumlah 5/2/5, 25 aksi nonaktif, navigasi lima halaman tanpa reload, menu aktif, refresh/trailing slash dan kesamaan daftar/jadwal publik. Regresi mencakup saldo/tabel, form profil, preview foto/cleanup URL dan login sebelumnya.
+- `npm run build`: PASS. Preview production: 15 skenario admin PASS (16 hasil termasuk induk), termasuk error API tanpa HTTP. Visual ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844: tanpa overflow horizontal halaman, teks/aksi bertabrakan, aset gagal atau exception runtime aplikasi.
+- Screenshot di `tmp/admin16-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport; belum perangkat fisik/Safari/Firefox. Data tetap contoh, CRUD menunggu desain form/dialog dan integrasi admin menunggu kesepakatan backend.
+
+Hanya sembilan file Admin 1.6 di-stage setelah pemeriksaan status, diff, daftar file dan staged diff. Aset referensi, log, screenshot, profil Chrome dan hasil build tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah daftar Agenda selesai.
+
+Usulan pesan commit: `feat: tambahkan halaman agenda admin dari data agenda publik`.

@@ -318,3 +318,14 @@ Referensi final: `design-references/user/14-admin-profil-masjid.png` (1766 × 14
 QA Chrome development/preview production pada 1728×1080, 1366×768, 768×1024 dan 390×844. Screenshot di `tmp/admin15-qa/` tidak di-stage. Mobile merupakan adaptasi desktop; belum perangkat fisik, Safari/Firefox atau klaim identik piksel.
 
 Refinement Ganti Foto atas permintaan pengguna setelah implementasi awal: kontrol putih semi-transparan dengan ikon Camera/shadow di kanan bawah gambar, target 44 px dan fokus keyboard yang terlihat. Ukuran, rasio, posisi objek dan radius gambar tetap. Petunjuk format/5 MB, Batalkan Foto serta status preview/error berada di bawah gambar dan membungkus pada mobile. Pemilihan native hanya preview lokal, tanpa galeri/drag-and-drop/crop/upload server atau perubahan banner publik. Bukti pada empat viewport di `tmp/admin15-photo-qa/` tidak di-stage.
+
+## Admin 1.6 — Kelola Agenda
+
+Referensi final: `design-references/user/15-admin-agenda.png` (1766 × 1505 px). Route `/admin/agenda`, memakai AdminLayout dan menu Agenda aktif. Margin/bayangan luar raster tidak disalin ke layout aplikasi.
+
+- Heading Agenda bergaris oranye, subtitle dan Tambah Agenda hijau di kanan. Kartu memakai admin-panel yang sudah ada, radius 24 px, shadow lembut, padding 20 px, tinggi minimum 88 px dan jarak 20 px. Kalender hijau berlatar hijau pucat di kiri, nama 16 px, frekuensi/jadwal 14 px, ikon Pencil hijau dan Trash2 merah di kanan.
+- Data memakai service agenda publik tanpa duplikasi. Kelompok tetap berurutan 5 Mingguan, 2 Bulanan dan 5 Tahunan / PHBI; frekuensi terlihat di setiap kartu, kelompok memiliki heading semantik untuk pembaca layar. Semua 12 kegiatan ditampilkan.
+- Nama Rabi’ul Awwal mengikuti mock **Peringatan Maulid Nabi Muhammad SAW**, meskipun raster mengulang **Peringatan Tahun Baru Islam**. Awalan **Bulan** pada seluruh jadwal tahunan serta ejaan/kapitalisasi seperti Al-Qur’an dan Ibu-Ibu tetap mengikuti sumber publik; tidak mengoreksi sumber berdasarkan gambar.
+- Tambah/Edit/Hapus nonaktif dengan title/label dan catatan data contoh di bawah daftar. Tidak ada modal/CRUD/notifikasi sukses. Aksi ikon mempunyai target 44 px. Smartphone menumpuk heading/tombol, membungkus nama/jadwal dan memindahkan aksi ke baris berikutnya dalam kartu; tablet mempertahankan kartu horizontal selama muat.
+
+QA Chrome development dan preview production pada 1728×1080, 1366×768, 768×1024 dan 390×844. Bukti di `tmp/admin16-qa/`, tidak di-stage. Adaptasi mobile belum berasal dari frame mobile resmi; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.
