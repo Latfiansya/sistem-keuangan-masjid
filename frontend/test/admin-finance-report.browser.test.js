@@ -13,11 +13,11 @@ const apiUrl = process.env.ADMIN_BROWSER_API_QA_URL
 const cdpUrl = process.env.REPORT_BROWSER_CDP_URL
 const phase = process.env.ADMIN_DASHBOARD_QA_PHASE === 'production' ? 'production' : 'development'
 
-test('Laporan admin: snapshot, tiga kategori, filter mock dan PNG ringkasan pada Chrome QA', {
+test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan PNG ringkasan pada Chrome QA', {
   skip: !baseUrl || !apiUrl || !cdpUrl ? 'Jalankan server mock/API dan Chrome QA sesuai README.' : false,
   timeout: 60000,
 }, async (t) => {
-  const output = fileURLToPath(new URL(`../../tmp/admin112-refinement-qa/${phase}/`, import.meta.url))
+  const output = fileURLToPath(new URL(`../../tmp/admin112-navigation-qa/${phase}/`, import.meta.url))
   await mkdir(`${output}downloads`, { recursive: true })
   const target = await (await fetch(`${cdpUrl}/json/new?about:blank`, { method: 'PUT' })).json()
   const ws = new WebSocket(target.webSocketDebuggerUrl)
@@ -67,12 +67,12 @@ test('Laporan admin: snapshot, tiga kategori, filter mock dan PNG ringkasan pada
   const summary = () => evaluate('document.querySelector(".admin-report > .admin-balance .admin-balance-table").textContent')
   const noOverflow = async () => {
     assert.equal(await evaluate('document.documentElement.scrollWidth>innerWidth'), false)
-    assert.equal(await evaluate('[...document.querySelectorAll(".admin-report-hero,.admin-report-balance,.admin-report-category-card,.admin-report-tabs button,.admin-report-category-tools article,.admin-report-toast")].every(e=>{const r=e.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&e.scrollWidth<=e.clientWidth})'), true)
+    assert.equal(await evaluate('[...document.querySelectorAll(".admin-report-hero,.admin-report-balance,.admin-report-category-card,.admin-report-tabs button,.admin-report-ledger-tools article,.admin-report-toast")].every(e=>{const r=e.getBoundingClientRect();return r.left>=0&&r.right<=innerWidth&&e.scrollWidth<=e.clientWidth})'), true)
   }
   try {
     await send('Page.enable'); await send('Runtime.enable'); await send('Network.enable')
     await send('Browser.setDownloadBehavior', { behavior: 'allowAndName', downloadPath: `${output}downloads`, eventsEnabled: true })
-    await t.test('empat viewport: navigasi, saldo identik Dashboard, fixture lengkap dan tepat tiga tab kategori dengan warna/data aktif', async () => {
+    await t.test('empat viewport: tiga jenis laporan lintas kategori, rekap bulanan, alignment filter dan saldo tetap', async () => {
       for (const [width, height] of [[1728,1080],[1366,768],[768,1024],[390,844]]) {
         await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false })
         await open('kelola-dana'); await waitFor('!!document.querySelector(".admin-funds-hero")')
@@ -86,51 +86,70 @@ test('Laporan admin: snapshot, tiga kategori, filter mock dan PNG ringkasan pada
         assert.equal(await evaluate('document.querySelector(".admin-nav-link[aria-current=page]").getAttribute("href")'), '/admin/laporan')
         assert.equal(await summary(), expectedSummary)
         assert.equal(await evaluate('getComputedStyle(document.querySelector(".admin-report-hero")).backgroundImage.split("url(")[0]'), fundsOverlay)
-        const controls = await evaluate('(()=>{const inputs=[...document.querySelectorAll(".admin-report-filters input")].map(e=>e.getBoundingClientRect()),b=document.querySelector(".admin-report-filters button").getBoundingClientRect();return {bottoms:inputs.map(r=>r.bottom),buttonBottom:b.bottom,heights:inputs.map(r=>r.height),buttonHeight:b.height}})()')
-        assert.equal(controls.buttonHeight, width < 1024 ? 44 : 36)
+        const controls = await evaluate('(()=>{const form=document.querySelector(".admin-report-filters"),input=[...form.querySelectorAll("input")],b=form.querySelector("button").getBoundingClientRect();return {height:form.getBoundingClientRect().height,centers:[...form.children].map(e=>{const r=e.getBoundingClientRect();return r.top+r.height/2}),floatingLabels:[...form.querySelectorAll("label")].every(e=>{const l=e.querySelector("span").getBoundingClientRect(),i=e.querySelector("input").getBoundingClientRect(),s=getComputedStyle(e.querySelector("input"));return l.top>i.top&&l.bottom<i.top+parseFloat(s.paddingTop)&&l.left>i.left&&l.right<i.right}),heights:input.map(e=>e.getBoundingClientRect().height),buttonHeight:b.height}})()')
+        assert.equal(controls.buttonHeight,52)
         assert.deepEqual(controls.heights, [controls.buttonHeight, controls.buttonHeight])
-        if (width >= 480) assert.ok(controls.bottoms.every(bottom=>Math.abs(bottom-controls.buttonBottom)<1))
+        if (width >= 1024) { assert.ok(controls.height < 75); assert.ok(controls.centers.every(center=>Math.abs(center-controls.centers[0])<1)) }
+        assert.equal(controls.floatingLabels,true)
         assert.match(await evaluate('document.querySelector(".admin-report-hero button:first-child svg").getAttribute("class")'), /circle-arrow-down/)
         assert.match(await evaluate('document.querySelector(".admin-report-hero button:nth-child(2) svg").getAttribute("class")'), /circle-arrow-up/)
         assert.match(await evaluate('document.querySelector(".admin-report-transactions--income header svg").getAttribute("class")'), /arrow-up-right/)
         assert.match(await evaluate('document.querySelector(".admin-report-transactions--expense header svg").getAttribute("class")'), /arrow-down-right/)
-        assert.match(await evaluate('document.querySelector("#admin-report-tab-maintenance svg").getAttribute("class")'), /file-text/)
+        assert.match(await evaluate('document.querySelector("#admin-report-tab-monthly svg").getAttribute("class")'), /file-text/)
         assert.equal(await evaluate('document.querySelector(".admin-report-balance h2").textContent'), 'Rp 17.228.200')
-        assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-report-tabs [role=tab]")].map(e=>e.textContent)'), mockAdminDashboard.categories.map((category) => category.label))
+        assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-report-tabs [role=tab]")].map(e=>e.textContent)'), ['Kas Masuk','Kas Keluar','Rekap Bulanan'])
         assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-report-transactions li")].map(e=>e.dataset.transactionId).sort()'), october.map((item) => item.id).sort())
         assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-report-transactions header > strong")].map(e=>e.textContent)'), ['Rp 1.791.500', 'Rp 1.427.500'])
         assert.match(await evaluate('document.querySelector(".admin-report-notice").textContent'), /transaksi simulasi.*bukan riwayat resmi/)
         assert.equal(await evaluate('document.querySelectorAll(".admin-report-actions button:not(:disabled),.admin-report dialog").length'), 0)
         if (width >= 640) assert.equal(await evaluate('new Set([...document.querySelectorAll(".admin-report-tabs button")].map(e=>Math.round(e.getBoundingClientRect().width))).size'), 1)
-        await noOverflow(); await evaluate('window.scrollTo(0,0)'); await screenshot(`laporan-${width}-top`); await screenshot(`laporan-${width}-full`, true)
+        await noOverflow(); await evaluate('document.querySelector(".admin-report-filters").scrollIntoView({block:"center"})'); await screenshot(`laporan-${width}-filter`); await evaluate('window.scrollTo(0,0)'); await screenshot(`laporan-${width}-top`); await screenshot(`laporan-${width}-full`, true)
         const activeColors = []
-        for (const category of mockAdminDashboard.categories) {
-          await click(`#admin-report-tab-${category.id}`)
-          assert.equal(await evaluate('document.querySelector(".admin-report-category-detail > h2").textContent'), category.label)
-          assert.equal(await evaluate('document.querySelector(".admin-report-tabs [aria-selected=true]").id'), `admin-report-tab-${category.id}`)
-          assert.equal(await evaluate('document.querySelector(".admin-report-category-total strong").textContent'), `Rp ${new Intl.NumberFormat('id-ID').format(category.openingBalance+category.income-category.expense)}`)
-          assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-report-category-table tbody tr[data-transaction-id]")].map(e=>e.dataset.transactionId)'), fixture.filter((item) => item.categoryId === category.id).map((item) => item.id))
+        for (const type of ['income','expense','monthly']) {
+          await click(`#admin-report-tab-${type}`)
+          assert.equal(await evaluate('document.querySelector(".admin-report-tabs [aria-selected=true]").id'), `admin-report-tab-${type}`)
+          const expectedColor = type === 'expense' ? 'rgb(202, 0, 58)' : 'rgb(8, 120, 21)'
           activeColors.push(await evaluate('getComputedStyle(document.querySelector(".admin-report-tabs [aria-selected=true]")).backgroundColor'))
-          assert.ok(await evaluate('document.querySelectorAll(".admin-report-category-table tbody .admin-report-amount--income").length>0&&document.querySelectorAll(".admin-report-category-table tbody .admin-report-amount--expense").length>0'))
-          await noOverflow(); await screenshot(`laporan-${width}-${category.id}`)
+          assert.equal(activeColors.at(-1),expectedColor)
+          if (type === 'monthly') {
+            assert.equal(await evaluate('document.querySelector(".admin-report-ledger-heading h2").textContent'),'Rekap Bulanan 2026')
+            assert.equal(await evaluate('document.querySelectorAll(".admin-report-monthly-table tbody").length'),10)
+            assert.equal(await evaluate('document.querySelectorAll(".admin-report-monthly-table tr[data-category-id]").length'),30)
+            assert.deepEqual(await evaluate('[...document.querySelectorAll("[data-month-total=\\"2026-10\\"] td")].map(e=>e.textContent)'),['16.864.200','1.791.500','1.427.500','17.228.200'])
+            const totals=await evaluate('[...document.querySelectorAll(".admin-report-monthly-table [data-month-total]")].map(e=>[...e.querySelectorAll("td")].map(c=>Number(c.textContent.replaceAll(".",""))))')
+            for (const [index,row] of totals.entries()) { assert.equal(row[0]+row[1]-row[2],row[3]); if(index) assert.equal(row[0],totals[index-1][3]) }
+            assert.equal(totals.reduce((sum,row)=>sum+row[1],0),74941200)
+            assert.equal(totals.reduce((sum,row)=>sum+row[2],0),64782500)
+          } else {
+            assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]")].map(e=>e.dataset.transactionId)'),fixture.filter(item=>item.type===type).map(item=>item.id))
+            const amount=fixture.filter(item=>item.type===type).reduce((sum,item)=>sum+item.amount,0)
+            assert.equal(await evaluate('document.querySelector(".admin-report-ledger-total strong").textContent'),`Rp ${new Intl.NumberFormat('id-ID').format(amount)}`)
+            assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody .admin-report-category-label").length'),type==='income'?141:108)
+            assert.deepEqual(await evaluate('[...new Set([...document.querySelectorAll(".admin-report-ledger-table tbody .admin-report-category-label")].map(e=>getComputedStyle(e).color))].sort()'),['rgb(0, 139, 67)','rgb(206, 87, 0)','rgb(36, 96, 222)'].sort())
+          }
+          await evaluate('window.scrollTo(0,document.querySelector(".admin-report-tabs").getBoundingClientRect().top+scrollY-160)')
+          await noOverflow(); await screenshot(`laporan-${width}-${type}`)
+          if (width===1728) await screenshot(`laporan-${width}-${type}-full`,true)
         }
-        assert.equal(new Set(activeColors).size, 3)
-        await key('Home',36); assert.equal(await evaluate('document.activeElement.id'), 'admin-report-tab-mosque')
-        await key('ArrowRight',39); assert.equal(await evaluate('document.activeElement.id'), 'admin-report-tab-friday')
-        await key('End',35); assert.equal(await evaluate('document.activeElement.id'), 'admin-report-tab-maintenance')
-        await key('ArrowLeft',37); assert.equal(await evaluate('document.activeElement.id'), 'admin-report-tab-friday')
+        assert.equal(new Set(activeColors).size,2)
+        await key('Home',36); assert.equal(await evaluate('document.activeElement.id'), 'admin-report-tab-income')
+        await key('ArrowRight',39); assert.equal(await evaluate('document.activeElement.id'), 'admin-report-tab-expense')
+        await key('End',35); assert.equal(await evaluate('document.activeElement.id'), 'admin-report-tab-monthly')
+        await key('ArrowLeft',37); assert.equal(await evaluate('document.activeElement.id'), 'admin-report-tab-expense')
       }
     })
-    await t.test('pencarian/rentang lokal, preset, validasi dan empty state tidak mengubah saldo snapshot', async () => {
+    await t.test('pencarian/rentang lokal, preset, validasi dan rekap parsial/kosong tanpa mengubah snapshot', async () => {
       await open(); const initialSummary = await summary()
-      await search(' INFAQ '); assert.equal(await evaluate('document.querySelectorAll(".admin-report-category-table tbody tr[data-transaction-id]").length'),fixture.filter(row=>row.categoryId==='mosque'&&row.description.toLowerCase().includes('infaq')).length)
-      await search('tidak ditemukan'); assert.match(await evaluate('document.querySelector(".admin-report-category-table tbody").textContent'),/Tidak ada transaksi mock/)
-      await search(' '); assert.equal(await evaluate('document.querySelectorAll(".admin-report-category-table tbody tr[data-transaction-id]").length'),172)
+      await search(' INFAQ '); assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),fixture.filter(row=>row.type==='income'&&row.description.toLowerCase().includes('infaq')).length)
+      await search('tidak ditemukan'); assert.match(await evaluate('document.querySelector(".admin-report-ledger-table tbody").textContent'),/Tidak ada transaksi mock/)
+      await search(' '); assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),141)
       await click('.admin-report-presets button:first-child')
       assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),4)
       await setDate('startDate','2026-10-14'); await setDate('endDate','2026-10-14'); await click('.admin-report-filters button')
       assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),1)
       assert.match(await evaluate('document.querySelector(".admin-report-transactions--income").textContent'),/Tidak ada transaksi mock pemasukan/)
+      assert.match(await evaluate('document.querySelector(".admin-report-ledger-table tbody").textContent'),/Tidak ada transaksi mock/)
+      await click('#admin-report-tab-expense'); assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),1)
       await setDate('startDate','2026-10-15'); await click('.admin-report-filters button')
       assert.match(await evaluate('document.querySelector("#admin-report-range-error").textContent'),/tidak boleh melebihi/)
       assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),1)
@@ -138,27 +157,32 @@ test('Laporan admin: snapshot, tiga kategori, filter mock dan PNG ringkasan pada
       await setDate('startDate','2025-12-31'); await click('.admin-report-filters button'); assert.match(await evaluate('document.querySelector("#admin-report-range-error").textContent'),/di dalam riwayat mock/)
       await setDate('startDate','2026-10-16'); await setDate('endDate','2026-10-20'); await click('.admin-report-filters button')
       assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),0)
+      await click('#admin-report-tab-monthly')
+      const empty=await evaluate('[...document.querySelectorAll(".admin-report-monthly-table [data-month-total] td")].map(e=>e.textContent)')
+      assert.deepEqual(empty,['17.228.200','0','0','17.228.200'])
       assert.equal(await summary(),initialSummary)
       await click('.admin-report-presets button:nth-child(2)'); assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),13)
-      await click('#admin-report-tab-maintenance'); await search('pengajian'); assert.match(await evaluate('document.querySelector(".admin-report-category-table tbody").textContent'),/Tidak ada transaksi mock/)
-      await click('#admin-report-tab-mosque'); assert.equal(await evaluate('document.querySelector(".admin-report-search input").value'),'')
-      await noOverflow(); await screenshot('laporan-filter-kategori',true)
-      await evaluate('document.querySelector(".admin-report-category-detail .admin-table-scroll").focus()'); await key('ArrowRight',39)
-      await waitFor('document.querySelector(".admin-report-category-detail .admin-table-scroll").scrollLeft>0')
-      await screenshot('laporan-mobile-scroll-tabel')
+      await click('#admin-report-tab-income'); await search('pengajian'); await click('#admin-report-tab-expense')
+      assert.equal(await evaluate('document.querySelector(".admin-report-search input").value'),'')
+      await evaluate('document.querySelector(".admin-report-ledger .admin-table-scroll").focus()'); await key('ArrowRight',39)
+      await waitFor('document.querySelector(".admin-report-ledger .admin-table-scroll").scrollLeft>0')
+      await noOverflow(); await screenshot('laporan-mobile-scroll-tabel')
       await setDate('startDate','2026-01-01'); await setDate('endDate','2026-01-31'); await click('.admin-report-filters button')
       assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),26)
-      assert.equal(await evaluate('document.querySelectorAll(".admin-report-category-table tbody tr[data-transaction-id]").length'),18)
+      assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),11)
       assert.equal(await evaluate('document.querySelector("#admin-report-detail-title").textContent'),'Detail Riwayat Mock')
       assert.equal(await summary(),initialSummary)
-      await click('#admin-report-tab-friday'); assert.equal(await evaluate('document.querySelectorAll(".admin-report-category-table tbody tr[data-transaction-id]").length'),4)
-      await click('#admin-report-tab-maintenance'); assert.equal(await evaluate('document.querySelectorAll(".admin-report-category-table tbody tr[data-transaction-id]").length'),4)
-      await noOverflow(); await screenshot('laporan-filter-januari',true)
+      await click('#admin-report-tab-income'); assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),15)
+      await click('#admin-report-tab-monthly'); assert.equal(await evaluate('document.querySelectorAll(".admin-report-monthly-table tbody").length'),1)
+      await setDate('startDate','2026-01-15'); await setDate('endDate','2026-02-18'); await click('.admin-report-filters button')
+      assert.equal(await evaluate('document.querySelectorAll(".admin-report-monthly-table tbody").length'),2)
+      assert.equal(await evaluate('document.querySelectorAll(".admin-report-monthly-table [data-category-id]").length'),6)
+      await noOverflow(); await screenshot('laporan-filter-parsial',true)
     })
     await t.test('PNG snapshot nyata mencakup seluruh kategori, toast sukses setelah trigger, error dan auto-dismiss', async () => {
       for (const [width,height] of [[1728,1080],[390,844]]) {
         await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false})
-        await open(); await click('#admin-report-tab-friday'); await search('kosong')
+        await open(); await click('#admin-report-tab-expense'); await search('kosong')
         const index=downloads.length
         await evaluate(`window.originalToBlob=HTMLCanvasElement.prototype.toBlob;HTMLCanvasElement.prototype.toBlob=function(callback,...args){originalToBlob.call(this,blob=>{window.resumeReport=()=>callback(blob)},...args)};window.originalAnchorClick=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){window.reportDownloadUrl=this.href;return originalAnchorClick.call(this)}`)
         await click('.admin-report-download button'); await waitFor('typeof window.resumeReport==="function"')
@@ -195,7 +219,7 @@ test('Laporan admin: snapshot, tiga kategori, filter mock dan PNG ringkasan pada
         await navigate(route); await waitFor(`!!document.querySelector('${selector}')`); await navigate('laporan'); await waitFor('!!document.querySelector(".admin-report-tabs")')
       }
       await open('laporan/'); await waitFor('!!document.querySelector(".admin-report-tabs")')
-      assert.equal(await evaluate('document.querySelector(".admin-report-tabs [aria-selected=true]").id'),'admin-report-tab-mosque')
+      assert.equal(await evaluate('document.querySelector(".admin-report-tabs [aria-selected=true]").id'),'admin-report-tab-income')
       await open('laporan',apiUrl); await waitFor('!!document.querySelector(".admin-dashboard-state[role=alert]")')
       assert.match(await evaluate('document.querySelector(".admin-dashboard-state").textContent'),/Dashboard admin melalui API belum tersedia/)
       assert.equal(await evaluate('!!document.querySelector(".admin-report")'),false)

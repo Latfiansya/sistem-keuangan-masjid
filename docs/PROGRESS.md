@@ -1084,3 +1084,27 @@ Screenshot Dashboard dan Kelola Dana sebelum/sesudah pada 1728×1080 identik (0 
 Sebelas file refinement diperbarui/ditambahkan setelah review diff dan validasi: AdminLayout.css, AdminFundsPage.css, halaman/CSS Laporan, fixture, service laporan, dua test serta README/DESIGN_MAP/PROGRESS. Lima file staging lama lainnya dipertahankan; total staging Admin 1.12 menjadi 16 file. Referensi, log, screenshot, hasil unduhan, profil Chrome dan build tidak disertakan. Tidak melakukan commit, push atau merge.
 
 Usulan pesan commit gabungan: `feat: tambahkan laporan admin dengan mock lengkap, filter kategori dan ekspor PNG`.
+
+
+## Admin 1.12 — Koreksi navigasi laporan dan alignment filter (11 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline commit pengguna `7ac0ec7`. Awal kerja tanpa perubahan tracked/staged; `design-references/` tetap untracked. Refinement ini disiapkan sebagai commit terpisah. Tiga referensi dibaca ulang pada potongan resolusi tinggi: ketiganya adalah state satu halaman, bukan tab kategori.
+
+- Tab kategori diganti **Kas Masuk** (ArrowUpRight/hijau), **Kas Keluar** (ArrowDownRight/rose #ca003a), **Rekap Bulanan** (FileText/hijau). Desktop tetap tiga kolom proporsional; keyboard panah/Home/End mengikuti tab baru. Tidak membuat tab keempat Laporan Bulanan. Warna kategori Jum'at Berkah dikembalikan ke biru khusus halaman Laporan; warna kategori global/halaman lain tidak diubah.
+- Kas Masuk memuat 141 transaksi/Rp74.941.200, Kas Keluar 108/Rp64.782.500 dari seluruh kategori. Kartu total/jumlah, pencarian uraian, tabel panjang, badge identitas kategori dan subtotal mengikuti masing-masing jenis laporan. Aksi edit/hapus tetap nonaktif. Dataset 249 baris, nominal dan snapshot tidak berubah.
+- Rekap Bulanan memakai tabel berkelompok: bulan mencakup tiga kategori dan satu TOTAL. Service menghitung saldo awal dari saldo historis serta mutasi sebelum periode, lalu pemasukan/pengeluaran/saldo akhir berdasarkan transaksi periode. Sepuluh bulan Januari–Oktober tercakup, tanpa angka hardcode rekap atau data November/Desember palsu. Filter parsial membawa saldo sebelum hari pertama terpilih; rentang tanpa transaksi menunjukkan mutasi nol dengan saldo tetap. Kartu kategori atas menjadi pintasan ke rekap, dengan komposisi/angka kartu tetap.
+- Rekonsiliasi historis tetap Rp7.069.500 + Rp74.941.200 − Rp64.782.500 = **Rp17.228.200**. Oktober tetap Rp16.864.200 + Rp1.791.500 − Rp1.427.500 = **Rp17.228.200**; saldo akhir kategori Rp12.718.200/Rp3.654.000/Rp856.000. Data masih simulasi dan tidak diklaim identik seluruh angka/123 pemasukan/251 pengeluaran pada raster.
+- Filter tanggal memakai padding vertikal 8 px dan alignment tengah; teks rentang, kelompok tanggal, Terapkan dan jumlah hasil satu garis tengah desktop. Label tanggal terpusat di atas date picker/gap 2 px. Tinggi kartu sekitar 70 px; Terapkan tetap 36 px desktop/44 px tablet-mobile. Tanggal awal, validasi dan alur Terapkan/preset tetap.
+- Markup hero, panel saldo utama, banner unduh dan dokumen ekspor diverifikasi identik dengan HEAD. Algoritma ekspor, backend, API_CONTRACT, mock Dashboard/fixture laporan, Dashboard, Kelola Dana dan frontend publik tidak diubah. Pemulihan identitas biru juga berlaku pada titik kategori di resume/PNG; nominal, ukuran dan perilaku ekspor tetap. Tidak menambah dependency atau fitur lain. README dan DESIGN_MAP dikoreksi agar tidak mempertahankan interpretasi navigasi sebelumnya.
+
+Verifikasi:
+
+- Lint PASS tanpa peringatan, `npm test` PASS: **91 frontend unit/SSR dan 18 backend**; lima suite browser opsional dijalankan terpisah sesuai kebutuhan. Dua test baru memeriksa pemisahan 141+108 transaksi tanpa kehilangan/duplikasi dan rekonsiliasi bulanan/kategori termasuk rentang parsial/kosong. Test unit laporan akhir 9/9 PASS. Build PASS.
+- Chrome development: 23 skenario admin lama + 4 Laporan + 6 Login + 5 Kwitansi PASS (**38 skenario/42 hasil termasuk induk**). Preview production: 23 admin lama + 4 Laporan PASS (**27 skenario/29 hasil**). Cakupan: empat viewport, tepat tiga tab/label/ikon/warna/keyboard, seluruh ID/jenis/kategori, pencarian/empty state, filter/preset/validasi, rekap dan carry saldo, snapshot tetap, scroll lokal, navigasi lama serta mode API tanpa endpoint/fallback karangan.
+- Screenshot ketiga tab di **1728×1080** dibandingkan dengan referensi 23/24/25: tabel lintas kategori untuk Kas Masuk/Keluar dan tabel bulan/kategori untuk Rekap. Adaptasi **1366×768, 768×1024, 390×844** ditinjau tanpa overflow halaman. Perbedaan data mengikuti dataset yang dipertahankan, bukan angka tahunan raster. QA terbatas Chrome/emulasi, belum perangkat fisik/Safari/Firefox.
+- PNG desktop/mobile benar-benar diunduh, didekode/dibuka dan tetap **2240×1326 px**, seluruh kategori/total tercakup. Toast sukses hanya setelah PNG/pemicu unduhan selesai; kegagalan render/pemicu dan auto-dismiss sekitar tiga detik PASS. Service ekspor dan handler toast tetap.
+- Bukti di `tmp/admin112-navigation-qa/`: `development/laporan-1728-income.png`, `laporan-1728-expense.png`, `laporan-1728-monthly.png`, varian full/viewport lain, screenshot filter, PNG dan log development/production. Semua artefak/referensi/build dikecualikan dari staging.
+
+Delapan file terkait refinement diperiksa dan di-stage: README, DESIGN_MAP, PROGRESS, AdminFinanceReportPage.jsx/CSS, adminFinanceReportService.js serta test unit/browser laporan. Tidak melakukan commit, push atau merge; HEAD tetap baseline pengguna.
+
+Usulan pesan commit: `fix: koreksi navigasi laporan dan alignment filter tanggal`.

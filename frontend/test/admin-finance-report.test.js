@@ -5,7 +5,7 @@ import { createServer } from 'vite'
 import { createElement as h } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router'
-import { buildAdminFinanceReport, filterAdminFinanceTransactions, getAdminFinancePreset, summarizeAdminFinanceTransactions, validateAdminFinanceRange } from '../src/services/adminFinanceReportService.js'
+import { buildAdminFinanceReport, buildAdminMonthlyRecap, filterAdminFinanceTransactions, getAdminFinancePreset, summarizeAdminFinanceTransactions, validateAdminFinanceRange } from '../src/services/adminFinanceReportService.js'
 
 let server, App, Page, DashboardPage, getAdminDashboard, createAdminFinanceSummaryPng
 before(async () => {
@@ -99,7 +99,7 @@ test('preset mengacu tanggal snapshot dan validasi menolak tanggal kosong, terba
   for (const range of [{ startDate: '', endDate: report.updatedDate }, { startDate: '2026-10-15', endDate: '2026-10-14' }, { startDate: '2026-02-31', endDate: report.updatedDate }, { startDate: '2025-12-31', endDate: report.updatedDate }, { startDate: '2026-10-01', endDate: '2026-10-21' }]) assert.throws(() => validateAdminFinanceRange(report, range))
 })
 
-test('route/menu benar, loading/error, tiga tab kategori saja dan aksi mutasi nonaktif', async () => {
+test('route/menu benar, loading/error, tiga jenis laporan saja dan aksi mutasi nonaktif', async () => {
   for (const route of ['/admin/laporan', '/admin/laporan/']) {
     const html = renderToStaticMarkup(h(MemoryRouter, { initialEntries: [route] }, h(App)))
     assert.match(html, /<h1>Laporan Keuangan<\/h1>/)
@@ -113,9 +113,12 @@ test('route/menu benar, loading/error, tiga tab kategori saja dan aksi mutasi no
   assert.match(html, /Kas Masjid/)
   assert.match(html, /Kotak Jum&#x27;at Berkah/)
   assert.match(html, /Kotak Pembangunan &amp; Pemeliharaan/)
-  assert.doesNotMatch(html, /Laporan Bulanan|Rekap Bulanan|Kas Keluar|<dialog/)
+  assert.match(html, /Kas Masuk/)
+  assert.match(html, /Kas Keluar/)
+  assert.match(html, /Rekap Bulanan/)
+  assert.doesNotMatch(html, /Laporan Bulanan|admin-report-tab-mosque|admin-report-tab-friday|<dialog/)
   assert.match(html, /bukan riwayat resmi.*Ringkasan saldo tetap snapshot/)
-  assert.equal((html.match(/aria-label="Edit .*?\(belum tersedia\)"/g) || []).length, 185)
+  assert.equal((html.match(/aria-label="Edit .*?\(belum tersedia\)"/g) || []).length, 154)
 })
 
 test('tabel resume laporan identik dengan Dashboard dan ID heading tidak ganda', async () => {
@@ -132,4 +135,55 @@ test('ekspor menolak lembar/tanggal belum siap dan signal abort tanpa membuat be
   await assert.rejects(createAdminFinanceSummaryPng({ sheet: null, updatedDate: '2026-02-31' }), /tanggal yang valid/)
   const controller = new AbortController(); controller.abort()
   await assert.rejects(createAdminFinanceSummaryPng({ sheet: { matches: () => true }, updatedDate: '2026-10-20', signal: controller.signal }), { name: 'AbortError' })
+})
+
+
+test('Kas Masuk dan Kas Keluar mencakup semua kategori tanpa kehilangan atau menduplikasi transaksi', async () => {
+  const report = buildAdminFinanceReport(await getAdminDashboard())
+  const before = structuredClone(report)
+  const income = filterAdminFinanceTransactions(report, { range: report.coverage, type: 'income' })
+  const expense = filterAdminFinanceTransactions(report, { range: report.coverage, type: 'expense' })
+  assert.equal(income.length, 141)
+  assert.equal(expense.length, 108)
+  assert.equal(summarizeAdminFinanceTransactions(income).income, 74941200)
+  assert.equal(summarizeAdminFinanceTransactions(expense).expense, 64782500)
+  for (const [rows, type] of [[income, 'income'], [expense, 'expense']]) {
+    assert.ok(rows.every((row) => row.type === type))
+    assert.equal(new Set(rows.map((row) => row.categoryId)).size, 3)
+  }
+  assert.equal(new Set([...income, ...expense].map((row) => row.id)).size, 249)
+  const search = filterAdminFinanceTransactions(report, { range: report.coverage, type: 'expense', query: ' LISTRIK ' })
+  assert.ok(search.length > 0)
+  assert.ok(search.every((row) => row.type === 'expense' && row.description.toLowerCase().includes('listrik')))
+  assert.deepEqual(report, before)
+})
+
+test('rekap bulanan dihitung dari seluruh transaksi, membawa saldo dan mendukung rentang parsial/kosong', async () => {
+  const report = buildAdminFinanceReport(await getAdminDashboard())
+  const before = structuredClone(report)
+  for (const range of [report.coverage, { startDate: '2026-01-15', endDate: '2026-02-18' }, { startDate: '2026-10-16', endDate: '2026-10-20' }]) {
+    const months = buildAdminMonthlyRecap(report, range)
+    const filtered = filterAdminFinanceTransactions(report, { range })
+    assert.equal(months.reduce((sum, month) => sum + month.totals.count, 0), filtered.length)
+    for (const [index, month] of months.entries()) {
+      for (const category of month.categories) {
+        const start = month.month === range.startDate.slice(0, 7) ? range.startDate : month.month + '-01'
+        const prior = report.transactions.filter((row) => row.categoryId === category.id && row.date < start)
+        const rows = filtered.filter((row) => row.categoryId === category.id && row.date.startsWith(month.month))
+        const opening = report.historyOpeningBalances[category.id] + prior.reduce((sum, row) => sum + (row.type === 'income' ? row.amount : -row.amount), 0)
+        assert.equal(category.openingBalance, opening)
+        assert.equal(category.income, rows.filter((row) => row.type === 'income').reduce((sum, row) => sum + row.amount, 0))
+        assert.equal(category.expense, rows.filter((row) => row.type === 'expense').reduce((sum, row) => sum + row.amount, 0))
+        assert.equal(category.closingBalance, opening + category.income - category.expense)
+        if (index) assert.equal(category.openingBalance, months[index - 1].categories.find((row) => row.id === category.id).closingBalance)
+      }
+      for (const key of ['openingBalance', 'income', 'expense', 'closingBalance']) assert.equal(month.totals[key], month.categories.reduce((sum, row) => sum + row[key], 0))
+    }
+  }
+  const months = buildAdminMonthlyRecap(report)
+  assert.equal(months.length, 10)
+  assert.equal(months[0].totals.openingBalance, 7069500)
+  assert.deepEqual(months.at(-1).totals, { ...report.totals, count: 13 })
+  assert.throws(() => buildAdminMonthlyRecap(report, { startDate: '', endDate: report.updatedDate }))
+  assert.deepEqual(report, before)
 })
