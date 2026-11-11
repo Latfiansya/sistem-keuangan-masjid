@@ -2,11 +2,12 @@ import { useRef, useState } from 'react'
 import AdminTransactionForm from '../components/AdminTransactionForm.jsx'
 import { getAdminRecentTransactions } from '../services/adminTransactionService.js'
 import { ArrowDownCircle, ArrowRightLeft, ArrowUpCircle } from 'lucide-react'
-import { useOutletContext } from 'react-router'
+import { useNavigate, useOutletContext } from 'react-router'
 import AdminRecentTransactions from '../components/AdminRecentTransactions.jsx'
 import './AdminFundsPage.css'
 
 export default function AdminFundsPage() {
+  const navigate = useNavigate()
   const { dashboard, error, addTransaction } = useOutletContext()
   const [transactionType, setTransactionType] = useState(null)
   const [message, setMessage] = useState('')
@@ -41,7 +42,7 @@ export default function AdminFundsPage() {
           <p role="status">{message || 'Simulasi sesi admin · Belum tersimpan ke server.'}</p>
         </div>
       </section>
-      <AdminRecentTransactions transactions={getAdminRecentTransactions(dashboard)} categories={dashboard.categories} />
+      <AdminRecentTransactions onViewAll={() => navigate('/admin/laporan#kas-masuk')} transactions={getAdminRecentTransactions(dashboard)} categories={dashboard.categories} />
       {transactionType && <AdminTransactionForm type={transactionType} categories={dashboard.categories} onSave={save} onClose={() => setTransactionType(null)} returnFocusRef={returnFocusRef} />}
     </div>
   )

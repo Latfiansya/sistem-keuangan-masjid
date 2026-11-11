@@ -208,7 +208,7 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
       for (const [width, height] of [[1728, 1080], [1366, 768], [768, 1024], [390, 844]]) {
         await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false })
         await open()
-        const original = await evaluate('document.querySelector(".admin-recent").outerHTML')
+        const original = await evaluate('document.querySelector(".admin-recent-table").outerHTML')
         await evaluate('window.adminFundsNavigation = true; window.scrollTo(0,500)')
         if (width < 1024) await click('.admin-menu-toggle')
         await click('.admin-nav-link[href="/admin/kelola-dana"]')
@@ -216,10 +216,10 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
         assert.equal(await evaluate('window.adminFundsNavigation'), true)
         assert.equal(await evaluate('window.scrollY'), 0)
         assert.equal(await evaluate('document.querySelector(".admin-nav-link[aria-current=page]").getAttribute("href")'), '/admin/kelola-dana')
-        assert.equal(await evaluate('document.querySelector(".admin-recent").outerHTML'), original)
+        assert.equal(await evaluate('document.querySelector(".admin-recent-table").outerHTML'), original)
         assert.equal(await evaluate('document.documentElement.scrollWidth > innerWidth'), false)
         assert.equal(await evaluate('document.querySelectorAll(".admin-funds-buttons button:not(:disabled)").length'),2)
-        assert.equal(await evaluate('document.querySelectorAll(".admin-funds button:disabled").length'),1)
+        assert.equal(await evaluate('document.querySelectorAll(".admin-funds button:disabled").length'),0)
         assert.equal(await evaluate('document.querySelectorAll(".admin-funds input,.admin-funds form,.admin-funds dialog").length'), 0)
         await evaluate('document.fonts.ready')
         await screenshot(`kelola-dana-${width}-top`, false, fundsOutput)
@@ -231,7 +231,7 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
         await click('.admin-nav-link[href="/admin/dashboard"]')
         await waitFor('!!document.querySelector(".admin-dashboard")')
         assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'), 'Dashboard Keuangan')
-        assert.equal(await evaluate('document.querySelector(".admin-recent").outerHTML'), original)
+        assert.equal(await evaluate('document.querySelector(".admin-recent-table").outerHTML'), original)
       }
     })
 

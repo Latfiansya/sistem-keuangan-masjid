@@ -2,11 +2,11 @@ import { ChevronRight } from 'lucide-react'
 import { adminCategoryColorStyle } from '../utils/adminCategoryColors.js'
 import { formatReportDate, formatReportNumber } from '../utils/reportFormatters.js'
 
-export default function AdminRecentTransactions({ transactions, categories }) {
+export default function AdminRecentTransactions({ transactions, categories, onViewAll }) {
   const sessionCount = transactions.filter((transaction) => transaction.source === 'session').length
   return (
     <section className="admin-panel admin-recent" aria-labelledby="admin-recent-title">
-      <div className="admin-recent-heading"><h2 id="admin-recent-title">Transaksi Terbaru</h2><button type="button" disabled title="Daftar transaksi lengkap belum tersedia">Lihat Semua<ChevronRight size={16} aria-hidden="true" /></button></div>
+      <div className="admin-recent-heading"><h2 id="admin-recent-title">Transaksi Terbaru</h2><button type="button" onClick={onViewAll} disabled={!onViewAll} title={onViewAll ? 'Lihat semua transaksi di laporan' : 'Daftar transaksi lengkap belum tersedia'}>Lihat Semua<ChevronRight size={16} aria-hidden="true" /></button></div>
       {sessionCount > 0 && <p className="admin-session-transactions-note">{sessionCount} tambahan sesi mock · Belum termasuk snapshot saldo dan laporan historis.</p>}
       <p className="admin-table-hint">Geser tabel untuk melihat seluruh kolom.</p>
       <div className="admin-table-scroll" role="region" aria-label="Transaksi terbaru, dapat digeser pada layar kecil" tabIndex={0}>

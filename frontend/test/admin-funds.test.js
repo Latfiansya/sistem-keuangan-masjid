@@ -44,7 +44,7 @@ test('route Kelola Dana menggunakan judul dan menu aktif yang sesuai tanpa layou
   }
 })
 
-test('Kelola Dana menangani loading/error dan menampilkan dua pemicu form aktif dan Lihat Semua nonaktif', async () => {
+test('Kelola Dana menangani loading/error dan menampilkan dua pemicu form dan Lihat Semua aktif', async () => {
   assert.match(renderPage(FundsPage, { dashboard: null, error: '' }), /role="status".*Memuat data kelola dana/)
   assert.match(renderPage(FundsPage, { dashboard: null, error: 'Gagal memuat.' }), /role="alert".*Gagal memuat/)
   const html = renderPage(FundsPage, { dashboard: await getAdminDashboard(), error: '' })
@@ -52,7 +52,7 @@ test('Kelola Dana menangani loading/error dan menampilkan dua pemicu form aktif 
   assert.match(html, /Kelola Transaksi/)
   assert.match(html, /Simulasi sesi admin/)
   assert.equal((html.match(/<button\b/g) || []).length, 3)
-  assert.equal((html.match(/disabled=""/g) || []).length, 1)
+  assert.equal((html.match(/disabled=""/g) || []).length, 0)
   assert.equal((html.match(/<table\b/g) || []).length, 1)
   assert.equal((html.match(/data-transaction-id=/g) || []).length, 5)
   assert.doesNotMatch(html, /<form|<input|<dialog|<a\b/)
@@ -60,7 +60,7 @@ test('Kelola Dana menangani loading/error dan menampilkan dua pemicu form aktif 
 
 test('Dashboard dan Kelola Dana merender tabel identik dari kategori dan transaksi yang sama', async () => {
   const context = { dashboard: await getAdminDashboard(), error: '' }
-  const table = (Page) => renderPage(Page, context).match(/<section class="admin-panel admin-recent"[\s\S]*?<\/section>/)[0]
+  const table = (Page) => renderPage(Page, context).match(/<table class="admin-recent-table">[\s\S]*?<\/table>/)[0]
   assert.equal(table(FundsPage), table(DashboardPage))
   assert.match(table(FundsPage), /117\.000/)
   assert.match(table(FundsPage), /403\.000/)

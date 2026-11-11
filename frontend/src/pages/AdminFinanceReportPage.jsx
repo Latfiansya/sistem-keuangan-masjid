@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useOutletContext } from 'react-router'
+import { useLocation, useOutletContext } from 'react-router'
 import { ArrowDownCircle, ArrowDownRight, ArrowDownToLine, ArrowUpCircle, ArrowUpRight, CalendarDays, ChevronRight, CircleAlert, Download, FileText, Landmark, LoaderCircle, Pencil, Search, ShieldCheck, Trash2, Wallet } from 'lucide-react'
 import AdminBalanceSummary from '../components/AdminBalanceSummary.jsx'
 import { buildAdminFinanceReport, buildAdminMonthlyRecap, filterAdminFinanceTransactions, getAdminFinancePreset, summarizeAdminFinanceTransactions, validateAdminFinanceRange } from '../services/adminFinanceReportService.js'
@@ -79,6 +79,7 @@ function MonthlyRecap({ months }) {
 }
 
 function AdminFinanceReportContent({ report }) {
+  const { hash, key } = useLocation()
   const [range, setRange] = useState(report.range)
   const [draftRange, setDraftRange] = useState(report.range)
   const [historyRange, setHistoryRange] = useState(report.coverage)
@@ -90,6 +91,7 @@ function AdminFinanceReportContent({ report }) {
   const exportSheet = useRef(null)
   const exportController = useRef(null)
   const tabPanel = useRef(null)
+  const reportNavigation = useRef(null)
   const downloadButton = useRef(null)
   const periodLabel = formatReportMonth(report.month)
   const monthLabel = periodLabel.split(' ')[0]
@@ -99,6 +101,25 @@ function AdminFinanceReportContent({ report }) {
   const ledgerTransactions = filterAdminFinanceTransactions(report, { range: historyRange, type: tabId === 'monthly' ? '' : tabId, query })
   const ledgerSummary = summarizeAdminFinanceTransactions(ledgerTransactions)
   const months = tabId === 'monthly' ? buildAdminMonthlyRecap(report, historyRange) : []
+
+  useEffect(() => {
+    let frame
+    const controller = new AbortController()
+    document.fonts.ready.then(() => {
+      if (controller.signal.aborted) return
+      frame = requestAnimationFrame(() => {
+        if (hash === '#kas-masuk') {
+          setTabId('income')
+          reportNavigation.current?.scrollIntoView({ block: 'start' })
+          const header = document.querySelector('.admin-topbar')
+          const offset = header && ['sticky', 'fixed'].includes(getComputedStyle(header).position) ? header.getBoundingClientRect().height : 0
+          window.scrollBy(0, -offset - 16)
+          document.getElementById('admin-report-tab-income')?.focus({ preventScroll: true })
+        } else if (!hash) window.scrollTo(0, 0)
+      })
+    })
+    return () => { controller.abort(); cancelAnimationFrame(frame) }
+  }, [hash, key])
 
   useEffect(() => () => exportController.current?.abort(), [])
   useEffect(() => {
@@ -160,7 +181,7 @@ function AdminFinanceReportContent({ report }) {
     </section>
     <AdminBalanceSummary categories={report.categories} totals={report.totals} updatedDate={report.updatedDate} title={`Resume Saldo Bulan ${monthLabel}`} titleId="admin-report-balance-title" />
     <section className="admin-report-download"><div><h2>Unduh Ringkasan Laporan</h2><p>PNG ringkasan snapshot {snapshotLabel} · data contoh, seluruh kategori.</p></div><button ref={downloadButton} type="button" onClick={handleDownload} disabled={exporting}>{exporting ? <LoaderCircle size={16} className="admin-report-spinner" aria-hidden="true" /> : <Download size={16} aria-hidden="true" />}{exporting ? 'Membuat PNG…' : 'Unduh PNG'}</button></section>
-    <div role="tablist" className="admin-report-tabs" aria-label="Jenis laporan">{reportTabs.map(({ id, label, icon: Icon }, index) => <button key={id} type="button" role="tab" id={`admin-report-tab-${id}`} aria-selected={tabId === id} aria-controls="admin-report-ledger-panel" tabIndex={tabId === id ? 0 : -1} className={`admin-report-view--${id}`} onClick={() => selectTab(id)} onKeyDown={(event) => handleTabKey(event, index)}><Icon size={16} aria-hidden="true" />{label}</button>)}</div>
+    <div ref={reportNavigation} id="kas-masuk" role="tablist" className="admin-report-tabs" aria-label="Jenis laporan">{reportTabs.map(({ id, label, icon: Icon }, index) => <button key={id} type="button" role="tab" id={`admin-report-tab-${id}`} aria-selected={tabId === id} aria-controls="admin-report-ledger-panel" tabIndex={tabId === id ? 0 : -1} className={`admin-report-view--${id}`} onClick={() => selectTab(id)} onKeyDown={(event) => handleTabKey(event, index)}><Icon size={16} aria-hidden="true" />{label}</button>)}</div>
     <section ref={tabPanel} id="admin-report-ledger-panel" role="tabpanel" aria-labelledby={`admin-report-tab-${tabId}`} tabIndex={0} className={`admin-report-ledger admin-report-view--${tabId}`}>
       <div className="admin-report-ledger-heading"><div><h2>{selectedTab.label}{tabId === 'monthly' ? ` ${historyRange.startDate.slice(0, 4)}` : ''}</h2><p>{tabId === 'income' ? 'Semua pemasukan dana masjid' : tabId === 'expense' ? 'Semua pengeluaran dana masjid' : 'Ringkasan saldo & aliran kas setiap bulan dan kategori'} · data mock<br />{formatReportDate(historyRange.startDate)}–{formatReportDate(historyRange.endDate)}</p></div>{tabId === 'monthly' && <span><CalendarDays size={14} aria-hidden="true" />Tahun {historyRange.startDate.slice(0, 4)}</span>}</div>
       {tabId === 'monthly' ? <MonthlyRecap months={months} /> : <>
