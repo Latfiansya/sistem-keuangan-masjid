@@ -429,3 +429,32 @@ Nama referensi yang diminta: `28-admin-tambah-pemasukan.png`, belum tersedia saa
 - Kategori dari sumber bersama, ID stabil, nama/warna mengikuti metadata. Proteksi hapus kategori mencakup tambahan sesi. Preferensi nama donatur hanya untuk pemasukan/default false, belum memengaruhi laporan publik. State hilang setelah refresh/keluar admin, tanpa storage, request, backend atau log palsu.
 
 Bukti kedua modal di 1728×1080, 1366×768, 768×1024 dan 390×844 serta screenshot simpan/integrasi di `tmp/admin114-qa/`, tidak di-stage. Perbedaan tanggal mengikuti locale kalender native; screenshot pendukung yang dipakai tetap bernama Pasted. Sinkronisasi agregat periode serta otorisasi/validasi server menunggu backend; tidak mengubah kontrak API.
+
+## Admin 1.15 — Pagination dan Detail/Edit/Hapus Transaksi
+
+Keempat referensi berikut digunakan sebagai elemen UI, tanpa mengganti layout Admin atau tiga tab Laporan:
+
+| Referensi lokal | Implementasi |
+| --- | --- |
+| `29-admin-pagination-transaksi.png` | Footer pagination 20/30/50/Semua, rentang baris dan Lihat Detail pada tabel Kas Masuk/Kas Keluar di `/admin/laporan` |
+| `30-admin-detail-transaksi.png` | `/admin/laporan/transaksi/:id`: breadcrumb, kembali, kartu informasi dan panel ringkasan kanan |
+| `31-admin-edit-transaksi.png` | `/admin/laporan/transaksi/:id/edit`: form halaman tersendiri dan ringkasan sebelum diedit |
+| `32-admin-hapus-transaksi.png` | Dialog konfirmasi dari detail; tombol aktif hanya untuk teks persis `HAPUS` |
+
+Field Tambah dan Edit berbagi `AdminTransactionFields`, kategori bersama, validasi service, tanggal native serta input rupiah. Pengeluaran memakai rose dan Nama Penerima tanpa checkbox nama publik; pemasukan memakai hijau dan preferensi nama donatur. Field opsional yang tidak ada tidak dipaksakan tampil di detail. Form edit menggunakan textarea uraian sebagaimana referensi, sementara modal Tambah mempertahankan input sebelumnya.
+
+Nomor halaman memakai ellipsis hanya bila ada celah, mengikuti hasil pencarian/rentang sebelum pemotongan baris. Konteks tab, pencarian, tanggal dan pagination disimpan sementara saat membuka detail. Detail/edit dan modal mengikuti grid desktop serta susunan satu kolom/scroll lokal pada mobile. Tidak menambahkan tab keempat.
+
+Semua teks operasi menyebut simulasi sesi. Peringatan hapus permanen pada raster disesuaikan agar tidak mengklaim perubahan database atau Activity Log. Saldo/PNG snapshot tetap; rekap dan total tabel aktif menampilkan hasil simulasi dari sumber transaksi bersama. Bukti visual empat viewport tersedia di `tmp/admin115-qa/` dan tidak di-stage.
+
+## Admin 1.16 — Pengaturan Donasi
+
+Referensi final: `design-references/user/33-admin-pengaturan-donasi.png`. Route `/admin/donasi` memakai AdminLayout, topbar Donasi dan menu Donasi di kelompok Konten Website, sesudah Kontak & Pengaturan.
+
+- Breadcrumb Konten Website → Kontak → Donasi; heading Pengaturan Donasi, badge draf dan banner peringatan mengikuti frame. Desktop memakai kolom konfigurasi dan kolom pratinjau/kesiapan; tablet/mobile bertumpuk tanpa mengubah layout halaman lain.
+- Urutan panel: Scan QRIS, Transfer Bank, Catatan donasi, Konfirmasi Donasi (WhatsApp), lalu footer Batal/Simpan Perubahan. Gambar PNG/JPG maksimal 2 MB dipratinjau lokal; Ganti/Hapus aktif setelah gambar valid tersedia. Toggle nonaktif sampai data lengkap, dan otomatis mati saat kelengkapan hilang.
+- Sesuai frame, hitungan `0 dari 2 siap` merujuk dua metode pembayaran (QRIS/transfer). Kesiapan konfirmasi WhatsApp ditampilkan terpisah. Semua status merujuk simulasi, bukan verifikasi rekening/QRIS atau publikasi.
+- Mini-preview hanya menampilkan metode aktif dan lengkap; tanpa QRIS/transfer tampil empty state. Konfirmasi WhatsApp menampilkan nomor/template literal dengan tombol pratinjau nonaktif, tanpa membuka atau mengirim pesan. Catatan donasi diperbarui langsung.
+- Rekening dan nomor WhatsApp awal kosong karena data resmi belum terverifikasi. Template placeholder dan catatan pengingat merupakan mock. Draf terakhir bertahan selama AdminLayout aktif; Batal mengembalikan isi dan gambar. Refresh/keluar layout menghapus draf, tanpa localStorage/backend atau perubahan Kontak publik.
+
+Bukti visual empat viewport, upload/preview dan status di `tmp/admin116-qa/`; aset referensi serta artefak tidak di-stage. Tidak membuat frame atau URL Figma baru.

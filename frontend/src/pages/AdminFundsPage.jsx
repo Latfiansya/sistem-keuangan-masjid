@@ -20,7 +20,7 @@ export default function AdminFundsPage() {
   function save(values, type) {
     addTransaction(values, type)
     setTransactionType(null)
-    setMessage(`${type === 'income' ? 'Pemasukan' : 'Pengeluaran'} ditambahkan ke daftar sesi mock. Belum tersimpan ke server; snapshot saldo/laporan tidak berubah.`)
+    setMessage(`${type === 'income' ? 'Pemasukan' : 'Pengeluaran'} ditambahkan ke daftar sesi mock. Belum tersimpan ke server; snapshot saldo tetap; laporan simulasi ikut diperbarui.`)
   }
   if (error) return <p className="admin-dashboard-state" role="alert">{error}</p>
   if (!dashboard) return <p className="admin-dashboard-state" role="status">Memuat data kelola dana…</p>
@@ -42,7 +42,7 @@ export default function AdminFundsPage() {
           <p role="status">{message || 'Simulasi sesi admin · Belum tersimpan ke server.'}</p>
         </div>
       </section>
-      <AdminRecentTransactions onViewAll={() => navigate('/admin/laporan#kas-masuk')} transactions={getAdminRecentTransactions(dashboard)} categories={dashboard.categories} />
+      <AdminRecentTransactions hasSessionChanges={Boolean(Object.keys(dashboard.transactionChanges || {}).length || dashboard.deletedTransactionIds?.length)} onViewAll={() => navigate('/admin/laporan#kas-masuk')} transactions={getAdminRecentTransactions(dashboard)} categories={dashboard.categories} />
       {transactionType && <AdminTransactionForm type={transactionType} categories={dashboard.categories} onSave={save} onClose={() => setTransactionType(null)} returnFocusRef={returnFocusRef} />}
     </div>
   )

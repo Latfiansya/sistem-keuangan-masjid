@@ -1,3 +1,4 @@
+import { getActiveAdminTransactions } from './adminTransactionData.js'
 import { dataSource } from '../utils/env.js'
 import { getLocalReceiptDate, receiptDateFromIso, receiptDateToIso } from '../utils/adminReceipt.js'
 
@@ -39,5 +40,28 @@ export function addMockAdminTransaction(dashboard, values, type) {
 }
 
 export function getAdminRecentTransactions(dashboard) {
-  return [...(dashboard.sessionTransactions || []), ...dashboard.recentTransactions].sort((a, b) => b.date.localeCompare(a.date))
+  const recentIds = new Set(dashboard.recentTransactions.map((transaction) => transaction.id))
+  const sessionOrder = new Map((dashboard.sessionTransactions || []).map((transaction, index) => [transaction.id, index]))
+  return getActiveAdminTransactions(dashboard).filter((transaction) => recentIds.has(transaction.id) || transaction.source === 'session').sort((a, b) => b.date.localeCompare(a.date) || (sessionOrder.get(a.id) ?? Infinity) - (sessionOrder.get(b.id) ?? Infinity))
+}
+
+export function editMockAdminTransaction(dashboard, id, values) {
+  if (dataSource !== 'mock' || !dashboard) throw new Error('Perubahan transaksi hanya tersedia dalam sesi mock.')
+  const transaction = getActiveAdminTransactions(dashboard).find((item) => item.id === id)
+  if (!transaction) throw new Error('Transaksi tidak ditemukan dalam sesi ini.')
+  const errors = validateAdminTransaction(values, dashboard.categories, transaction.type)
+  if (Object.keys(errors).length) throw new Error(Object.values(errors)[0])
+  const changes = {
+    date: values.date, categoryId: values.categoryId, description: values.description.trim(), amount: Number(values.amount),
+    personName: (values.personName || '').trim(), notes: (values.notes || '').trim(),
+    showDonorNamePublic: transaction.type === 'income' && values.showDonorNamePublic === true,
+    sessionEdited: true,
+  }
+  return { ...dashboard, transactionChanges: { ...dashboard.transactionChanges, [id]: changes } }
+}
+
+export function deleteMockAdminTransaction(dashboard, id) {
+  if (dataSource !== 'mock' || !dashboard) throw new Error('Penghapusan transaksi hanya tersedia dalam sesi mock.')
+  if (!getActiveAdminTransactions(dashboard).some((transaction) => transaction.id === id)) throw new Error('Transaksi tidak ditemukan dalam sesi ini.')
+  return { ...dashboard, deletedTransactionIds: [...(dashboard.deletedTransactionIds || []), id] }
 }

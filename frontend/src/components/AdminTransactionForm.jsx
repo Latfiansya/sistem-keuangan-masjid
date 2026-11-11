@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronLeft } from 'lucide-react'
-import AdminRupiahInput from './AdminRupiahInput.jsx'
+import AdminTransactionFields from './AdminTransactionFields.jsx'
 import { getLocalTransactionDate, validateAdminTransaction } from '../services/adminTransactionService.js'
 
 export default function AdminTransactionForm({ type, categories, onSave, onClose, returnFocusRef }) {
@@ -60,21 +60,11 @@ export default function AdminTransactionForm({ type, categories, onSave, onClose
     }
   }
 
-  const error = (name) => errors[name] && <p id={`admin-transaction-${name}-error`} className="admin-transaction-error" role="alert">{errors[name]}</p>
-  const attributes = (name) => ({ id: `admin-transaction-${name}`, name, value: values[name], onChange: (event) => change(name, event.target.value), 'aria-invalid': Boolean(errors[name]), 'aria-describedby': errors[name] ? `admin-transaction-${name}-error` : undefined })
-  const fieldLabel = (name, text, required = false) => <label htmlFor={`admin-transaction-${name}`}>{text}{required && <span aria-hidden="true">*</span>}</label>
-
   return <dialog ref={dialogRef} className={`admin-transaction-dialog admin-transaction-dialog--${type}`} aria-labelledby="admin-transaction-title" aria-describedby="admin-transaction-note" onCancel={(event) => { event.preventDefault(); onClose() }} onKeyDown={trapFocus}>
     <header><button type="button" onClick={onClose} aria-label={`Tutup tambah ${label.toLowerCase()}`}><ChevronLeft size={22} aria-hidden="true" /></button><div><h2 id="admin-transaction-title">Tambah {label}</h2><p>Catat {label.toLowerCase()} dana masjid</p></div></header>
     <form noValidate onSubmit={submit}>
-      <div className="admin-transaction-field">{fieldLabel('date', 'Tanggal Transaksi', true)}<input {...attributes('date')} type="date" required />{error('date')}</div>
-      <div className="admin-transaction-field">{fieldLabel('categoryId', 'Kategori Dana', true)}<select {...attributes('categoryId')} required><option value="">Pilih Kategori Dana</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select>{error('categoryId')}</div>
-      <div className="admin-transaction-field">{fieldLabel('description', `Uraian ${label}`, true)}<input {...attributes('description')} required autoComplete="off" maxLength={500} placeholder={income ? 'Contoh: Infaq Jumat' : 'Contoh: Pembelian perlengkapan masjid'} />{error('description')}</div>
-      <div className="admin-transaction-field">{fieldLabel('amount', 'Nominal', true)}<AdminRupiahInput {...attributes('amount')} required />{error('amount')}</div>
-      <div className="admin-transaction-field">{fieldLabel('personName', income ? 'Nama Donatur' : 'Nama Penerima')}<input {...attributes('personName')} autoComplete="off" maxLength={100} placeholder={income ? 'Kosongkan untuk Hamba Allah' : 'Nama penerima (opsional)'} />{error('personName')}</div>
-      {income && <label className="admin-transaction-privacy"><input name="showDonorNamePublic" type="checkbox" checked={values.showDonorNamePublic} onChange={(event) => change('showDonorNamePublic', event.target.checked)} />Tampilkan nama donatur di laporan publik</label>}
-      <div className="admin-transaction-field">{fieldLabel('notes', 'Keterangan')}<textarea {...attributes('notes')} rows={3} maxLength={500} placeholder="Keterangan tambahan (opsional)" />{error('notes')}</div>
-      <p id="admin-transaction-note" className="admin-transaction-note">{income ? 'Transaksi dan pilihan nama publik hanya simulasi sesi admin, belum tersimpan ke server.' : 'Transaksi hanya simulasi sesi admin, belum tersimpan ke server.'} Saldo dan laporan historis tetap memakai snapshot.</p>
+      <AdminTransactionFields values={values} errors={errors} categories={categories} type={type} change={change} />
+      <p id="admin-transaction-note" className="admin-transaction-note">{income ? 'Transaksi dan pilihan nama publik hanya simulasi sesi admin, belum tersimpan ke server.' : 'Transaksi hanya simulasi sesi admin, belum tersimpan ke server.'} Daftar dan laporan simulasi diperbarui; saldo serta PNG snapshot tetap.</p>
       {errors.form && <p className="admin-transaction-error" role="alert">{errors.form}</p>}
       <footer><button type="button" onClick={onClose}>Batal</button><button type="submit" className="admin-transaction-save"><Check size={16} aria-hidden="true" />Simpan {label}</button></footer>
     </form>

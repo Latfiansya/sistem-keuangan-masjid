@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router'
-import { ArrowRightLeft, Bell, Building2, CalendarDays, ClipboardList, Contact, FileText, Folder, KeyRound, LayoutDashboard, LogOut, Menu, Receipt, Users, X } from 'lucide-react'
-import { addMockAdminTransaction } from '../services/adminTransactionService.js'
+import { ArrowRightLeft, Bell, Building2, CalendarDays, ClipboardList, Contact, FileText, Folder, HandHeart, KeyRound, LayoutDashboard, LogOut, Menu, Receipt, Users, X } from 'lucide-react'
+import { addMockAdminTransaction, deleteMockAdminTransaction, editMockAdminTransaction } from '../services/adminTransactionService.js'
 import { getAdminDashboard } from '../services/adminDashboardService.js'
 import { deleteMockAdminCategory, saveMockAdminCategory } from '../services/adminCategoryService.js'
 import './AdminLayout.css'
@@ -19,6 +19,7 @@ const navigation = [
     { label: 'Profil Masjid', icon: Building2, to: '/admin/profil-masjid' },
     { label: 'Agenda', icon: CalendarDays, to: '/admin/agenda' },
     { label: 'Kontak & Pengaturan', title: 'Kontak & Pengaturan Website', icon: Contact, to: '/admin/kontak-pengaturan' },
+    { label: 'Donasi', icon: HandHeart, to: '/admin/donasi' },
   ] },
   { label: 'Pengaturan', items: [
     { label: 'Kelola Akun', icon: Users, to: '/admin/kelola-akun' },
@@ -28,10 +29,13 @@ const navigation = [
 
 export default function AdminLayout() {
   const { pathname } = useLocation()
-  const currentPage = navigation.flatMap((group) => group.items).find((item) => item.to === pathname.replace(/\/$/, ''))
-  const title = currentPage?.title || currentPage?.label || 'Dashboard Keuangan'
+  const transactionPage = pathname.startsWith('/admin/laporan/transaksi/')
+  const currentPage = navigation.flatMap((group) => group.items).find((item) => item.to === (transactionPage ? '/admin/laporan' : pathname.replace(/\/$/, '')))
+  const title = transactionPage ? 'Transaksi' : currentPage?.title || currentPage?.label || 'Dashboard Keuangan'
   const [dashboard, setDashboard] = useState(null)
   const [error, setError] = useState('')
+  const [reportView, setReportView] = useState(null)
+  const [donationDraft, setDonationDraft] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuButton = useRef(null)
   const navigationPanel = useRef(null)
@@ -78,6 +82,9 @@ export default function AdminLayout() {
     setDashboard(addMockAdminTransaction(dashboard, values, type))
   }
 
+  function editTransaction(id, values) { setDashboard(editMockAdminTransaction(dashboard, id, values)) }
+  function deleteTransaction(id) { setDashboard(deleteMockAdminTransaction(dashboard, id)) }
+
   const account = dashboard?.account
   return (
     <div className="admin-shell">
@@ -108,7 +115,7 @@ export default function AdminLayout() {
             <span className="admin-avatar" aria-label="Inisial akun contoh">{account?.initials || '—'}</span>
           </div>
         </header>
-        <main id="admin-content" className="admin-content" tabIndex={-1}><Outlet context={{ dashboard, error, saveCategory, deleteCategory, addTransaction }} /></main>
+        <main id="admin-content" className="admin-content" tabIndex={-1}><Outlet context={{ dashboard, error, saveCategory, deleteCategory, addTransaction, editTransaction, deleteTransaction, reportView, setReportView, donationDraft, setDonationDraft }} /></main>
       </div>
     </div>
   )

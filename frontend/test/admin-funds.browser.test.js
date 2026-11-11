@@ -43,7 +43,7 @@ test('Kelola Dana: tambah transaksi sesi, privasi donatur dan snapshot pada Chro
   const key = async (value, code, modifiers = 0) => { for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key: value, code: value === ' ' ? 'Space' : value, windowsVirtualKeyCode: code, modifiers, ...(type === 'keyDown' && value === 'Enter' ? { text: '\r' } : type === 'keyDown' && value === ' ' ? { text: ' ' } : {}) }) }
   const fillName = async (name) => { await evaluate('document.querySelector("#admin-category-name").focus();document.querySelector("#admin-category-name").select()'); await send('Input.insertText', { text: name }) }
   const open = async (route = 'kategori-dana', origin = baseUrl) => { await send('Page.navigate', { url: `${origin}/admin/${route}` }); await waitFor('document.readyState==="complete" && !!document.querySelector(".admin-shell")'); await waitFor(origin === baseUrl ? (route.startsWith('kelola-dana') ? '!!document.querySelector(".admin-funds")' : '!!document.querySelector(".admin-balance-table")') : '!!document.querySelector(".admin-dashboard-state[role=alert]")'); await evaluate('document.fonts.ready') }
-  const navigate = async (route) => { if (await evaluate('innerWidth<1024')) await click('.admin-menu-toggle'); await click(`.admin-nav-link[href="/admin/${route}"]`); await waitFor(route === 'laporan' ? '!!document.querySelector(".admin-report-tabs")' : route === 'kategori-dana' ? '!!document.querySelector(".admin-categories-table")' : route === 'dashboard' ? '!!document.querySelector(".admin-dashboard")' : route === 'activity-log' ? '!!document.querySelector(".admin-activity-card")' : '!!document.querySelector(".admin-funds")') }
+  const navigate = async (route) => { if (await evaluate('innerWidth<1024')) await click('.admin-menu-toggle'); await click(`.admin-nav-link[href="/admin/${route}"]`); await waitFor(route === 'laporan' ? '!!document.querySelector(".admin-report-tabs")' : route === 'kategori-dana' ? '!!document.querySelector(".admin-categories-table")' : route === 'dashboard' ? '!!document.querySelector(".admin-dashboard")' : route === 'activity-log' ? '!!document.querySelector(".admin-activity-card")' : '!!document.querySelector(".admin-funds")'); if (route === 'laporan') await evaluate('document.fonts.ready.then(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))') }
   const screenshot = async (name) => { const png = await send('Page.captureScreenshot', { format: 'png' }); await writeFile(`${output}${name}.png`, Buffer.from(png.data, 'base64')) }
   const rowAction = (id, mode) => `.admin-categories-table [data-category-id="${id}"] button:${mode === 'edit' ? 'first' : 'last'}-child`
   const noOverflow = async () => {
@@ -131,10 +131,12 @@ test('Kelola Dana: tambah transaksi sesi, privasi donatur dan snapshot pada Chro
       const transactionId=await evaluate('document.querySelector(".admin-recent-table tr[data-source=session]").dataset.transactionId')
       await navigate('dashboard'); assert.equal(await rows(),6)
       assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-statistic>p")].map(e=>e.textContent)'),['Rp 16.864.200','Rp 1.791.500','Rp 1.427.500','Rp 17.228.200'])
-      assert.match(await evaluate('document.querySelector(".admin-session-transactions-note").textContent'),/Belum termasuk snapshot saldo/)
+      assert.match(await evaluate('document.querySelector(".admin-session-transactions-note").textContent'),/snapshot saldo tetap/)
       await navigate('laporan')
-      assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tr[data-transaction-id]").length'),141)
-      assert.match(await evaluate('document.querySelector(".admin-report-notice").textContent'),/1 tambahan sesi mock belum termasuk/)
+      assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tr[data-transaction-id]").length'),20)
+      await click('.admin-report-page-size button:last-of-type')
+      assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tr[data-transaction-id]").length'),142)
+      assert.match(await evaluate('document.querySelector(".admin-report-notice").textContent'),/Ada perubahan sesi/)
       assert.equal(await evaluate('document.querySelector(".admin-report-balance h2").textContent'),'Rp 17.228.200')
       await click('#admin-report-tab-expense'); assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tr[data-transaction-id]").length'),108)
       await click('#admin-report-tab-monthly'); assert.deepEqual(await evaluate('[...document.querySelectorAll("[data-month-total=\\"2026-10\\"] td")].map(e=>e.textContent)'),['16.864.200','1.791.500','1.427.500','17.228.200'])

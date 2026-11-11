@@ -102,6 +102,7 @@
 .admin-report-ledger-table td:nth-child(2) { min-width: 190px; max-width: 280px; }
 .admin-report-ledger-table td:nth-child(3) { min-width: 240px; overflow-wrap: anywhere; }
 .admin-report .admin-report-ledger-table td:nth-child(4) { text-align: right; white-space: nowrap; font-weight: 750; }
+.admin-report .admin-report-ledger-table thead th:nth-child(4), .admin-report .admin-report-ledger-table tbody td:nth-child(4) { padding-right: 48px; text-align: right; }
 .admin-report-ledger-table tfoot { color: #61748e; background: #f7fbff; }
 .admin-report-amount--income { color: #008b60; }
 .admin-report-amount--expense { color: #d0183e; }
@@ -186,3 +187,16 @@
 .admin-report-month small { display: block; margin-top: 4px; color: #8b9fbf; font-size: 12px; font-weight: 400; }
 .admin-report-month-total { color: #61748e; background: #f1f5f9; }
 @media (max-width: 479px) { .admin-report-ledger-heading { align-items: flex-start; flex-wrap: wrap; } }
+.admin-report-detail-link { display: inline-flex; align-items: center; justify-content: flex-end; gap: 5px; color: var(--category-color, #087815); font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; }
+.admin-report-detail-link:hover { text-decoration: underline; }
+.admin-report-detail-link:focus-visible, .admin-report-pagination button:focus-visible { outline: 3px solid #d58b00; outline-offset: 3px; }
+.admin-report-ledger-hint { display: flex; align-items: center; gap: 6px; margin: 0 0 16px; color: #7b8799; font-size: 12px; line-height: 1.5; }
+.admin-report-ledger-hint svg { flex-shrink: 0; color: var(--category-color); }
+.admin-report-pagination { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 16px; border-top: 1px solid #e1e9f4; color: #758296; background: #f7f9fc; font-size: 11px; line-height: 1.5; }
+.admin-report-pagination > div, .admin-report-page-size, .admin-report-pagination nav { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.admin-report-pagination > div { gap: 12px; }
+.admin-report-pagination button { display: inline-flex; align-items: center; justify-content: center; min-width: 30px; min-height: 32px; padding: 6px 9px; border: 1px solid #e1e9f4; border-radius: 7px; color: #758296; background: white; font: inherit; cursor: pointer; }
+.admin-report-pagination button[aria-current="page"], .admin-report-pagination button[aria-pressed="true"] { border-color: var(--category-color); color: white; background: var(--category-color); }
+.admin-report-pagination button:disabled { cursor: not-allowed; opacity: .4; }
+.admin-report-pagination button:not(:disabled):hover { border-color: var(--category-color); }
+@media (max-width: 767px) { .admin-report-pagination { align-items: flex-start; flex-direction: column; } .admin-report-pagination button { min-width: 38px; min-height: 44px; } .admin-report-pagination nav { max-width: 100%; gap: 4px; } .admin-report-pagination nav button { min-width: 32px; padding-inline: 8px; } }

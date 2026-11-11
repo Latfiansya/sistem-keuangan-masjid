@@ -1,19 +1,19 @@
 import { validateReportRange } from '../utils/reportCalculations.js'
-import { mockAdminFinanceHistory, mockAdminFinanceOctober } from '../mocks/adminFinanceReport.js'
+import { getActiveAdminTransactions, getAdminHistoricalTransactions } from './adminTransactionData.js'
 
 export function buildAdminFinanceReport(dashboard) {
   const month = dashboard.updatedDate.slice(0, 7)
   const range = { startDate: `${month}-01`, endDate: dashboard.updatedDate }
-  const transactions = [
-    ...structuredClone(mockAdminFinanceHistory),
-    ...structuredClone(mockAdminFinanceOctober),
-    ...dashboard.recentTransactions.map((transaction) => ({ ...transaction, source: 'dashboard', mock: true })),
-  ].sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
+  const historical = getAdminHistoricalTransactions(dashboard)
+  const transactions = getActiveAdminTransactions(dashboard)
   const historyOpeningBalances = Object.fromEntries(dashboard.categories.map((category) => {
-    const prior = summarizeAdminFinanceTransactions(transactions.filter((transaction) => transaction.categoryId === category.id && transaction.date < range.startDate))
+    const prior = summarizeAdminFinanceTransactions(historical.filter((transaction) => transaction.categoryId === category.id && transaction.date < range.startDate))
     return [category.id, category.openingBalance - prior.income + prior.expense]
   }))
-  return { ...dashboard, month, range, coverage: { startDate: '2026-01-01', endDate: dashboard.updatedDate }, transactions, historyOpeningBalances }
+  const dates = transactions.map((transaction) => transaction.date)
+  const coverage = { startDate: ['2026-01-01', ...dates].sort()[0], endDate: [dashboard.updatedDate, ...dates].sort().at(-1) }
+  const sessionChangeCount = (dashboard.sessionTransactions || []).length + Object.keys(dashboard.transactionChanges || {}).length + (dashboard.deletedTransactionIds || []).length
+  return { ...dashboard, month, range, coverage, transactions, historyOpeningBalances, historicalTransactionCount: historical.length, sessionChangeCount }
 }
 
 export function getAdminFinancePreset(preset, today = new Date()) {

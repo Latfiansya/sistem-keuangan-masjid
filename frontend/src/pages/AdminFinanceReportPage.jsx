@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { useLocation, useOutletContext } from 'react-router'
-import { ArrowDownCircle, ArrowDownRight, ArrowDownToLine, ArrowUpCircle, ArrowUpRight, CalendarDays, ChevronRight, CircleAlert, Download, FileText, Landmark, LoaderCircle, Pencil, Search, ShieldCheck, Trash2, Wallet } from 'lucide-react'
+import { Link, useLocation, useOutletContext } from 'react-router'
+import { ArrowDownCircle, ArrowDownRight, ArrowDownToLine, ArrowUpCircle, ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, CircleAlert, Download, FileText, Landmark, LoaderCircle, Pencil, Search, ShieldCheck, Trash2, Wallet } from 'lucide-react'
+import { paginateAdminTransactions } from '../utils/adminPagination.js'
 import AdminBalanceSummary from '../components/AdminBalanceSummary.jsx'
 import { buildAdminFinanceReport, buildAdminMonthlyRecap, filterAdminFinanceTransactions, getAdminFinancePreset, summarizeAdminFinanceTransactions, validateAdminFinanceRange } from '../services/adminFinanceReportService.js'
 import { createAdminFinanceSummaryPng } from '../services/adminFinanceExportService.js'
@@ -34,7 +35,8 @@ const reportTabs = [
   { id: 'monthly', label: 'Rekap Bulanan', icon: FileText },
 ]
 
-function LedgerTable({ transactions, categories, type }) {
+function LedgerTable({ transactions, categories, type, page, pageSize, setPage, setPageSize, rememberView }) {
+  const pagination = paginateAdminTransactions(transactions, page, pageSize)
   const total = summarizeAdminFinanceTransactions(transactions)[type]
   return <div className="admin-panel admin-report-table-panel">
     <p className="admin-table-hint">Geser tabel untuk melihat seluruh kolom.</p>
@@ -42,19 +44,20 @@ function LedgerTable({ transactions, categories, type }) {
       <table className="admin-report-ledger-table">
         <caption className="sr-only">Transaksi simulasi seluruh kategori sesuai jenis dan filter, bukan data resmi masjid.</caption>
         <thead><tr>{['Tanggal', 'Kategori', 'Uraian', 'Jumlah (Rp)', 'Aksi'].map((label) => <th key={label} scope="col">{label}</th>)}</tr></thead>
-        <tbody>{transactions.length ? transactions.map((transaction) => {
+        <tbody>{transactions.length ? pagination.rows.map((transaction) => {
           const category = categories.find((item) => item.id === transaction.categoryId)
           return <tr key={transaction.id} data-transaction-id={transaction.id}>
             <td><time dateTime={transaction.date}>{formatReportDate(transaction.date)}</time></td>
             <td><span style={adminCategoryColorStyle(category.color)} className={`admin-report-category-label admin-report-category--${category.color}`}>• {category.label}</span></td>
             <td>{transaction.description}</td>
             <td className={`admin-report-amount--${transaction.type}`}>{formatReportNumber(transaction.amount)}</td>
-            <td><TransactionActions transaction={transaction} /></td>
+            <td><Link className="admin-report-detail-link" to={`/admin/laporan/transaksi/${encodeURIComponent(transaction.id)}`} onClick={rememberView}>Lihat Detail<ChevronRight size={15} aria-hidden="true" /></Link></td>
           </tr>
         }) : <tr><td colSpan={5} className="admin-report-empty">Tidak ada transaksi mock yang sesuai filter.</td></tr>}</tbody>
-        <tfoot><tr><th scope="row" colSpan={3}>Total transaksi mock ditampilkan</th><td colSpan={2} className={`admin-report-amount--${type}`}>{formatRupiah(total)}</td></tr></tfoot>
+        <tfoot><tr><th scope="row" colSpan={3}>Total seluruh hasil filter (simulasi)</th><td colSpan={2} className={`admin-report-amount--${type}`}>{formatRupiah(total)}</td></tr></tfoot>
       </table>
     </div>
+    <footer className="admin-report-pagination"><div><span role="status">Menampilkan {pagination.start}–{pagination.end} dari {pagination.total} transaksi</span><div className="admin-report-page-size" role="group" aria-label="Jumlah baris transaksi"><span>Tampilkan:</span>{[20, 30, 50, 'all'].map((size) => <button key={size} type="button" aria-pressed={pageSize === size} onClick={() => { setPageSize(size); setPage(1) }}>{size === 'all' ? 'Semua' : size}</button>)}</div></div>{pagination.pages.length > 0 && <nav aria-label="Halaman transaksi"><button type="button" aria-label="Halaman sebelumnya" disabled={pagination.page === 1} onClick={() => setPage(pagination.page - 1)}><ChevronLeft size={16} aria-hidden="true" /></button>{pagination.pages.map((number, index) => number === '…' ? <span key={`ellipsis-${index}`} aria-hidden="true">…</span> : <button type="button" key={number} aria-label={`Halaman ${number}`} aria-current={pagination.page === number ? 'page' : undefined} onClick={() => setPage(number)}>{number}</button>)}<button type="button" aria-label="Halaman berikutnya" disabled={pagination.page === pagination.pageCount} onClick={() => setPage(pagination.page + 1)}><ChevronRight size={16} aria-hidden="true" /></button></nav>}</footer>
   </div>
 }
 
@@ -80,14 +83,17 @@ function MonthlyRecap({ months }) {
 }
 
 function AdminFinanceReportContent({ report }) {
-  const { hash, key } = useLocation()
-  const [range, setRange] = useState(report.range)
-  const [draftRange, setDraftRange] = useState(report.range)
-  const [historyRange, setHistoryRange] = useState(report.coverage)
+  const { hash, key, state } = useLocation()
+  const { reportView, setReportView } = useOutletContext()
+  const [range, setRange] = useState(() => reportView?.range ?? report.range)
+  const [draftRange, setDraftRange] = useState(() => reportView?.draftRange ?? report.range)
+  const [historyRange, setHistoryRange] = useState(() => reportView?.historyRange ?? report.coverage)
   const [rangeError, setRangeError] = useState('')
-  const [activePreset, setActivePreset] = useState(null)
-  const [tabId, setTabId] = useState('income')
-  const [query, setQuery] = useState('')
+  const [activePreset, setActivePreset] = useState(() => reportView?.activePreset ?? null)
+  const [tabId, setTabId] = useState(() => reportView?.tabId ?? 'income')
+  const [query, setQuery] = useState(() => reportView?.query ?? '')
+  const [page, setPage] = useState(() => reportView?.page || 1)
+  const [pageSize, setPageSize] = useState(() => reportView?.pageSize || 20)
   const [exporting, setExporting] = useState(false)
   const [toast, setToast] = useState(null)
   const exportSheet = useRef(null)
@@ -110,18 +116,20 @@ function AdminFinanceReportContent({ report }) {
     document.fonts.ready.then(() => {
       if (controller.signal.aborted) return
       frame = requestAnimationFrame(() => {
-        if (hash === '#kas-masuk') {
-          setTabId('income')
+        if (hash === '#kas-masuk' || hash === '#transaksi') {
+          if (hash === '#kas-masuk') { setTabId('income'); setPage(1) }
           reportNavigation.current?.scrollIntoView({ block: 'start' })
           const header = document.querySelector('.admin-topbar')
           const offset = header && ['sticky', 'fixed'].includes(getComputedStyle(header).position) ? header.getBoundingClientRect().height : 0
           window.scrollBy(0, -offset - 16)
-          document.getElementById('admin-report-tab-income')?.focus({ preventScroll: true })
+          document.getElementById(`admin-report-tab-${hash === '#kas-masuk' ? 'income' : reportView?.tabId || 'income'}`)?.focus({ preventScroll: true })
         } else if (!hash) window.scrollTo(0, 0)
       })
     })
     return () => { controller.abort(); cancelAnimationFrame(frame) }
-  }, [hash, key])
+  }, [hash, key, reportView?.tabId])
+
+  function rememberView() { setReportView?.({ range, draftRange, historyRange, tabId, query, page: paginateAdminTransactions(ledgerTransactions, page, pageSize).page, pageSize, activePreset }) }
 
   useEffect(() => () => exportController.current?.abort(), [])
   useEffect(() => {
@@ -132,16 +140,16 @@ function AdminFinanceReportContent({ report }) {
 
   function applyRange(event) {
     event.preventDefault()
-    try { validateAdminFinanceRange(report, draftRange); setRange({ ...draftRange }); setHistoryRange({ ...draftRange }); setRangeError(''); setActivePreset(null) }
+    try { validateAdminFinanceRange(report, draftRange); setRange({ ...draftRange }); setHistoryRange({ ...draftRange }); setRangeError(''); setActivePreset(null); setPage(1) }
     catch (cause) { setRangeError(cause.message) }
   }
 
   function applyPreset(preset) {
     const next = getAdminFinancePreset(preset)
-    setRange(next); setDraftRange(next); setHistoryRange(next); setRangeError(''); setActivePreset(preset)
+    setRange(next); setDraftRange(next); setHistoryRange(next); setRangeError(''); setActivePreset(preset); setPage(1)
   }
 
-  function selectTab(id) { setTabId(id); setQuery('') }
+  function selectTab(id) { setTabId(id); setQuery(''); setPage(1) }
 
   function handleTabKey(event, index) {
     let next
@@ -172,13 +180,14 @@ function AdminFinanceReportContent({ report }) {
   }
 
   return <div className="admin-report">
+    {state?.message && <p className="admin-report-notice" role="status">{state.message}</p>}
     <header className="admin-report-hero"><span><Landmark size={14} aria-hidden="true" />MASJID AL-HIDAYAH</span><h2>LAPORAN<br />KEUANGAN</h2><p>Ringkasan pemasukan, pengeluaran, dan saldo<br className="admin-desktop-break" /> dana masjid dalam satu tampilan.</p><div><button type="button" disabled title="Tambah pemasukan belum tersedia"><ArrowDownCircle size={16} aria-hidden="true" />Tambah Pemasukan</button><button type="button" disabled title="Tambah pengeluaran belum tersedia"><ArrowUpCircle size={16} aria-hidden="true" />Tambah Pengeluaran</button></div></header>
     <section className="admin-report-balance" aria-label="Total saldo seluruh dana"><p>TOTAL SALDO SELURUH DANA</p><span><i aria-hidden="true" />{periodLabel} · snapshot {snapshotLabel}</span><h2>{formatRupiah(report.totals.closingBalance)}</h2><dl>{[['openingBalance', 'Saldo Awal'], ['income', 'Pemasukan'], ['expense', 'Pengeluaran']].map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{formatRupiah(report.totals[key])}</dd></div>)}</dl></section>
-    <div className="admin-report-category-cards">{report.categories.map((category) => <button key={category.id} type="button" style={adminCategoryColorStyle(category.color)} className={`admin-report-category-card admin-report-category--${category.color}`} onClick={() => { selectTab('monthly'); tabPanel.current?.scrollIntoView({ block: 'start' }) }} aria-label={`Lihat rincian ${category.label}`}><span><Wallet size={21} aria-hidden="true" /></span><small>{category.label}</small><strong>{formatRupiah(category.closingBalance)}</strong><footer>Saldo snapshot <ChevronRight size={16} aria-hidden="true" /></footer></button>)}</div>
+    <div className="admin-report-category-cards">{report.categories.map((category) => <button key={category.id} type="button" style={adminCategoryColorStyle(category.color)} className={`admin-report-category-card admin-report-category--${category.color}`} onClick={() => { selectTab('monthly'); tabPanel.current?.scrollIntoView({ block: 'start' }) }} aria-label={`Lihat rincian ${category.label}`}><span><Wallet size={21} aria-hidden="true" /></span><small>{category.label}</small><strong>{formatRupiah(category.closingBalance)}</strong></button>)}</div>
     <section className="admin-report-detail" aria-labelledby="admin-report-detail-title"><div className="admin-report-detail-heading"><div><h2 id="admin-report-detail-title">Detail {range.startDate.slice(0, 7) === report.month ? periodLabel : 'Riwayat Mock'}</h2><p>Rincian pemasukan dan pengeluaran simulasi untuk rentang terpilih.</p></div><div className="admin-report-presets">{[['week', '1 minggu terakhir'], ['month', '1 bulan terakhir'], ['quarter', '3 bulan terakhir'], ['currentMonth', 'Bulan ini']].map(([id, label]) => <button key={id} type="button" aria-pressed={activePreset === id} onClick={() => applyPreset(id)}>{id === 'currentMonth' && <CalendarDays size={14} aria-hidden="true" />}{label}</button>)}</div></div>
-      <form className="admin-report-filters" noValidate onSubmit={applyRange} aria-label="Filter tanggal transaksi mock"><span><CalendarDays size={16} aria-hidden="true" />Rentang transaksi:</span>{[['startDate', 'Dari tanggal'], ['endDate', 'Sampai tanggal']].map(([key, label]) => <label key={key}><span>{label}</span><input name={key} type="date" required value={draftRange[key]} onChange={(event) => { setDraftRange((previous) => ({ ...previous, [key]: event.target.value })); setRangeError(''); setActivePreset(null) }} aria-invalid={Boolean(rangeError)} aria-describedby={rangeError ? 'admin-report-range-error' : undefined} /></label>)}<button type="submit">Terapkan</button><p>{transactions.length} dari {report.transactions.length} transaksi mock</p></form>
+      <form className="admin-report-filters" noValidate onSubmit={applyRange} aria-label="Filter tanggal transaksi mock"><span><CalendarDays size={16} aria-hidden="true" />Rentang transaksi:</span>{[['startDate', 'Dari tanggal'], ['endDate', 'Sampai tanggal']].map(([key, label]) => <label key={key}><span>{label}</span><input name={key} type="date" required value={draftRange[key]} onChange={(event) => { setDraftRange((previous) => ({ ...previous, [key]: event.target.value })); setRangeError(''); setActivePreset(null); setPage(1) }} aria-invalid={Boolean(rangeError)} aria-describedby={rangeError ? 'admin-report-range-error' : undefined} /></label>)}<button type="submit">Terapkan</button><p>{transactions.length} dari {report.transactions.length} transaksi mock</p></form>
       {rangeError && <p className="admin-report-error" id="admin-report-range-error" role="alert">{rangeError}</p>}
-      <aside className="admin-report-notice"><ShieldCheck size={18} aria-hidden="true" /><p>Data mock khusus review · {report.transactions.length} transaksi simulasi Januari–Oktober, bukan riwayat resmi. Ringkasan saldo tetap snapshot {snapshotLabel}. Filter tanggal juga membatasi ketiga tampilan laporan di bawah.{report.sessionTransactions?.length > 0 && <> {report.sessionTransactions.length} tambahan sesi mock belum termasuk saldo dan laporan historis ini.</>}</p></aside>
+      <aside className="admin-report-notice"><ShieldCheck size={18} aria-hidden="true" /><p>Data mock khusus review · {report.historicalTransactionCount} transaksi historis mock, {report.transactions.length} transaksi aktif; bukan riwayat resmi. Ringkasan saldo tetap snapshot {snapshotLabel}. Filter tanggal juga membatasi ketiga tampilan laporan di bawah.{report.sessionChangeCount > 0 && <> Ada perubahan sesi: tabel, total filter, dan rekap memakai data aktif. Saldo serta PNG snapshot tetap memakai baseline.</>}</p></aside>
       <div className="admin-report-transaction-panels"><TransactionPanel type="income" transactions={transactions} categories={report.categories} /><TransactionPanel type="expense" transactions={transactions} categories={report.categories} /></div>
     </section>
     <AdminBalanceSummary categories={report.categories} totals={report.totals} updatedDate={report.updatedDate} title={`Resume Saldo Bulan ${monthLabel}`} titleId="admin-report-balance-title" />
@@ -187,8 +196,9 @@ function AdminFinanceReportContent({ report }) {
     <section ref={tabPanel} id="admin-report-ledger-panel" role="tabpanel" aria-labelledby={`admin-report-tab-${tabId}`} tabIndex={0} className={`admin-report-ledger admin-report-view--${tabId}`}>
       <div className="admin-report-ledger-heading"><div><h2>{selectedTab.label}{tabId === 'monthly' ? ` ${historyRange.startDate.slice(0, 4)}` : ''}</h2><p>{tabId === 'income' ? 'Semua pemasukan dana masjid' : tabId === 'expense' ? 'Semua pengeluaran dana masjid' : 'Ringkasan saldo & aliran kas setiap bulan dan kategori'} · data mock<br />{formatReportDate(historyRange.startDate)}–{formatReportDate(historyRange.endDate)}</p></div>{tabId === 'monthly' && <span><CalendarDays size={14} aria-hidden="true" />Tahun {historyRange.startDate.slice(0, 4)}</span>}</div>
       {tabId === 'monthly' ? <MonthlyRecap months={months} /> : <>
-        <div className="admin-report-ledger-tools"><article className="admin-report-ledger-total"><span>TOTAL {tabId === 'income' ? 'PEMASUKAN' : 'PENGELUARAN'}</span><strong>{formatRupiah(ledgerSummary[tabId])}</strong><small>Sesuai filter · mock</small><selectedTab.icon size={72} aria-hidden="true" /></article><article className="admin-report-ledger-count"><span>JUMLAH TRANSAKSI</span><strong>{ledgerTransactions.length}</strong><small>entri mock ditampilkan</small></article><label className="admin-report-search"><Search size={18} aria-hidden="true" /><span className="sr-only">Cari uraian transaksi</span><input type="search" maxLength={160} placeholder="Cari transaksi..." value={query} onChange={(event) => setQuery(event.target.value)} /></label></div>
-        <LedgerTable transactions={ledgerTransactions} categories={report.categories} type={tabId} />
+        <div className="admin-report-ledger-tools"><article className="admin-report-ledger-total"><span>TOTAL {tabId === 'income' ? 'PEMASUKAN' : 'PENGELUARAN'}</span><strong>{formatRupiah(ledgerSummary[tabId])}</strong><small>Sesuai filter · mock</small><selectedTab.icon size={72} aria-hidden="true" /></article><article className="admin-report-ledger-count"><span>JUMLAH TRANSAKSI</span><strong>{ledgerTransactions.length}</strong><small>hasil filter · simulasi</small></article><label className="admin-report-search"><Search size={18} aria-hidden="true" /><span className="sr-only">Cari uraian transaksi</span><input type="search" maxLength={160} placeholder="Cari transaksi..." value={query} onChange={(event) => { setQuery(event.target.value); setPage(1) }} /></label></div>
+        <p className="admin-report-ledger-hint"><ShieldCheck size={14} aria-hidden="true" />Lihat Detail untuk melihat transaksi. Edit dan hapus tersedia di halaman detail · simulasi sesi.</p>
+        <LedgerTable transactions={ledgerTransactions} categories={report.categories} type={tabId} page={page} pageSize={pageSize} setPage={setPage} setPageSize={setPageSize} rememberView={rememberView} />
         <p className="sr-only" role="status">{ledgerTransactions.length} transaksi mock {selectedTab.label}.</p>
       </>}
     </section>
