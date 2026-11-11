@@ -79,10 +79,23 @@ test('Kelola Dana: tambah transaksi sesi, privasi donatur dan snapshot pada Chro
           assert.equal(await evaluate('document.querySelectorAll(".admin-transaction-error").length'),4)
           assert.equal(await evaluate('document.activeElement.name'),'date')
           await setValue('date',today); await setValue('categoryId','mosque'); await fill('description',`${type} mock ${width}`)
-          for (const amount of ['0','-1','1e3','100.000','1.5','1000000000000']) {
+          for (const amount of ['0','-1','1e3','1.5','1,5','1000000000000']) {
             await fill('amount',amount); await save(); assert.match(await evaluate('document.querySelector("#admin-transaction-amount-error").textContent'),/rupiah bulat positif/)
           }
-          await fill('amount',type==='income'?'125000':'50000'); await fill('personName','Nama Contoh'); await fill('notes','Catatan sesi\nbaris kedua')
+          await fill('amount','100000')
+          assert.equal(await evaluate('document.querySelector("#admin-transaction-amount").value'),'100.000')
+          await evaluate('document.querySelector("#admin-transaction-amount").setSelectionRange(4,4)'); await key('Backspace',8)
+          assert.equal(await evaluate('document.querySelector("#admin-transaction-amount").value'),'10.000')
+          await fill('amount','100000'); await evaluate('document.querySelector("#admin-transaction-amount").setSelectionRange(3,3)'); await key('Delete',46)
+          assert.equal(await evaluate('document.querySelector("#admin-transaction-amount").value'),'10.000')
+          await fill('amount','100000'); await evaluate('document.querySelector("#admin-transaction-amount").setSelectionRange(1,1)'); await send('Input.insertText',{text:'5'})
+          assert.equal(await evaluate('document.querySelector("#admin-transaction-amount").value'),'1.500.000')
+          assert.equal(await evaluate('document.querySelector("#admin-transaction-amount").selectionStart'),3)
+          await fill('amount','Rp 150.000')
+          assert.equal(await evaluate('document.querySelector("#admin-transaction-amount").value'),'150.000')
+          await fill('amount',''); await save(); assert.ok(await evaluate('!!document.querySelector("#admin-transaction-amount-error")'))
+          await fill('amount',type==='income'?'125000':'50000'); assert.equal(await evaluate('document.querySelector("#admin-transaction-amount").value'),type==='income'?'125.000':'50.000'); await fill('personName','Nama Contoh'); await fill('notes','Catatan sesi\nbaris kedua')
+          await screenshot(`${type}-${width}-rupiah`)
           if(type==='income') { await click('[name=showDonorNamePublic]'); assert.equal(await evaluate('document.querySelector("dialog [name=showDonorNamePublic]").checked'),true); await key(' ',32); assert.equal(await evaluate('document.querySelector("dialog [name=showDonorNamePublic]").checked'),false); await click('[name=showDonorNamePublic]') }
           if(width===390) { await evaluate('document.querySelector("dialog [name=description]").focus()'); await key('Enter',13) } else await save()
           await waitFor('!document.querySelector("dialog")')

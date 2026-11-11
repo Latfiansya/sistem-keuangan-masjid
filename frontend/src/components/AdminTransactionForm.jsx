@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronLeft } from 'lucide-react'
+import AdminRupiahInput from './AdminRupiahInput.jsx'
 import { getLocalTransactionDate, validateAdminTransaction } from '../services/adminTransactionService.js'
 
 export default function AdminTransactionForm({ type, categories, onSave, onClose, returnFocusRef }) {
@@ -69,7 +70,7 @@ export default function AdminTransactionForm({ type, categories, onSave, onClose
       <div className="admin-transaction-field">{fieldLabel('date', 'Tanggal Transaksi', true)}<input {...attributes('date')} type="date" required />{error('date')}</div>
       <div className="admin-transaction-field">{fieldLabel('categoryId', 'Kategori Dana', true)}<select {...attributes('categoryId')} required><option value="">Pilih Kategori Dana</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.label}</option>)}</select>{error('categoryId')}</div>
       <div className="admin-transaction-field">{fieldLabel('description', `Uraian ${label}`, true)}<input {...attributes('description')} required autoComplete="off" maxLength={500} placeholder={income ? 'Contoh: Infaq Jumat' : 'Contoh: Pembelian perlengkapan masjid'} />{error('description')}</div>
-      <div className="admin-transaction-field">{fieldLabel('amount', 'Nominal', true)}<input {...attributes('amount')} required inputMode="numeric" autoComplete="off" maxLength={20} placeholder="Rp0" />{error('amount')}</div>
+      <div className="admin-transaction-field">{fieldLabel('amount', 'Nominal', true)}<AdminRupiahInput {...attributes('amount')} required />{error('amount')}</div>
       <div className="admin-transaction-field">{fieldLabel('personName', income ? 'Nama Donatur' : 'Nama Penerima')}<input {...attributes('personName')} autoComplete="off" maxLength={100} placeholder={income ? 'Kosongkan untuk Hamba Allah' : 'Nama penerima (opsional)'} />{error('personName')}</div>
       {income && <label className="admin-transaction-privacy"><input name="showDonorNamePublic" type="checkbox" checked={values.showDonorNamePublic} onChange={(event) => change('showDonorNamePublic', event.target.checked)} />Tampilkan nama donatur di laporan publik</label>}
       <div className="admin-transaction-field">{fieldLabel('notes', 'Keterangan')}<textarea {...attributes('notes')} rows={3} maxLength={500} placeholder="Keterangan tambahan (opsional)" />{error('notes')}</div>

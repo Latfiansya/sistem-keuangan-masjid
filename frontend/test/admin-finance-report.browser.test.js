@@ -53,7 +53,7 @@ test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan PNG ringkasan
   const key = async (value, code) => { for (const type of ['keyDown', 'keyUp']) await send('Input.dispatchKeyEvent', { type, key: value, code: value, windowsVirtualKeyCode: code }) }
   const setDate = (name, value) => evaluate(`(()=>{const e=document.querySelector('.admin-report-filters [name=${name}]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(e,${JSON.stringify(value)});e.dispatchEvent(new Event('input',{bubbles:true}));e.dispatchEvent(new Event('change',{bubbles:true}))})()`)
   const search = async (value) => { await evaluate('document.querySelector(".admin-report-search input").focus();document.querySelector(".admin-report-search input").select()'); await send('Input.insertText', { text: value }) }
-  const open = async (route = 'laporan', origin = baseUrl) => { await send('Page.navigate', { url: `${origin}/admin/${route}` }); await waitFor('document.readyState==="complete" && !!document.querySelector(".admin-shell")'); if (route === 'laporan' && origin === baseUrl) await waitFor('!!document.querySelector(".admin-report-tabs")'); await evaluate('document.fonts.ready') }
+  const open = async (route = 'laporan', origin = baseUrl) => { await send('Page.navigate', { url: `${origin}/admin/${route}` }); await waitFor('document.readyState==="complete" && !!document.querySelector(".admin-shell")'); if (route === 'laporan' && origin === baseUrl) await waitFor('!!document.querySelector(".admin-report-tabs")'); await evaluate('document.fonts.ready'); await evaluate('new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))') }
   const navigate = async (route) => { if (await evaluate('innerWidth<1024')) await click('.admin-menu-toggle'); await click(`.admin-nav-link[href="/admin/${route}"]`) }
   const screenshot = async (name, full = false) => {
     const size = await evaluate('({width:innerWidth,height:document.documentElement.scrollHeight})')
@@ -143,8 +143,16 @@ test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan PNG ringkasan
       await search(' INFAQ '); assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),fixture.filter(row=>row.type==='income'&&row.description.toLowerCase().includes('infaq')).length)
       await search('tidak ditemukan'); assert.match(await evaluate('document.querySelector(".admin-report-ledger-table tbody").textContent'),/Tidak ada transaksi mock/)
       await search(' '); assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),141)
-      await click('.admin-report-presets button:first-child')
-      assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),4)
+      assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-report-presets button")].map(e=>e.textContent)'), ['1 minggu terakhir', '1 bulan terakhir', '3 bulan terakhir', 'Bulan ini'])
+      for (let index = 0; index < 4; index++) {
+        const expected = await evaluate(`(() => {const end=new Date(),start=new Date(end),day=start.getDate();if(${index}===0)start.setDate(day-6);else if(${index}===3)start.setDate(1);else {start.setDate(1);start.setMonth(start.getMonth()-(${index}===1?1:3));start.setDate(Math.min(day,new Date(start.getFullYear(),start.getMonth()+1,0).getDate()))}const f=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');return {startDate:f(start),endDate:f(end)}})()`)
+        await click(`.admin-report-presets button:nth-child(${index+1})`)
+        assert.deepEqual(await evaluate('Object.fromEntries([...document.querySelectorAll(".admin-report-filters input")].map(e=>[e.name,e.value]))'),expected)
+        assert.equal(await evaluate(`document.querySelector('.admin-report-presets button:nth-child(${index+1})').getAttribute('aria-pressed')`),'true')
+        const rows = fixture.filter(row=>row.date>=expected.startDate&&row.date<=expected.endDate)
+        assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),rows.length)
+        assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),rows.filter(row=>row.type==='income').length)
+      }
       await setDate('startDate','2026-10-14'); await setDate('endDate','2026-10-14'); await click('.admin-report-filters button')
       assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),1)
       assert.match(await evaluate('document.querySelector(".admin-report-transactions--income").textContent'),/Tidak ada transaksi mock pemasukan/)
@@ -154,14 +162,14 @@ test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan PNG ringkasan
       assert.match(await evaluate('document.querySelector("#admin-report-range-error").textContent'),/tidak boleh melebihi/)
       assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),1)
       await setDate('startDate',''); await click('.admin-report-filters button'); assert.match(await evaluate('document.querySelector("#admin-report-range-error").textContent'),/tanggal yang valid/)
-      await setDate('startDate','2025-12-31'); await click('.admin-report-filters button'); assert.match(await evaluate('document.querySelector("#admin-report-range-error").textContent'),/di dalam riwayat mock/)
       await setDate('startDate','2026-10-16'); await setDate('endDate','2026-10-20'); await click('.admin-report-filters button')
       assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),0)
       await click('#admin-report-tab-monthly')
       const empty=await evaluate('[...document.querySelectorAll(".admin-report-monthly-table [data-month-total] td")].map(e=>e.textContent)')
       assert.deepEqual(empty,['17.228.200','0','0','17.228.200'])
       assert.equal(await summary(),initialSummary)
-      await click('.admin-report-presets button:nth-child(2)'); assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),13)
+      await setDate('startDate','2026-10-01'); await setDate('endDate','2026-10-20'); await click('.admin-report-filters button'); assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),13)
+      assert.equal(await evaluate('document.querySelectorAll(".admin-report-presets [aria-pressed=true]").length'),0)
       await click('#admin-report-tab-income'); await search('pengajian'); await click('#admin-report-tab-expense')
       assert.equal(await evaluate('document.querySelector(".admin-report-search input").value'),'')
       await evaluate('document.querySelector(".admin-report-ledger .admin-table-scroll").focus()'); await key('ArrowRight',39)
@@ -178,6 +186,26 @@ test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan PNG ringkasan
       assert.equal(await evaluate('document.querySelectorAll(".admin-report-monthly-table tbody").length'),2)
       assert.equal(await evaluate('document.querySelectorAll(".admin-report-monthly-table [data-category-id]").length'),6)
       await noOverflow(); await screenshot('laporan-filter-parsial',true)
+    })
+    await t.test('preset memakai hari lokal berbeda dari UTC dan periode tanpa data menampilkan empty state', async () => {
+      await send('Emulation.setTimezoneOverride', { timezoneId: 'America/Los_Angeles' })
+      const script = await send('Page.addScriptToEvaluateOnNewDocument', { source: `const OriginalDate=Date;globalThis.Date=class extends OriginalDate{constructor(...args){super(...(args.length?args:['2026-11-11T01:00:00Z']))}static now(){return new OriginalDate('2026-11-11T01:00:00Z').getTime()}}` })
+      try {
+        await open()
+        for (const [index, start] of ['2026-11-04','2026-10-10','2026-08-10','2026-11-01'].entries()) {
+          await click(`.admin-report-presets button:nth-child(${index+1})`)
+          assert.equal(await evaluate('document.querySelector("[name=startDate]").value'), start)
+          assert.equal(await evaluate('document.querySelector("[name=endDate]").value'), '2026-11-10')
+        }
+        assert.match(await evaluate('document.querySelector(".admin-report-ledger-table tbody").textContent'), /Tidak ada transaksi mock/)
+        await click('#admin-report-tab-monthly')
+        assert.match(await evaluate('document.querySelector(".admin-report-monthly-table tbody").textContent'), /Tidak ada transaksi mock/)
+        assert.equal(await evaluate('document.querySelectorAll(".admin-report-monthly-table [data-month-total]").length'), 0)
+      } finally {
+        await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: script.identifier })
+        await send('Emulation.setTimezoneOverride', { timezoneId: '' })
+        await open()
+      }
     })
     await t.test('Lihat Semua Kelola Dana menuju hash Kas Masuk di bawah banner, sedangkan Sidebar tetap membuka dari atas', async () => {
       for (const [width,height] of [[1728,1080],[1366,768],[768,1024],[390,844]]) {

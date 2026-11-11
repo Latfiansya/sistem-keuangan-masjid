@@ -25,7 +25,7 @@ export function validateReceipt(values) {
     if (!values[field].trim()) errors[field] = `${label} wajib diisi.`
     else if (values[field].trim().length > limit || [...values[field]].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) errors[field] = `${label} tidak valid atau terlalu panjang.`
   }
-  if (!/^\d{1,12}$/.test(values.amount) || Number(values.amount) <= 0) errors.amount = 'Masukkan rupiah bulat positif, maksimal 999.999.999.999, tanpa titik atau desimal.'
+  if (!/^\d{1,12}$/.test(values.amount) || Number(values.amount) <= 0) errors.amount = 'Masukkan rupiah bulat positif, maksimal 999.999.999.999, tanpa desimal.'
   if (!receiptMethods.includes(values.method)) errors.method = 'Pilih metode pembayaran.'
   if (!receiptDateToIso(values.date)) errors.date = 'Masukkan tanggal yang valid dalam format dd/mm/yyyy.'
   return errors

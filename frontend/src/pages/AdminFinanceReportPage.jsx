@@ -65,6 +65,7 @@ function MonthlyRecap({ months }) {
       <table className="admin-report-monthly-table">
         <caption className="sr-only">Saldo awal, pemasukan, pengeluaran dan saldo akhir simulasi setiap bulan dan kategori. Bulan parsial mengikuti rentang tanggal terpilih.</caption>
         <thead><tr>{['Bulan', 'Kategori', 'Saldo Awal (Rp)', 'Pemasukan (Rp)', 'Pengeluaran (Rp)', 'Saldo Akhir (Rp)'].map((label) => <th key={label} scope="col">{label}</th>)}</tr></thead>
+        {months.length === 0 && <tbody><tr><td colSpan={6} className="admin-report-empty">Tidak ada transaksi mock untuk rentang ini.</td></tr></tbody>}
         {months.map(({ month, categories, totals }) => <tbody key={month} data-month={month}>
           {categories.map((category, index) => <tr key={category.id} data-category-id={category.id}>
             {index === 0 && <th className="admin-report-month" rowSpan={categories.length + 1} scope="rowgroup"><span>{formatReportMonth(month).slice(0, 3).toUpperCase()}</span><div>{formatReportMonth(month).split(' ')[0]}<small>{month.slice(0, 4)}</small></div></th>}
@@ -84,6 +85,7 @@ function AdminFinanceReportContent({ report }) {
   const [draftRange, setDraftRange] = useState(report.range)
   const [historyRange, setHistoryRange] = useState(report.coverage)
   const [rangeError, setRangeError] = useState('')
+  const [activePreset, setActivePreset] = useState(null)
   const [tabId, setTabId] = useState('income')
   const [query, setQuery] = useState('')
   const [exporting, setExporting] = useState(false)
@@ -130,13 +132,13 @@ function AdminFinanceReportContent({ report }) {
 
   function applyRange(event) {
     event.preventDefault()
-    try { validateAdminFinanceRange(report, draftRange); setRange({ ...draftRange }); setHistoryRange({ ...draftRange }); setRangeError('') }
+    try { validateAdminFinanceRange(report, draftRange); setRange({ ...draftRange }); setHistoryRange({ ...draftRange }); setRangeError(''); setActivePreset(null) }
     catch (cause) { setRangeError(cause.message) }
   }
 
   function applyPreset(preset) {
-    const next = getAdminFinancePreset(report, preset)
-    setRange(next); setDraftRange(next); setHistoryRange(next); setRangeError('')
+    const next = getAdminFinancePreset(preset)
+    setRange(next); setDraftRange(next); setHistoryRange(next); setRangeError(''); setActivePreset(preset)
   }
 
   function selectTab(id) { setTabId(id); setQuery('') }
@@ -173,8 +175,8 @@ function AdminFinanceReportContent({ report }) {
     <header className="admin-report-hero"><span><Landmark size={14} aria-hidden="true" />MASJID AL-HIDAYAH</span><h2>LAPORAN<br />KEUANGAN</h2><p>Ringkasan pemasukan, pengeluaran, dan saldo<br className="admin-desktop-break" /> dana masjid dalam satu tampilan.</p><div><button type="button" disabled title="Tambah pemasukan belum tersedia"><ArrowDownCircle size={16} aria-hidden="true" />Tambah Pemasukan</button><button type="button" disabled title="Tambah pengeluaran belum tersedia"><ArrowUpCircle size={16} aria-hidden="true" />Tambah Pengeluaran</button></div></header>
     <section className="admin-report-balance" aria-label="Total saldo seluruh dana"><p>TOTAL SALDO SELURUH DANA</p><span><i aria-hidden="true" />{periodLabel} · snapshot {snapshotLabel}</span><h2>{formatRupiah(report.totals.closingBalance)}</h2><dl>{[['openingBalance', 'Saldo Awal'], ['income', 'Pemasukan'], ['expense', 'Pengeluaran']].map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{formatRupiah(report.totals[key])}</dd></div>)}</dl></section>
     <div className="admin-report-category-cards">{report.categories.map((category) => <button key={category.id} type="button" style={adminCategoryColorStyle(category.color)} className={`admin-report-category-card admin-report-category--${category.color}`} onClick={() => { selectTab('monthly'); tabPanel.current?.scrollIntoView({ block: 'start' }) }} aria-label={`Lihat rincian ${category.label}`}><span><Wallet size={21} aria-hidden="true" /></span><small>{category.label}</small><strong>{formatRupiah(category.closingBalance)}</strong><footer>Saldo snapshot <ChevronRight size={16} aria-hidden="true" /></footer></button>)}</div>
-    <section className="admin-report-detail" aria-labelledby="admin-report-detail-title"><div className="admin-report-detail-heading"><div><h2 id="admin-report-detail-title">Detail {range.startDate.slice(0, 7) === report.month ? periodLabel : 'Riwayat Mock'}</h2><p>Rincian pemasukan dan pengeluaran simulasi untuk rentang terpilih.</p></div><div className="admin-report-presets"><button type="button" onClick={() => applyPreset('week')}>Minggu terakhir</button><button type="button" onClick={() => applyPreset('month')}>Bulan berjalan</button><button type="button" disabled title="Preset tiga bulan belum diaktifkan">3 bulan terakhir</button><span><CalendarDays size={14} aria-hidden="true" />{periodLabel}</span></div></div>
-      <form className="admin-report-filters" noValidate onSubmit={applyRange} aria-label="Filter tanggal transaksi mock"><span><CalendarDays size={16} aria-hidden="true" />Rentang transaksi:</span>{[['startDate', 'Dari tanggal'], ['endDate', 'Sampai tanggal']].map(([key, label]) => <label key={key}><span>{label}</span><input name={key} type="date" min={report.coverage.startDate} max={report.updatedDate} required value={draftRange[key]} onChange={(event) => { setDraftRange((previous) => ({ ...previous, [key]: event.target.value })); setRangeError('') }} aria-invalid={Boolean(rangeError)} aria-describedby={rangeError ? 'admin-report-range-error' : undefined} /></label>)}<button type="submit">Terapkan</button><p>{transactions.length} dari {report.transactions.length} transaksi mock</p></form>
+    <section className="admin-report-detail" aria-labelledby="admin-report-detail-title"><div className="admin-report-detail-heading"><div><h2 id="admin-report-detail-title">Detail {range.startDate.slice(0, 7) === report.month ? periodLabel : 'Riwayat Mock'}</h2><p>Rincian pemasukan dan pengeluaran simulasi untuk rentang terpilih.</p></div><div className="admin-report-presets">{[['week', '1 minggu terakhir'], ['month', '1 bulan terakhir'], ['quarter', '3 bulan terakhir'], ['currentMonth', 'Bulan ini']].map(([id, label]) => <button key={id} type="button" aria-pressed={activePreset === id} onClick={() => applyPreset(id)}>{id === 'currentMonth' && <CalendarDays size={14} aria-hidden="true" />}{label}</button>)}</div></div>
+      <form className="admin-report-filters" noValidate onSubmit={applyRange} aria-label="Filter tanggal transaksi mock"><span><CalendarDays size={16} aria-hidden="true" />Rentang transaksi:</span>{[['startDate', 'Dari tanggal'], ['endDate', 'Sampai tanggal']].map(([key, label]) => <label key={key}><span>{label}</span><input name={key} type="date" required value={draftRange[key]} onChange={(event) => { setDraftRange((previous) => ({ ...previous, [key]: event.target.value })); setRangeError(''); setActivePreset(null) }} aria-invalid={Boolean(rangeError)} aria-describedby={rangeError ? 'admin-report-range-error' : undefined} /></label>)}<button type="submit">Terapkan</button><p>{transactions.length} dari {report.transactions.length} transaksi mock</p></form>
       {rangeError && <p className="admin-report-error" id="admin-report-range-error" role="alert">{rangeError}</p>}
       <aside className="admin-report-notice"><ShieldCheck size={18} aria-hidden="true" /><p>Data mock khusus review · {report.transactions.length} transaksi simulasi Januari–Oktober, bukan riwayat resmi. Ringkasan saldo tetap snapshot {snapshotLabel}. Filter tanggal juga membatasi ketiga tampilan laporan di bawah.{report.sessionTransactions?.length > 0 && <> {report.sessionTransactions.length} tambahan sesi mock belum termasuk saldo dan laporan historis ini.</>}</p></aside>
       <div className="admin-report-transaction-panels"><TransactionPanel type="income" transactions={transactions} categories={report.categories} /><TransactionPanel type="expense" transactions={transactions} categories={report.categories} /></div>

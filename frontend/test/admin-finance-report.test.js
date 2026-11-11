@@ -89,14 +89,24 @@ test('filter rentang/kategori/uraian lokal gabungan, trim/kapital, kosong, tanpa
   assert.deepEqual(report, before)
 })
 
-test('preset mengacu tanggal snapshot dan validasi menolak tanggal kosong, terbalik, tidak valid atau di luar snapshot', async () => {
+test('empat preset memakai kalender lokal, bulan bergulir menjepit akhir bulan, dan rentang kosong tidak mengarang saldo', async () => {
   const report = buildAdminFinanceReport(await getAdminDashboard())
-  assert.deepEqual(getAdminFinancePreset(report, 'week'), { startDate: '2026-10-14', endDate: '2026-10-20' })
-  assert.deepEqual(getAdminFinancePreset(report, 'month'), report.range)
-  assert.equal(filterAdminFinanceTransactions(report, { range: getAdminFinancePreset(report, 'week') }).length, 4)
-  assert.deepEqual(getAdminFinancePreset({ ...report, updatedDate: '2026-10-03' }, 'week'), { startDate: '2026-10-01', endDate: '2026-10-03' })
-  assert.throws(() => getAdminFinancePreset(report, 'quarter'))
-  for (const range of [{ startDate: '', endDate: report.updatedDate }, { startDate: '2026-10-15', endDate: '2026-10-14' }, { startDate: '2026-02-31', endDate: report.updatedDate }, { startDate: '2025-12-31', endDate: report.updatedDate }, { startDate: '2026-10-01', endDate: '2026-10-21' }]) assert.throws(() => validateAdminFinanceRange(report, range))
+  const today = new Date(2026, 10, 11, 23, 30)
+  for (const [preset, startDate] of [['week', '2026-11-05'], ['month', '2026-10-11'], ['quarter', '2026-08-11'], ['currentMonth', '2026-11-01']]) {
+    const range = getAdminFinancePreset(preset, today)
+    assert.deepEqual(range, { startDate, endDate: '2026-11-11' })
+    validateAdminFinanceRange(report, range)
+  }
+  assert.deepEqual(getAdminFinancePreset('week', new Date(2026, 0, 3)), { startDate: '2025-12-28', endDate: '2026-01-03' })
+  assert.equal(getAdminFinancePreset('month', new Date(2024, 2, 31)).startDate, '2024-02-29')
+  assert.equal(getAdminFinancePreset('quarter', new Date(2026, 4, 31)).startDate, '2026-02-28')
+  const range = getAdminFinancePreset('currentMonth', today)
+  assert.deepEqual(filterAdminFinanceTransactions(report, { range }), [])
+  assert.deepEqual(buildAdminMonthlyRecap(report, range), [])
+  assert.deepEqual(buildAdminMonthlyRecap(report, { startDate: '2026-10-21', endDate: '2026-10-31' }), [])
+  assert.throws(() => getAdminFinancePreset('unknown'))
+  for (const range of [{ startDate: '', endDate: report.updatedDate }, { startDate: '2026-10-15', endDate: '2026-10-14' }, { startDate: '2026-02-31', endDate: report.updatedDate }]) assert.throws(() => validateAdminFinanceRange(report, range))
+  assert.deepEqual(report.totals, { openingBalance: 16864200, income: 1791500, expense: 1427500, closingBalance: 17228200 })
 })
 
 test('route/menu benar, loading/error, tiga jenis laporan saja dan aksi mutasi nonaktif', async () => {

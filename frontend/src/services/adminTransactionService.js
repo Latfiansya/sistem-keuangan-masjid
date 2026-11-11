@@ -19,7 +19,7 @@ export function validateAdminTransaction(values, categories, type) {
       return code === 127 || (code < 32 && !(field === 'notes' && [9, 10, 13].includes(code)))
     })) errors[field] = `${label} tidak valid atau melebihi ${limit} karakter.`
   }
-  if (!/^\d{1,12}$/.test(values.amount) || Number(values.amount) <= 0) errors.amount = 'Masukkan rupiah bulat positif, maksimal 999.999.999.999, tanpa titik atau desimal.'
+  if (!/^\d{1,12}$/.test(values.amount) || Number(values.amount) <= 0) errors.amount = 'Masukkan rupiah bulat positif, maksimal 999.999.999.999, tanpa desimal.'
   return errors
 }
 

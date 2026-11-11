@@ -119,6 +119,9 @@ test('Kwitansi lokal, modal, PNG nyata dan toast pada Chrome QA', {
         await save()
         assert.equal(await evaluate('document.querySelectorAll(".admin-receipt-error").length'), 2)
         await fill('amount', '1250000')
+        assert.equal(await evaluate('document.querySelector("#admin-receipt-amount").value'), '1.250.000')
+        assert.equal(await evaluate('document.querySelector(".admin-receipt-confirm svg")'), null)
+        await screenshot(`kwitansi-${width}-rupiah`)
         await setDate('2026-11-10')
         if (width === 390) { await evaluate('document.querySelector("#admin-receipt-payer").focus()'); await key('Enter', 13) }
         else await save()

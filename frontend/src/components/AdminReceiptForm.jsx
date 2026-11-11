@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, X } from 'lucide-react'
+import { X } from 'lucide-react'
+import AdminRupiahInput from './AdminRupiahInput.jsx'
 import { emptyReceipt, getLocalReceiptDate, receiptDateFromIso, receiptDateToIso, receiptMethods, validateReceipt } from '../utils/adminReceipt.js'
 
 export default function AdminReceiptForm({ receipt, onSave, onClose, returnFocusRef }) {
@@ -63,12 +64,12 @@ export default function AdminReceiptForm({ receipt, onSave, onClose, returnFocus
     <header><h2 id="admin-receipt-form-title">Buat Kwitansi</h2><button type="button" aria-label="Tutup buat kwitansi" onClick={onClose}><X size={20} aria-hidden="true" /></button></header>
     <form noValidate onSubmit={handleSubmit}>
       {field('payer', 'Telah terima dari', 'Nama pemberi pembayaran', 100)}
-      {field('amount', 'Nominal (Rp)', 'Nominal jumlah, tanpa titik', 12, 'numeric')}
+      <div className="admin-receipt-field"><label htmlFor="admin-receipt-amount">Nominal (Rp)<span aria-hidden="true">*</span></label><AdminRupiahInput id="admin-receipt-amount" name="amount" required value={values.amount} onChange={handleChange} aria-invalid={Boolean(errors.amount)} aria-describedby={errors.amount ? 'admin-receipt-amount-error' : undefined} />{errors.amount && <p id="admin-receipt-amount-error" className="admin-receipt-error" role="alert">{errors.amount}</p>}</div>
       {field('purpose', 'Untuk Pembayaran', 'Keterangan pembayaran', 500)}
       <div className="admin-receipt-field"><label htmlFor="admin-receipt-method">Metode Pembayaran<span aria-hidden="true">*</span></label><select id="admin-receipt-method" name="method" required value={values.method} onChange={handleChange} aria-invalid={Boolean(errors.method)} aria-describedby={errors.method ? 'admin-receipt-method-error' : undefined}><option value="">Pilih Metode Pembayaran</option>{receiptMethods.map((method) => <option key={method}>{method}</option>)}</select>{errors.method && <p id="admin-receipt-method-error" className="admin-receipt-error" role="alert">{errors.method}</p>}</div>
       <div className="admin-receipt-field"><label htmlFor="admin-receipt-date">Tanggal<span aria-hidden="true">*</span></label><input id="admin-receipt-date" name="date" type="date" required value={receiptDateToIso(values.date)} onChange={handleChange} aria-invalid={Boolean(errors.date)} aria-describedby={errors.date ? 'admin-receipt-date-error' : undefined} />{errors.date && <p id="admin-receipt-date-error" className="admin-receipt-error" role="alert">{errors.date}</p>}</div>
       <p id="admin-receipt-form-note" className="admin-receipt-note">Simpan hanya memperbarui pratinjau lokal. Draft belum tersimpan ke server dan akan hilang saat halaman dimuat ulang atau ditinggalkan.</p>
-      <footer><button type="button" onClick={onClose}>Batal</button><button type="submit" className="admin-receipt-confirm"><Check size={16} aria-hidden="true" />Simpan Kwitansi</button></footer>
+      <footer><button type="button" onClick={onClose}>Batal</button><button type="submit" className="admin-receipt-confirm">Simpan Kwitansi</button></footer>
     </form>
   </dialog>
 }

@@ -29,7 +29,7 @@
 .admin-report-detail-heading p, .admin-report-ledger-heading p { margin: 4px 0 0; color: #8b9fbf; font-size: 13px; line-height: 1.5; }
 .admin-report-presets { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .admin-report-presets button, .admin-report-presets > span { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 8px 12px; border: 1px solid #e1e9f4; border-radius: 12px; color: #61748e; background: #fff; font-size: 12px; }
-.admin-report-presets > span { color: #fff; background: #087815; }
+.admin-report-presets button[aria-pressed="true"] { color: #fff; background: #087815; }
 .admin-report-presets button:not(:disabled), .admin-report-filters button, .admin-report-download button { cursor: pointer; }
 .admin-report-presets button:disabled { opacity: .6; }
 .admin-report-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 8px 16px; border-radius: 16px; background: #fff; }

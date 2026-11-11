@@ -16,17 +16,24 @@ export function buildAdminFinanceReport(dashboard) {
   return { ...dashboard, month, range, coverage: { startDate: '2026-01-01', endDate: dashboard.updatedDate }, transactions, historyOpeningBalances }
 }
 
-export function getAdminFinancePreset(report, preset) {
-  if (preset === 'month') return { ...report.range }
-  if (preset !== 'week') throw new Error('Pilihan rentang cuplikan tidak tersedia.')
-  const start = new Date(`${report.updatedDate}T00:00:00Z`)
-  start.setUTCDate(start.getUTCDate() - 6)
-  return { startDate: [start.toISOString().slice(0, 10), report.range.startDate].sort().at(-1), endDate: report.updatedDate }
+export function getAdminFinancePreset(preset, today = new Date()) {
+  const end = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  const start = new Date(end)
+  if (preset === 'week') start.setDate(start.getDate() - 6)
+  else if (preset === 'month' || preset === 'quarter') {
+    const day = start.getDate()
+    start.setDate(1)
+    start.setMonth(start.getMonth() - (preset === 'quarter' ? 3 : 1))
+    const lastDay = new Date(start.getFullYear(), start.getMonth() + 1, 0).getDate()
+    start.setDate(Math.min(day, lastDay))
+  } else if (preset === 'currentMonth') start.setDate(1)
+  else throw new Error('Pilihan rentang tidak tersedia.')
+  const localDate = (date) => [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-')
+  return { startDate: localDate(start), endDate: localDate(end) }
 }
 
-export function validateAdminFinanceRange(report, range) {
+export function validateAdminFinanceRange(_report, range) {
   validateReportRange(range)
-  if (range.startDate < report.coverage.startDate || range.endDate > report.coverage.endDate) throw new Error('Pilih rentang di dalam riwayat mock, sampai tanggal terakhir diperbarui.')
 }
 
 export function filterAdminFinanceTransactions(report, { range = report.range, categoryId = '', type = '', query = '' } = {}) {
@@ -37,10 +44,12 @@ export function filterAdminFinanceTransactions(report, { range = report.range, c
 
 export function buildAdminMonthlyRecap(report, range = report.coverage) {
   validateAdminFinanceRange(report, range)
+  if (range.startDate > report.coverage.endDate || range.endDate < report.coverage.startDate) return []
   const months = []
-  let month = range.startDate.slice(0, 7)
-  while (month <= range.endDate.slice(0, 7)) {
-    const startDate = month === range.startDate.slice(0, 7) ? range.startDate : `${month}-01`
+  let month = [range.startDate, report.coverage.startDate].sort().at(-1).slice(0, 7)
+  const lastMonth = [range.endDate, report.coverage.endDate].sort()[0].slice(0, 7)
+  while (month <= lastMonth) {
+    const startDate = [range.startDate, report.coverage.startDate, `${month}-01`].sort().at(-1)
     const categories = report.categories.map((category) => {
       const rows = report.transactions.filter((transaction) => transaction.categoryId === category.id)
       const prior = summarizeAdminFinanceTransactions(rows.filter((transaction) => transaction.date < startDate))
