@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router'
-import { ArrowRightLeft, Bell, Building2, CalendarDays, ClipboardList, Contact, FileText, Folder, HandHeart, KeyRound, LayoutDashboard, LogOut, Menu, Receipt, Users, X } from 'lucide-react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
+import { ArrowRightLeft, Building2, CalendarDays, ClipboardList, Contact, FileText, Folder, HandHeart, KeyRound, LayoutDashboard, LogOut, Menu, Receipt, Users, X } from 'lucide-react'
 import { addMockAdminTransaction, deleteMockAdminTransaction, editMockAdminTransaction } from '../services/adminTransactionService.js'
 import { getAdminDashboard } from '../services/adminDashboardService.js'
 import { deleteMockAdminCategory, saveMockAdminCategory } from '../services/adminCategoryService.js'
+import AdminHeaderActions from './AdminHeaderActions.jsx'
 import './AdminLayout.css'
 
 const navigation = [
@@ -28,6 +29,7 @@ const navigation = [
 ]
 
 export default function AdminLayout() {
+  const navigate = useNavigate()
   const { pathname } = useLocation()
   const transactionPage = pathname.startsWith('/admin/laporan/transaksi/')
   const currentPage = navigation.flatMap((group) => group.items).find((item) => item.to === (transactionPage ? '/admin/laporan' : pathname.replace(/\/$/, '')))
@@ -103,17 +105,14 @@ export default function AdminLayout() {
         <div className="admin-account">
           <span className="admin-avatar" aria-hidden="true">{account?.initials || '—'}</span>
           <div><strong>{account?.name || 'Pengurus'}</strong><span>{account?.email || 'Akun contoh'}</span></div>
-          <button type="button" disabled aria-label="Logout belum tersedia" title="Logout belum tersedia"><LogOut size={18} aria-hidden="true" /></button>
+          <button type="button" aria-label="Logout — kembali ke Login" title="Kembali ke Login · Autentikasi masih stub, belum ada sesi nyata" onClick={() => navigate('/admin/login')}><LogOut size={18} aria-hidden="true" /></button>
         </div>
       </aside>
       <div className="admin-workspace">
         <header className="admin-topbar">
           <button className="admin-menu-toggle" type="button" ref={menuButton} aria-expanded={menuOpen} aria-controls="admin-navigation" aria-label={menuOpen ? 'Tutup menu admin' : 'Buka menu admin'} onClick={() => setMenuOpen((previous) => !previous)}>{menuOpen ? <X size={22} aria-hidden="true" /> : <Menu size={22} aria-hidden="true" />}</button>
           <h1>{title}</h1>
-          <div className="admin-topbar-actions">
-            <button type="button" disabled aria-label="Notifikasi belum tersedia" title="Notifikasi belum tersedia"><Bell size={22} aria-hidden="true" /></button>
-            <span className="admin-avatar" aria-label="Inisial akun contoh">{account?.initials || '—'}</span>
-          </div>
+          <AdminHeaderActions key={pathname} account={account} dashboard={dashboard} onOpen={() => setMenuOpen(false)} />
         </header>
         <main id="admin-content" className="admin-content" tabIndex={-1}><Outlet context={{ dashboard, error, saveCategory, deleteCategory, addTransaction, editTransaction, deleteTransaction, reportView, setReportView, donationDraft, setDonationDraft }} /></main>
       </div>

@@ -1193,3 +1193,17 @@ Sesuai arahan terbaru pengguna, staging Admin 1.15 dan Admin 1.16 digabung, term
 Batasan: seluruhnya simulasi sesi; belum ada upload server, publikasi, WhatsApp API, transaksi donasi otomatis atau penyimpanan permanen. QA memakai emulasi Chrome, belum perangkat fisik lintas browser.
 
 Usulan pesan commit gabungan: `feat: lengkapi pengelolaan transaksi dan pengaturan donasi admin`.
+
+### Patch — Aktivasi Dashboard dan Header Admin
+
+- Pemeriksaan awal menemukan branch aktif `main`; patch dikerjakan pada branch baru `feature/admin-dashboard-header` dari HEAD yang sama. Branch `main` tidak diubah dan tidak ada merge.
+- Dua tombol hero Dashboard menuju Kelola Dana dan membuka modal pemasukan/pengeluaran yang sudah tersedia. React Router state dikonsumsi dengan replace; Batal, Kembali, Back/Forward dan refresh tidak membuka ulang modal secara tidak sengaja. Tombol banner Lihat Laporan dan tiga shortcut Dashboard diaktifkan tanpa perubahan saldo atau layout.
+- Sesuai koreksi lanjutan, avatar Header hanya elemen visual tanpa klik atau dropdown profil. Ikon Logout Sidebar aktif menuju `/admin/login`, dengan keterangan bahwa autentikasi masih stub. Tidak dibuat logout palsu, token atau sesi baru; integrasi logout sebenarnya menunggu backend autentikasi. State, handler dan CSS dropdown profil dihapus.
+- Lonceng menampilkan maksimal lima aktivitas mock terbaru menurut tanggal/waktu, dengan nama admin, ringkasan dan modul. Rincian log tidak dibawa ke notifikasi. Tautan detail transaksi membutuhkan ID aktif yang valid; kode tampilan transaksi tidak ditebak sebagai ID. Modul lain menuju halaman admin terkait, dengan fallback Activity Log dan tautan Lihat Semua Aktivitas. Tidak ada polling, status baca atau notifikasi real-time.
+- Dropdown mendukung klik luar, Escape, Enter/Space, ArrowDown dan Tab. Panel notifikasi ditutup saat berganti halaman, serta menutup navigasi sidebar mobile ketika dibuka. Bentuk avatar dan ukuran elemen lama dipertahankan; dropdown menggunakan scroll lokal bila ruang terbatas.
+- Verifikasi: lint PASS, **116 frontend unit/SSR dan 18 backend PASS**. Sepuluh suite browser opsional dilewati pada test default dan pengujian relevan dijalankan terpisah. Setelah koreksi avatar/Logout Sidebar, Chrome development PASS **27 skenario/29 hasil termasuk dua induk** (23 regresi admin dan empat Dashboard/Header); empat skenario Kelola Dana tambahan juga sudah lulus pada patch awal. Pemeriksaan mencakup 1728×1080, 1366×768, 768×1024 dan 390×844, navigasi, modal sekali buka, refresh, keyboard, lima aktivitas terurut, storage/request kosong, saldo snapshot tetap serta tidak ada overflow. Build PASS dengan peringatan bundle utama di atas 500 kB; optimasi bundling di luar lingkup patch ini.
+- Preview production juga PASS empat skenario Dashboard/Header di empat viewport, termasuk pengujian ulang modal sekali buka dan dropdown setelah bundling. Artefak QA berada di `tmp/admin-header-qa/` dan tidak di-stage. Frontend publik, backend, kontrak API, fixture transaksi dan saldo tidak diubah. Tidak melakukan commit, push atau merge.
+
+Batasan: identitas akun dan aktivitas adalah data contoh; tidak ada sesi autentikasi atau sistem notifikasi server. QA memakai emulasi Chrome, belum perangkat fisik lintas browser.
+
+Usulan pesan commit: `feat: aktifkan navigasi dashboard dan dropdown header admin`.

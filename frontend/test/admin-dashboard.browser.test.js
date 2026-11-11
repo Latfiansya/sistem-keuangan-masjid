@@ -195,7 +195,10 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
     })
 
     await t.test('fitur di luar lingkup nonaktif, akun contoh tidak menjadi autentikasi dan refresh tetap membuka dashboard', async () => {
-      assert.equal(await evaluate('[...document.querySelectorAll(".admin-dashboard button, .admin-nav-group button, .admin-account button, .admin-topbar-actions button")].every(e=>e.disabled&&!!e.title)'), true)
+      assert.equal(await evaluate('[...document.querySelectorAll(".admin-nav-group button")].every(e=>e.disabled&&!!e.title)'), true)
+      assert.equal(await evaluate('document.querySelectorAll(".admin-dashboard button:not(:disabled)").length'), 6)
+      assert.equal(await evaluate('document.querySelector(".admin-account button").disabled'), false)
+      assert.equal(await evaluate('document.querySelectorAll(".admin-topbar-actions > button:not(:disabled)").length'), 1)
       assert.match(await evaluate('document.querySelector(".admin-dashboard-status").textContent'), /Data contoh/)
       assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-shell a[href]")].map(e=>e.getAttribute("href"))'), ['#admin-content', '/admin/dashboard', '/admin/kelola-dana', '/admin/kategori-dana', '/admin/laporan', '/admin/kwitansi', '/admin/activity-log', '/admin/profil-masjid', '/admin/agenda', '/admin/kontak-pengaturan', '/admin/donasi', '/admin/kelola-akun', '/admin/kode-akses-laporan'])
       assert.deepEqual(await evaluate('({local:localStorage.length,session:sessionStorage.length,cookie:document.cookie})'), { local: 0, session: 0, cookie: '' })

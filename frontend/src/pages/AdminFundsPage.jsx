@@ -1,19 +1,28 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import AdminTransactionForm from '../components/AdminTransactionForm.jsx'
 import { getAdminRecentTransactions } from '../services/adminTransactionService.js'
 import { ArrowDownCircle, ArrowRightLeft, ArrowUpCircle } from 'lucide-react'
-import { useNavigate, useOutletContext } from 'react-router'
+import { useLocation, useNavigate, useOutletContext } from 'react-router'
 import AdminRecentTransactions from '../components/AdminRecentTransactions.jsx'
 import './AdminFundsPage.css'
 
 export default function AdminFundsPage() {
   const navigate = useNavigate()
+  const { pathname, search, hash, state } = useLocation()
+  const requestedType = ['income', 'expense'].includes(state?.openTransaction) ? state.openTransaction : null
   const { dashboard, error, addTransaction } = useOutletContext()
-  const [transactionType, setTransactionType] = useState(null)
+  const [transactionType, setTransactionType] = useState(requestedType)
   const [message, setMessage] = useState('')
-  const returnFocusRef = useRef(null)
-  function openForm(type, event) {
-    returnFocusRef.current = event.currentTarget
+  const incomeButton = useRef(null)
+  const expenseButton = useRef(null)
+
+  useEffect(() => {
+    if (!requestedType) return
+    const nextState = { ...state }
+    delete nextState.openTransaction
+    navigate({ pathname, search, hash }, { replace: true, state: Object.keys(nextState).length ? nextState : null })
+  }, [requestedType, state, navigate, pathname, search, hash])
+  function openForm(type) {
     setMessage('')
     setTransactionType(type)
   }
@@ -36,14 +45,14 @@ export default function AdminFundsPage() {
         <div className="admin-funds-controls-heading"><h2 id="admin-funds-controls-title">Kelola Transaksi</h2><p>Catat pemasukan atau pengeluaran dalam sesi mock</p></div>
         <div className="admin-funds-controls-body">
           <div className="admin-funds-buttons">
-            <button type="button" onClick={(event) => openForm('income', event)}><ArrowDownCircle size={18} aria-hidden="true" />Pemasukan</button>
-            <button type="button" onClick={(event) => openForm('expense', event)}><ArrowUpCircle size={18} aria-hidden="true" />Pengeluaran</button>
+            <button ref={incomeButton} type="button" onClick={() => openForm('income')}><ArrowDownCircle size={18} aria-hidden="true" />Pemasukan</button>
+            <button ref={expenseButton} type="button" onClick={() => openForm('expense')}><ArrowUpCircle size={18} aria-hidden="true" />Pengeluaran</button>
           </div>
           <p role="status">{message || 'Simulasi sesi admin · Belum tersimpan ke server.'}</p>
         </div>
       </section>
       <AdminRecentTransactions hasSessionChanges={Boolean(Object.keys(dashboard.transactionChanges || {}).length || dashboard.deletedTransactionIds?.length)} onViewAll={() => navigate('/admin/laporan#kas-masuk')} transactions={getAdminRecentTransactions(dashboard)} categories={dashboard.categories} />
-      {transactionType && <AdminTransactionForm type={transactionType} categories={dashboard.categories} onSave={save} onClose={() => setTransactionType(null)} returnFocusRef={returnFocusRef} />}
+      {transactionType && <AdminTransactionForm type={transactionType} categories={dashboard.categories} onSave={save} onClose={() => setTransactionType(null)} returnFocusRef={transactionType === 'income' ? incomeButton : expenseButton} />}
     </div>
   )
 }
