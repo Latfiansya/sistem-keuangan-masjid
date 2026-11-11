@@ -68,6 +68,35 @@ test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan pengaturan un
   try {
     await send('Page.enable'); await send('Runtime.enable'); await send('Network.enable')
     await send('Browser.setDownloadBehavior', { behavior: 'allowAndName', downloadPath: `${output}downloads`, eventsEnabled: true })
+    await t.test('hero memakai modal Kelola Dana sekali buka dan tipografi banner normal pada desktop/mobile', async () => {
+      for (const [width,height] of [[1728,1080],[390,844]]) {
+        await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false})
+        await open()
+        assert.equal(await evaluate('getComputedStyle(document.querySelector(".admin-report-download h2")).letterSpacing'),'normal')
+        for (const [index,label] of [[1,'Pemasukan'],[2,'Pengeluaran']]) {
+          await click(`.admin-report-hero button:nth-child(${index})`)
+          await waitFor('location.pathname==="/admin/kelola-dana"&&!!document.querySelector(".admin-transaction-dialog[open]")')
+          assert.equal(await evaluate('document.querySelector("#admin-transaction-title").textContent'),`Tambah ${label}`)
+          assert.equal(await evaluate('history.state.usr?.openTransaction'),undefined)
+          await key('Escape',27);await waitFor('!document.querySelector(".admin-transaction-dialog")')
+          let history=await send('Page.getNavigationHistory')
+          await send('Page.navigateToHistoryEntry',{entryId:history.entries[history.currentIndex-1].id})
+          await waitFor('location.pathname==="/admin/laporan"&&!!document.querySelector(".admin-report-hero")')
+          history=await send('Page.getNavigationHistory')
+          await send('Page.navigateToHistoryEntry',{entryId:history.entries[history.currentIndex+1].id})
+          await waitFor('location.pathname==="/admin/kelola-dana"&&!!document.querySelector(".admin-funds")')
+          assert.equal(await evaluate('document.querySelector(".admin-transaction-dialog")'),null)
+          await open()
+          await click(`.admin-report-hero button:nth-child(${index})`)
+          await waitFor('!!document.querySelector(".admin-transaction-dialog[open]")')
+          await evaluate('window.reportHeroReload=true');await send('Page.reload')
+          await waitFor('!window.reportHeroReload&&document.readyState==="complete"&&!!document.querySelector(".admin-funds")')
+          assert.equal(await evaluate('document.querySelector(".admin-transaction-dialog")'),null)
+          await open()
+        }
+        await noOverflow()
+      }
+    })
     await t.test('empat viewport: tiga jenis laporan lintas kategori, rekap bulanan, alignment filter dan saldo tetap', async () => {
       for (const [width, height] of [[1728,1080],[1366,768],[768,1024],[390,844]]) {
         await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false })
