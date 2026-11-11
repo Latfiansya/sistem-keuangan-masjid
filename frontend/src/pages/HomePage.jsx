@@ -15,6 +15,9 @@ export default function HomePage() {
     <>
       <section className="hero" aria-labelledby="hero-heading">
         <img className="hero-image" src="/assets/masjid-background.webp" width="1928" height="1089" alt="Masjid Al-Hidayah Sorolaten" fetchPriority="high" />
+        <div className="hero-building-layer" aria-hidden="true">
+          <img className="hero-building-overlay" src="/assets/masjid-hero-overlay.webp" width="3456" height="2232" alt="" />
+        </div>
         <div className="hero-copy">
           <h1 id="hero-heading">MASJID<br />AL-HIDAYAH</h1>
           <p>{content.heroDescription}</p>
