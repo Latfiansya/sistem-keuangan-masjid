@@ -1,0 +1,44 @@
+.admin-settings { display: grid; gap: 24px; }
+.admin-settings-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 64px; }
+.admin-settings-heading > div { min-width: 0; padding-left: 12px; border-left: 4px solid #f49a00; }
+.admin-settings-heading h2 { margin: 0; font-size: 32px; font-weight: 750; line-height: 1.2; letter-spacing: -.7px; }
+.admin-settings-heading p { margin: 4px 0 0; color: #758aa5; font-size: 14px; line-height: 1.5; }
+.admin-settings-save { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; gap: 8px; min-height: 40px; padding: 10px 18px; border: 0; border-radius: 16px; color: #fff; background: var(--admin-green); font-size: 14px; font-weight: 600; line-height: 1.4; }
+.admin-settings-save:hover:not(:disabled) { background: #005500; }
+.admin-settings-save:disabled { opacity: .65; }
+.admin-settings-form { display: grid; gap: 16px; padding: 24px; box-shadow: 0 8px 24px #345d8310; }
+.admin-settings-form h3 { display: flex; align-items: center; gap: 12px; margin: 0 0 2px; color: #34465f; font-size: 18px; font-weight: 700; line-height: 1.5; }
+.admin-settings-form h3 svg { color: #00a775; }
+.admin-settings-field { min-width: 0; }
+.admin-settings-field label { display: block; margin-bottom: 6px; color: #34465f; font-size: 14px; font-weight: 600; line-height: 1.5; }
+.admin-settings-field input, .admin-settings-field textarea { display: block; width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid #e1e9f4; border-radius: 14px; color: #253247; background: #f7f9fc; font: inherit; font-size: 14px; line-height: 1.5; }
+.admin-settings-field input::placeholder { color: #8794a7; opacity: 1; }
+.admin-settings-field textarea { resize: vertical; }
+.admin-settings-field input[aria-invalid="true"] { border-color: #cc2437; }
+.admin-settings-report { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 60px; padding: 10px 16px; border-radius: 14px; color: #34465f; background: #f7f9fc; cursor: pointer; }
+.admin-settings-report > span:first-child { min-width: 0; }
+.admin-settings-report strong { display: block; font-size: 14px; font-weight: 600; line-height: 1.5; }
+.admin-settings-report-description { display: block; color: #8b9fbf; font-size: 12px; line-height: 1.5; }
+.admin-settings-switch { position: relative; display: grid; place-items: center; flex-shrink: 0; width: 44px; height: 44px; border-radius: 10px; }
+.admin-settings-switch input { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.admin-settings-switch:focus-within { outline: 3px solid #d58b00; outline-offset: 3px; }
+.admin-settings-switch-track { position: relative; width: 38px; height: 20px; border-radius: 999px; background: #9aabc0; }
+.admin-settings-switch-track::after { position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; content: ''; }
+.admin-settings-switch input:checked + .admin-settings-switch-track { background: var(--admin-green); }
+.admin-settings-switch input:checked + .admin-settings-switch-track::after { transform: translateX(18px); }
+.admin-settings-note, .admin-settings-error, .admin-settings-feedback { margin: 0; font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.admin-settings-note { color: #61748e; }
+.admin-settings-error { margin-top: 6px; color: #b81c30; }
+.admin-settings-feedback { padding: 12px 16px; border: 1px solid #a8d8ba; border-radius: 12px; color: #08612b; background: #f0fbf3; font-size: 14px; }
+@media (max-width: 1023px) {
+  .admin-settings-save { min-height: 44px; }
+  .admin-settings-field input, .admin-settings-field textarea { min-height: 44px; font-size: 16px; }
+}
+@media (max-width: 479px) {
+  .admin-settings { gap: 20px; }
+  .admin-settings-heading { align-items: flex-start; flex-direction: column; gap: 18px; }
+  .admin-settings-heading h2 { font-size: 28px; }
+  .admin-settings-save { width: 100%; }
+  .admin-settings-form { padding: 20px; }
+  .admin-settings-field textarea { min-height: 132px; }
+}

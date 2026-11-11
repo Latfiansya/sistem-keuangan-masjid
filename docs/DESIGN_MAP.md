@@ -19,7 +19,7 @@ Keputusan aktif M1.8b menggantikan gate halaman penuh M1.5a: CTA laporan Beranda
 
 `PublicLayout` memuat konten dari `publicContentService`, menampilkan Navbar/Footer, dan membagikan konten ke Beranda melalui konteks Outlet. `Button`, `VisionMission`, dan `AgendaSummary` diekstrak untuk pola yang berulang. Statistik dan kartu kemakmuran tetap berada di Beranda tanpa abstraksi kartu generik.
 
-Urutan Beranda: hero, tiga statistik, visi-misi, ringkasan agenda, tiga kartu kemakmuran, CTA laporan, Footer. Logo/Beranda menuju `/`, Profil menuju `/profil`, dan CTA/Footer laporan menuju `/laporan-keuangan`. M1.2 menambahkan `/agenda` untuk Navbar serta kedua CTA Agenda pada Beranda. Masuk Pengurus dinonaktifkan sampai tujuan resmi tersedia.
+Urutan Beranda: hero, tiga statistik, visi-misi, ringkasan agenda, tiga kartu kemakmuran, CTA laporan, Footer. Logo/Beranda menuju `/`, Profil menuju `/profil`, dan CTA/Footer laporan menuju `/laporan-keuangan`. M1.2 menambahkan `/agenda` untuk Navbar serta kedua CTA Agenda pada Beranda. Masuk Pengurus pada Footer menuju `/admin/login` memakai React Router Link.
 
 ## Batas kesetiaan visual
 
@@ -259,3 +259,202 @@ Desktop ≥1024 px tetap memakai baseline M1.8a/M1.8b. Aturan baru dibatasi brea
 | Format/PDF/PNG | Mobile: tombol pratinjau bertumpuk dan kontrol lebar halaman ≥44 px. Tablet: pengantar/tombol dapat membungkus. ReportSheet A4, skala baca lokal, pagination dan ekspor tetap. |
 
 Screenshot sebelum/iterasi/final pada 360×800, 390×844, 768×1024, 1024×768, 1366×768 dan 1728×1080 berada di tmp/m18c-qa/ (diabaikan Git). Adaptasi ini belum menjadi desain mobile resmi/pixel-perfect.
+
+## Admin 1.1 — Login Pengurus
+
+Referensi resmi pengguna: `design-references/user/10-admin-login.png` (3456 × 2000 px, dibandingkan pada skala 1728 × 1000). `AdminLoginPage` berada di `/admin/login`, terpisah dari `PublicLayout` dan route laporan. Tidak membuat layout dashboard, menu admin atau halaman lanjutan.
+
+- Desktop ≥1024 px: panel identitas sekitar 29% lebar layar, foto masjid lokal dengan overlay biru–hijau, logo, judul dan deskripsi di bawah. Panel kanan abu-abu muda dengan kartu putih di tengah, label Email/Password, input dan tombol Masuk Dashboard. Font Plus Jakarta Sans lokal; tidak memakai screenshot sebagai isi aplikasi.
+- Tablet/mobile: panel identitas di atas kartu login, spacing dan judul lebih ringkas, form satu kolom dengan input minimal 44 px dan teks input 16 px. Halaman boleh bergulir vertikal pada layar pendek. Ini adaptasi responsive dari referensi desktop, bukan frame mobile resmi.
+- Gaya baru dibatasi `.admin-login*` dalam `AdminLoginPage.css`; CSS, aset dan komponen publik tidak diubah. Kredensial contoh pada gambar tidak diisi ke input atau disalin sebagai akun aplikasi.
+- Refinement: tombol Eye/EyeOff Lucide di kanan input password, area klik 44 px, hover/fokus dan label tampilkan/sembunyikan. Lebar/tinggi, border dan radius input tetap; padding kanan memberi ruang ikon. Password tersembunyi secara default dan toggle tidak mengubah nilai/validasi atau melakukan submit. CTA Masuk Pengurus pada Footer tetap menuju `/admin/login`.
+- Loading/error/validasi mendukung alur form. Tidak ada login berhasil semu, token, session, lupa password atau registrasi. Batas integrasi dan status endpoint mengikuti README Admin 1.1; kontrak API tidak diubah.
+
+Screenshot QA lokal disimpan di `tmp/admin11-qa/` dan tidak masuk Git. Kemiripan dinilai dari susunan, proporsi, crop, warna dan tipografi; belum diklaim identik piksel atau diuji pada perangkat fisik/lintas browser.
+
+## Admin 1.2 — Dashboard Keuangan
+
+Referensi final pengguna: `design-references/user/11-admin-dashboard.png` (1766 × 2013 px). Implementasi pada `/admin/dashboard` memakai AdminLayout dengan sidebar/topbar sendiri; tidak mengubah desain Login Pengurus atau PublicLayout. Margin hitam dan bayangan di luar aplikasi pada screenshot tidak dibuat sebagai bingkai halaman.
+
+- Desktop: sidebar hijau 240–288 px, logo lokal, tiga kelompok navigasi, dashboard aktif, akun contoh di bawah. Topbar putih, notifikasi nonaktif dan avatar SA. Hero hijau dengan foto masjid, judul serta dua tombol transaksi, diikuti indikator update dan empat kartu saldo.
+- Resume tiga kategori memakai satu sumber angka bersama kartu. Kolom numerik pertama ditulis **Saldo Awal**, mengoreksi label Saldo Akhir yang berulang pada screenshot. Saldo akhir kategori/total dihitung melalui service, bukan angka presentasi terpisah. Nilai mengikuti contoh 20 Oktober 2026, terpisah dari mock publik April.
+- Banner oranye, lima transaksi terbaru dan tiga shortcut mengikuti urutan referensi. Klaim realtime diganti kalimat netral karena data statis; keterangan Data contoh terlihat. Akun/nama/email pada sidebar merupakan konten fixture, bukan kredensial atau sesi nyata. Fitur belum dibuat tetap nonaktif dengan title/keterangan yang jelas.
+- Tablet 768 px: sidebar collapsible di bawah topbar, kartu dua kolom. Mobile 390 px: kartu/shortcut satu kolom, banner bertumpuk, teks/area klik menyesuaikan. Menu mendukung Escape, backdrop, fokus awal/kembali dan penutupan saat fokus keluar. Tabel memiliki petunjuk dan scroll horizontal lokal dengan akses keyboard.
+- Foto/logo/font memakai aset lokal yang sudah ada, ikon Lucide React. CSS baru dibatasi `.admin-*` di AdminLayout.css. Halaman tidak menggunakan screenshot sebagai konten dan tidak membuat menu, transaksi, laporan, notifikasi atau akun fiktif yang berfungsi.
+
+QA Chrome development/preview build mencakup 1728×1080, 1366×768, 768×1024 dan 390×844. Screenshot/top/full/menu dan metrik disimpan di `tmp/admin12-qa/`, tidak di-stage. Kesetiaan visual merupakan pendekatan raster; belum ada frame mobile resmi, pengujian perangkat fisik atau verifikasi Safari/Firefox pada milestone ini.
+
+## Admin 1.3 — Kelola Dana Keuangan
+
+Referensi final: `design-references/user/12-admin-kelola-dana.png` (1856 × 1395 px). Margin hitam/bayangan di luar bingkai aplikasi tidak dijadikan bagian halaman. Route `/admin/kelola-dana` memakai Sidebar dan Topbar AdminLayout yang sama; Kelola Dana aktif, Dashboard tetap dapat dinavigasi, judul Topbar mengikuti route.
+
+- Hero hijau dengan foto masjid di kanan, badge MANAJEMEN TRANSAKSI, judul dan deskripsi referensi. Tinggi desktop sekitar 196 px, padding 28×40 px, radius 24 px; tidak mengubah hero Dashboard.
+- Panel Kelola Transaksi berisi deskripsi, tombol Pemasukan hijau dan Pengeluaran oranye. Keterangan Data contoh/Fitur transaksi belum tersedia memperjelas bahwa deskripsi referensi belum merupakan implementasi CRUD. Tombol tetap nonaktif tanpa form/modal/route karangan.
+- Tabel Transaksi Terbaru diekstrak dari Dashboard menjadi `AdminRecentTransactions` tanpa perubahan markup/styling. Kedua halaman memakai kategori dan lima transaksi yang sama melalui service/konteks layout, termasuk Lihat Semua nonaktif. Tidak membuat mock kedua atau mengubah saldo/laporan publik.
+- Desktop mempertahankan geometri Sidebar/Topbar, spacing 24 px dan tabel penuh. Tablet memakai menu collapsible yang sudah ada; mobile menumpuk tombol, menyesuaikan hero/teks dan mempertahankan scroll tabel lokal. Menu fokus ke tautan aktif ketika dibuka; pergantian halaman mereset scroll.
+
+QA Chrome dilakukan pada 1728×1080, 1366×768, 768×1024 dan 390×844, development dan preview production. Screenshot di `tmp/admin13-qa/` tidak di-stage. Desain mobile merupakan adaptasi desktop; belum frame mobile resmi, perangkat fisik, Safari/Firefox atau klaim identik piksel.
+
+## Admin 1.4 — Kategori Dana
+
+Referensi final: `design-references/user/13-admin-kategori-dana.png` (1856 × 1172 px). Route `/admin/kategori-dana` menggunakan AdminLayout yang sama, tanpa menyalin margin hitam/bayangan luar screenshot. Sidebar Kategori Dana aktif; Dashboard dan Kelola Dana tetap dapat dinavigasi.
+
+- Heading Kategori Dana dengan garis oranye vertikal, subtitle, dan Tambah Kategori hijau di kanan. Kartu putih menampilkan NO/KATEGORI/AKSI, tiga badge serta ikon Pencil/Trash2 dari Lucide. Aksi nonaktif diberi title/label aksesibilitas per kategori; tidak membuat form/dialog/CRUD.
+- Badge Kas Masjid hijau, Jum'at Berkah emas, serta Pembangunan & Pemeliharaan oranye. Warna emas hanya override dalam tabel kategori; ID, label, warna sumber dan saldo tidak diubah, sehingga titik Jum'at Berkah pada resume tetap biru seperti referensi.
+- Resume diekstrak dari Dashboard menjadi AdminBalanceSummary. Dashboard mempertahankan markup/visual awal; Kategori Dana menghilangkan deskripsi tambahan di atas resume sesuai raster. Tabel/nominal memakai sumber dan styling yang sama. Label nominal pertama **Saldo Awal**, mengoreksi pengulangan Saldo Akhir pada gambar.
+- Desktop: heading/tombol sejajar, gap 24 px, tabel kategori sekitar 44 px header dan 76 px per baris, radius kartu 24 px. Tablet/mobile mengikuti menu yang ada; pada smartphone heading/tombol bertumpuk. Badge tetap utuh dengan scroll tabel lokal dan akses keyboard. Area aksi 44 px untuk kenyamanan target.
+
+QA pada 1728×1080, 1366×768, 768×1024 dan 390×844; bukti di `tmp/admin14-qa/` tidak di-stage. Adaptasi mobile bukan frame resmi; kesetiaan visual merupakan pendekatan raster dan belum diuji pada perangkat fisik/Safari/Firefox.
+
+## Admin 1.5 — Profil Masjid
+
+Referensi final: `design-references/user/14-admin-profil-masjid.png` (1766 × 1405 px). Route `/admin/profil-masjid` memakai Sidebar/Topbar yang sama, menu Profil Masjid aktif. Margin hitam/bayangan luar gambar tidak menjadi bagian layout.
+
+- Heading bergaris oranye, subtitle dan Simpan Perubahan hijau dengan ikon Check. Form memakai kartu putih radius 24 px, shadow lembut, padding 24 px dan gap 20 px. Label/input mengikuti font lokal Plus Jakarta Sans dan palet admin.
+- Banner awal memakai `assets/masjid-background.webp` yang sudah ada, rasio desktop 2,8 dengan posisi bawah agar bangunan utuh. Nama Masjid wajib, Deskripsi Singkat dan Alamat berupa textarea, Kontak memakai ikon Phone; tidak ada crop atau bagian profil tambahan.
+- Isi nama/deskripsi/alamat mengikuti mock publik, bukan menyalin field kosong/nama berbeda di raster. Kontak tetap kosong karena nomor resmi belum terverifikasi. Catatan simulasi dan feedback ditambahkan untuk memperjelas batas penyimpanan; error memiliki label serta fokus field pertama. Data publik tidak berubah.
+- Tablet mengikuti menu collapsible dan input 16 px. Smartphone menumpuk heading/tombol, tombol selebar konten, padding kartu 20 px, banner rasio 1,6 dan textarea lebih tinggi; tidak memerlukan scroll horizontal halaman.
+
+QA Chrome development/preview production pada 1728×1080, 1366×768, 768×1024 dan 390×844. Screenshot di `tmp/admin15-qa/` tidak di-stage. Mobile merupakan adaptasi desktop; belum perangkat fisik, Safari/Firefox atau klaim identik piksel.
+
+Refinement Ganti Foto atas permintaan pengguna setelah implementasi awal: kontrol putih semi-transparan dengan ikon Camera/shadow di kanan bawah gambar, target 44 px dan fokus keyboard yang terlihat. Ukuran, rasio, posisi objek dan radius gambar tetap. Petunjuk format/5 MB, Batalkan Foto serta status preview/error berada di bawah gambar dan membungkus pada mobile. Pemilihan native hanya preview lokal, tanpa galeri/drag-and-drop/crop/upload server atau perubahan banner publik. Bukti pada empat viewport di `tmp/admin15-photo-qa/` tidak di-stage.
+
+## Admin 1.6 — Kelola Agenda
+
+Referensi final: `design-references/user/15-admin-agenda.png` (1766 × 1505 px). Route `/admin/agenda`, memakai AdminLayout dan menu Agenda aktif. Margin/bayangan luar raster tidak disalin ke layout aplikasi.
+
+- Heading Agenda bergaris oranye, subtitle dan Tambah Agenda hijau di kanan. Kartu memakai admin-panel yang sudah ada, radius 24 px, shadow lembut, padding 20 px, tinggi minimum 88 px dan jarak 20 px. Kalender hijau berlatar hijau pucat di kiri, nama 16 px, frekuensi/jadwal 14 px, ikon Pencil hijau dan Trash2 merah di kanan.
+- Data memakai service agenda publik tanpa duplikasi. Kelompok tetap berurutan 5 Mingguan, 2 Bulanan dan 5 Tahunan / PHBI; frekuensi terlihat di setiap kartu, kelompok memiliki heading semantik untuk pembaca layar. Semua 12 kegiatan ditampilkan.
+- Nama Rabi’ul Awwal mengikuti mock **Peringatan Maulid Nabi Muhammad SAW**, meskipun raster mengulang **Peringatan Tahun Baru Islam**. Awalan **Bulan** pada seluruh jadwal tahunan serta ejaan/kapitalisasi seperti Al-Qur’an dan Ibu-Ibu tetap mengikuti sumber publik; tidak mengoreksi sumber berdasarkan gambar.
+- Tambah/Edit/Hapus nonaktif dengan title/label dan catatan data contoh di bawah daftar. Tidak ada modal/CRUD/notifikasi sukses. Aksi ikon mempunyai target 44 px. Smartphone menumpuk heading/tombol, membungkus nama/jadwal dan memindahkan aksi ke baris berikutnya dalam kartu; tablet mempertahankan kartu horizontal selama muat.
+
+QA Chrome development dan preview production pada 1728×1080, 1366×768, 768×1024 dan 390×844. Bukti di `tmp/admin16-qa/`, tidak di-stage. Adaptasi mobile belum berasal dari frame mobile resmi; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.
+
+## Admin 1.7 — Kontak & Pengaturan Website
+
+Referensi final: `design-references/user/16-admin-kontak-pengaturan.png` (1766 × 1056 px). Route `/admin/kontak-pengaturan` memakai AdminLayout, menu Kontak & Pengaturan aktif dan judul Topbar lengkap. Margin/bayangan hitam luar gambar tidak menjadi layout aplikasi.
+
+- Heading beraksen oranye, subtitle serta Simpan Perubahan hijau berikon Check mengikuti pola admin. Kartu memakai admin-panel, radius 24 px, padding 24 px, gap 16 px dan shadow lembut. Bagian Informasi Kontak menggunakan Phone hijau, input latar abu muda/radius 14 px, alamat textarea serta baris laporan berlatar abu muda.
+- WhatsApp/email/Maps awal kosong; placeholder kontak menandai belum dikonfirmasi dan Maps memakai contoh format tautan. Contoh nomor/email pada raster tidak menjadi data resmi. Alamat memakai salinan referensi publik yang sama dengan Profil Masjid. Perubahan tidak disinkronkan ke halaman lain. Catatan simulasi dan feedback ditambahkan untuk menjelaskan batas penyimpanan serta toggle.
+- Switch native berlabel Laporan Keuangan Publik, tampilan track 38×20 px dengan target 44 px dan fokus terlihat. Aktif hijau/knob kanan, nonaktif abu/knob kiri; mendukung keyboard Space. Tidak menjadi pengaman atau pengubah route laporan publik.
+- Desktop mempertahankan form selebar konten. Tablet/mobile memakai menu sebelumnya dan input 16 px; smartphone menumpuk heading/tombol, judul Topbar membungkus, textarea lebih tinggi dan baris switch menjaga ruang teks/target klik.
+
+Visual Chrome development/preview production ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844. Bukti di `tmp/admin17-qa/`, tidak di-stage. Mobile merupakan adaptasi desktop; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.
+
+## Admin 1.8 — Kelola Akun
+
+Referensi final: `design-references/user/17-admin-kelola-akun.png` (1766 × 1056 px). Route `/admin/kelola-akun` memakai AdminLayout dan menu Kelola Akun aktif; Topbar tetap memakai komponen lama. Margin hitam/bayangan luar raster tidak menjadi layout halaman.
+
+- Label visual Super Admin Only dengan Shield oranye dan pill kuning pucat, heading beraksen oranye, subtitle serta Tambah Akun Admin hijau. Panel pencarian putih berikon Search, input dan Pencarian; placeholder menjadi **Cari nama atau email...** sesuai fungsi halaman, bukan Cari transaksi pada raster.
+- Empat kartu admin-panel putih/radius 24 px, shadow lembut, padding 20 px, tinggi minimum 104 px dan gap 12 px. Avatar bulat hijau pucat, nama 16 px, email 14 px, role/tanggal 12 px dan badge Aktif hijau/Nonaktif abu. Inisial SA/AF/SR/BS diselaraskan dengan nama; tanggal memakai formatter Indonesia panjang yang sudah ada, bukan singkatan campuran pada gambar.
+- Nama/email/role/status/tanggal mengikuti contoh referensi. Tiga akun aktif memiliki Edit/Nonaktifkan, akun nonaktif Edit/Hapus/Aktifkan. Warna dan ikon mengikuti desain; semua aksi pengelolaan nonaktif, tanpa modal atau perubahan data. Label Super Admin Only tidak menjadi otorisasi.
+- Pada tablet tombol aksi memiliki tinggi minimum 44 px; smartphone memindahkan aksi ke baris berikutnya dalam kartu, teks/email dapat membungkus, heading/tombol serta panel pencarian menyesuaikan lebar. Hasil pencarian tanpa kecocokan menampilkan pesan jelas, bukan kartu fiktif.
+
+Visual Chrome development/preview production ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844. Screenshot di `tmp/admin18-qa/` tidak di-stage. Mobile adalah adaptasi desktop; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.
+
+## Admin 1.9 — Kode Akses Laporan Publik
+
+Referensi final: `design-references/user/18-admin-kode-akses-laporan.png` (1766 × 1056 px). Route `/admin/kode-akses-laporan` memakai AdminLayout; menu dan Topbar Kode Akses Laporan aktif. Margin hitam/bayangan luar raster tidak menjadi layout aplikasi.
+
+- Label visual Super Admin Only berikon Shield, heading Kode Akses Laporan Publik beraksen oranye dan subtitle mengikuti pola admin. Dua kartu memakai admin-panel/radius 24 px, padding 24 px, shadow lembut dan jarak 20 px; tidak membuat layout baru.
+- Status Kode Akses: KeyRound hijau berlatar hijau pucat 48 px, badge Aktif, area abu muda, delapan simbol placeholder, chip **Simulasi**, metadata perubahan contoh dan Ubah Kode Akses nonaktif. Tidak menyimpan kode/hash dan tidak menyalin klaim Terenkripsi dari raster.
+- Cara Kerja memakai Info dan lima baris ChevronRight. Teks disesuaikan dengan M1.8b: CTA membuka gate, integrasi pemeriksaan direncanakan, kode sesuai menuju **/laporan-keuangan**, akses langsung/refresh tetap terbuka, serta autentikasi Super Admin untuk mengganti kode terpisah. Tidak menggunakan /laporan atau klaim realtime/perlindungan halaman/hash terenkripsi pada gambar.
+- Status/tanggal/pengubah diberi catatan data contoh. Smartphone membungkus judul, daftar dan metadata; tombol selebar kartu dengan target minimum 44 px. Area kode dan Simulasi dapat menyesuaikan ruang tanpa memotong teks.
+
+QA Chrome development/preview production pada 1728×1080, 1366×768, 768×1024 dan 390×844. Bukti di `tmp/admin19-qa/`, tidak di-stage. Mobile merupakan adaptasi desktop; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.
+
+## Admin 1.10 — Activity Log
+
+Referensi final: `design-references/user/19-admin-activity-log.png` (1766 × 3540 px). Route `/admin/activity-log` memakai AdminLayout, menu aktif dan Topbar Activity Log; Sidebar/Topbar tidak dibuat ulang. Margin hitam/bayangan luar raster bukan bagian layout.
+
+- Hero hijau memakai foto masjid yang sudah ada, radius 24 px, badge APPEND-ONLY · TIDAK DAPAT DIHAPUS dan judul 36 px. Deskripsi serta banner Sistem Append-Only diperjelas sebagai data contoh/konsep, tanpa klaim integritas atau kelengkapan yang sudah ditegakkan.
+- Panel filter putih memakai empat kontrol native berlabel dan pencarian selebar panel. Grid empat kolom desktop menjadi dua pada tablet dan satu pada smartphone; ukuran input mobile 16 px dengan target minimum 44 px. Filter bekerja langsung tanpa tombol submit tambahan.
+- Tujuh grup tanggal memakai pill kalender, garis horizontal dan jumlah hasil. Timeline vertikal, marker berwarna 40 px, avatar/inisial, badge jenis/modul, kartu putih admin-panel, radius 24 px dan detail perubahan mengikuti proporsi referensi. Badge menggunakan warna teks lebih gelap agar mudah dibaca; nominal lama dicoret merah dan baru hijau.
+- Sembilan skenario bersifat mandiri. Kartu 11 Juni memakai tanggal 11 Juni dan contoh akun Siti, menggantikan duplikasi kartu/timestamp 12 Juni pada raster. Skenario 9 Juni berupa penonaktifan akun Budi; tidak menyalin rincian reset password. Perubahan kode hanya metadata contoh tanpa nilai asli dan tetap menyebut gate UI. Contoh tidak mengubah mock transaksi, akun atau agenda halaman lain.
+- Smartphone memperkecil marker menjadi 32 px, membungkus header/badge, menumpuk label/nilai detail serta menjaga teks panjang di dalam kartu. Tidak ada tombol edit/hapus log, dialog, ekspor atau pencatatan aktivitas sungguhan.
+
+Visual Chrome development/preview production diperiksa pada 1728×1080, 1366×768, 768×1024 dan 390×844. Bukti di `tmp/admin110-qa/`, tidak di-stage. Mobile merupakan adaptasi desktop; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.
+
+## Admin 1.11 — Kwitansi dan Buat Kwitansi
+
+Referensi final halaman/modal: `design-references/user/20-admin-kwitansi.png` (1766×1057 px) dan `21-admin-buat-kwitansi.png` (524×641 px). Route `/admin/kwitansi` memakai AdminLayout; menu aktif dan Topbar Kwitansi. Margin hitam/shadow luar raster bukan layout aplikasi.
+
+- Heading beraksen oranye, tombol Buat Kwitansi hijau, kartu putih/radius 24 px, header foto berlapis hijau dengan ikon Building2 serta judul masjid dua baris, detail berbaris, terbilang berbingkai hijau, tanggal Yogyakarta, label generated dan Unduh PNG selebar konten mengikuti referensi. Font/foto/ikon yang sudah ada digunakan kembali.
+- Nomor 0 pada gambar diganti **Belum diterbitkan**, terbilang menjadi kata Indonesia dan label draft ditambahkan pada dokumen. Pratinjau awal tidak memakai identitas/nominal contoh resmi. Penambahan label dan teks panjang dapat memperbesar tinggi kartu; tidak memotong konten demi tinggi raster.
+- Modal putih selebar 448 px, radius 16 px, header/X, lima kontrol berlabel, tanda wajib merah, tombol Batal/Simpan dan catatan state lokal. Native dialog membatasi interaksi latar; fokus/Tab/Shift+Tab, Enter, Escape, return focus dan scroll viewport pendek didukung. Smartphone memakai input 16 px, target minimum 44 px dan dialog mengikuti visual viewport saat keyboard muncul.
+- Halaman mobile menumpuk heading/tombol serta label/nilai kwitansi. Render PNG menggunakan komponen dokumen yang sama pada salinan tetap 1120 px, resolusi 2×/tinggi otomatis; aturan responsive layar tidak mengubah format unduhan. Tidak menyertakan Sidebar, form, tombol atau toast dalam PNG.
+- Referensi tambahan toast yang disebut pengguna: `22-admin-notifikasi-unduh-kwitansi.png`, belum ditemukan saat pemeriksaan workspace. Sementara mengikuti spesifikasi tertulis pengguna: toast hijau, ikon Download, teks sukses persis, radius/shadow lembut, kanan bawah, role status, auto-dismiss tiga detik; error merah. Pada mobile tersedia ruang bawah dan tombol unduh dibawa ke tengah viewport agar tidak tertutup toast; toast tidak menangkap pointer.
+- Refinement pengguna: Buat Kwitansi mengikuti Tambah Kategori/Agenda, tinggi minimum 40 px desktop/44 px tablet-mobile, font 14 px, padding 10×18 px dan radius 16 px. Warna/ikon/fungsi tetap; Unduh PNG tidak berubah. Tanggal modal memakai kalender native dengan default tanggal lokal perangkat, tanpa batas tanggal lampau. Format input mengikuti browser; preview/PNG tetap dd/mm/yyyy dan draft tersimpan dipertahankan saat modal dibuka ulang.
+
+Bukti screenshot empat viewport dan berkas PNG hasil unduhan di `tmp/admin111-qa/`, tidak di-stage. QA terbatas Chrome/emulasi; belum perangkat fisik/Safari/Firefox atau klaim identik piksel.
+
+## Admin 1.12 — Laporan Keuangan
+
+Referensi final: `23-admin-laporan-01.png` (1766×10490 px), `24-admin-laporan-02.png` (1766×18105 px) dan `25-admin-laporan-03.png` (3532×12533 px), di `design-references/user/`. Route `/admin/laporan` memakai AdminLayout; Topbar Laporan Keuangan menggantikan Transaksi pada raster. Margin hitam/shadow luar bukan layout aplikasi.
+
+- Hero foto, judul dua baris, badge, dua tombol transaksi, saldo utama hijau, tiga kartu kategori, Detail Oktober, dua panel rincian, resume dan banner oranye mengikuti komposisi desktop. Refinement mempertahankan tinggi/posisi konten Laporan tetapi menyamakan gradient ke nilai asli Kelola Dana: #1b6b42 → #258961e8 → #30947199 → #4fa68426. Token bersama di AdminLayout dipakai kedua hero; posisi foto Laporan 45% dan Kelola Dana 47% tetap. Screenshot Dashboard/Kelola Dana sebelum-sesudah pada 1728×1080 identik (0 piksel berubah).
+- Koreksi navigasi setelah commit `7ac0ec7`: ketiga raster adalah tiga state **satu halaman**. Tab **Kas Masuk** memakai ArrowUpRight/hijau, **Kas Keluar** ArrowDownRight/rose #ca003a, **Rekap Bulanan** FileText/hijau sesuai raster. Tiga kolom sama lebar di desktop; tab Laporan Bulanan keempat tetap dihilangkan. Kategori dana tidak lagi dipakai sebagai tab utama. Identitas Kas Masjid hijau, Jum'at Berkah biru dan Pembangunan oranye dipertahankan, terpisah dari warna jenis laporan.
+- Filter memakai alignment tengah dengan padding vertikal 8 px. Label rentang, kelompok date picker, Terapkan dan jumlah hasil satu garis tengah desktop; teks label tanggal terpusat di atas input dengan gap 2 px. Terapkan tetap 36 px desktop/padding 6×14/font 13 dan 44 px tablet/mobile. Tinggi kartu sekitar 70 px desktop; mobile membungkus/bertumpuk. Nilai tanggal, validasi serta logika penerapan rentang tetap.
+- Panel atas awalnya Oktober: **6 pemasukan dan 7 pengeluaran**, total persis baseline. Referensi memiliki 5 pemasukan; pemetaan biru/oranye pada referensi tidak konsisten dengan Dashboard. Entri biru menjadi Rp403.000, sedangkan oranye memakai cuplikan Rp403.000 yang sudah ada ditambah Rp303.000 simulasi. Keduanya ditandai simulasi, bukan salinan identik. Resume tetap memakai kolom **Saldo Awal** yang benar.
+- Fixture riwayat Januari–Oktober tetap: 172 Kas Masjid, 38 Jum'at Berkah, 39 Pembangunan. Total 249 contoh (163 dari bagian raster terbaca, 81 simulasi/penyesuaian, 5 cuplikan Dashboard). Semua ditandai mock. Nama, tanggal, jenis dan nominal bervariasi; data tidak diklaim lengkap/identik 123 pemasukan + 251 pengeluaran Figma atau sama dengan rekap tahunannya. Bagian yang nominal/teksnya belum dapat dipastikan diperlakukan sebagai simulasi.
+- Saldo sumber tidak ditukar agar menyerupai label raster: akhir Kas Masjid Rp12.718.200, Jum'at Berkah Rp3.654.000, Pembangunan Rp856.000. Kas Masuk menampilkan 141 transaksi dari semua kategori, total Rp74.941.200; Kas Keluar 108, total Rp64.782.500. Kartu total mengikuti jenis laporan, kartu jumlah dan pencarian sejajar seperti raster. Tabel memakai badge kategori berwarna, tanggal, uraian, nominal sesuai jenis serta aksi nonaktif. Pencarian/rentang memengaruhi total dan baris, bukan snapshot.
+- Rekap Bulanan 2026 memakai tabel dengan Bulan, Kategori, Saldo Awal, Pemasukan, Pengeluaran dan Saldo Akhir. Kolom bulan mencakup tiga baris kategori dan satu baris TOTAL abu-abu. Saldo awal historis ditambah mutasi sebelum rentang membentuk saldo awal tiap grup; semua nilai bulanan dihitung dari 249 transaksi. Rincian Januari–Oktober saja, tanpa menyalin angka tahunan raster atau mengarang data bulan mendatang. Rentang parsial tetap seimbang, rentang kosong membawa saldo dengan mutasi nol. Kartu kategori atas menjadi pintasan ke rekap tanpa mengubah komposisi/angka kartu; aksen Jum'at Berkah dikembalikan ke identitas biru.
+- Ekspor, ringkasan PNG dan toast tidak diubah. PNG desktop/mobile tetap 2240×1326, berisi seluruh kategori baseline. Tidak mengekspor daftar historis panjang atau menambah PDF.
+- Tablet/mobile menumpuk panel/kartu/tab, input 16 px dan target aksi minimum 44 px. Tabel tetap scroll lokal dengan petunjuk dan caption beracuan pada kontainer. Kas Masuk/Kas Keluar menampilkan seluruh baris sesuai filter; rekap memiliki 30 baris kategori dan 10 total bulanan pada rentang awal. Data tidak dipotong demi menyerupai jumlah baris Figma. Tidak menambah dependency atau mekanisme daftar kompleks.
+
+Bukti koreksi navigasi di `tmp/admin112-navigation-qa/`; screenshot empat viewport 1728×1080, 1366×768, 768×1024 dan 390×844 tidak di-stage. QA Chrome/emulasi, belum perangkat fisik/Safari/Firefox atau klaim identik piksel. Semua data historis tetap contoh pengembangan, terpisah dari laporan publik April dan sumber Dashboard.
+
+
+## Admin 1.13 — Patch interaksi Kategori Dana
+
+Referensi final `26-admin-hapus-kategori.png` (524×311 px) dan `27-admin-tambah-edit-kategori.png` (768×433 px). Satu halaman `/admin/kategori-dana` dan AdminLayout yang sama, tanpa route atau halaman baru.
+
+- Form Tambah/Edit memakai satu komponen dengan judul dinamis, panel hijau muda, kartu putih berborder/radius, Nama Kategori, sembilan swatch berurutan sesuai raster dan footer Batal/Simpan. Indikator centang/outline dan radio native membantu keyboard/aksesibilitas; modal 720 px desktop, sembilan kolom warna, tiga kolom di smartphone. Warna memakai varian teks lebih gelap untuk keterbacaan tanpa menambah color picker.
+- Konfirmasi Hapus memakai kartu putih, peringatan merah dan judul **Hapus Kategori?**. Label **Ya, Hapus Kategori** mengoreksi Hapus Transaksi pada raster. Kalimat database/Activity Log dari raster diganti penjelasan sesi mock. Kategori terpakai/saldo bukan nol menampilkan alasan serta konfirmasi nonaktif; kategori mock kosong dapat dikonfirmasi. Batal/X/Escape tidak mengubah state.
+- Patch ini menggantikan aksi nonaktif Admin 1.4. Badge emas Jum'at Berkah pada baseline daftar dihapus sebagai override lokal; badge/titik/aksen kini mengikuti definisi warna bersama di `adminCategoryColors.js`. Varian dasar hijau/biru/oranye di Dashboard/Laporan dipertahankan; mengubah warna kategori tidak mewarnai jenis transaksi, saldo pemasukan/pengeluaran atau tab laporan.
+- State kategori pada AdminLayout dipakai seluruh halaman admin selama layout aktif. Nama/warna berubah berdasarkan ID yang tetap; kategori baru memiliki saldo nol. Jumlah kategori pada resume/rekap dapat bertambah tanpa mengubah total. Tidak mengubah fixture 249 transaksi, snapshot, backend, autentikasi, frontend publik maupun algoritma ekspor.
+- Native dialog membatasi tinggi viewport dan dapat digulir; Escape, fokus awal, trap Tab/Shift+Tab dan fokus kembali tersedia. Mobile memakai input 16 px serta area interaksi minimum 44 px. Feedback menyebut mock/belum ke server; tidak meniru penyimpanan permanen atau log asli.
+
+Bukti desktop/tablet/mobile dan warna pada Laporan di `tmp/admin113-qa/`, tidak di-stage. Backend nantinya harus memvalidasi nama, pilihan warna, izin serta relasi transaksi sebelum penghapusan; belum menetapkan URL/kontrak baru.
+
+
+## Admin 1.14 — Form Tambah Pemasukan dan Pengeluaran
+
+Nama referensi yang diminta: `28-admin-tambah-pemasukan.png`, belum tersedia saat pemeriksaan. File yang berisi frame Tambah Pemasukan sesuai rincian pengguna ditemukan sebagai `design-references/user/Pasted 2026-11-11 at 1.49.23 AM.png` (768×906). Frame tersebut dipakai tanpa mengganti nama atau memasukkan aset ke staging; tidak mengarang frame/URL lain.
+
+- Satu `AdminTransactionForm` dengan parameter income/expense. Header memakai tombol kembali, judul dan subtitle; surface pemasukan hijau muda, kartu putih berborder/radius, label di atas field, checkbox dalam panel lembut, Keterangan dan footer Batal/Simpan mengikuti raster. Modal 720 px desktop, radius 32 px, panel/form padding 24 px. Tablet/mobile menyesuaikan lebar, input 16 px, tinggi dibatasi visual viewport dan scroll lokal; posisi ikut perubahan viewport dengan cleanup listener.
+- Pengeluaran memakai struktur enam field yang sama, label Uraian Pengeluaran dan Nama Penerima; checkbox nama publik tidak dirender. Surface #fff0f3, tombol/aksen #ca003a. Tombol Pengeluaran pada panel Kelola Dana menjadi rose, Pemasukan tetap hijau. Warna kategori oranye maupun tab jenis transaksi tidak diubah.
+- Tanggal native diawali hari ini menurut kalender lokal perangkat, bukan UTC; form baru selalu kosong selain tanggal. Validasi error/fokus, Batal/Escape/kembali, trap Tab/Shift+Tab dan pengembalian fokus tersedia. Tidak menambahkan form edit/hapus, metode pembayaran, unggahan, atau fitur transaksi lain.
+- Tambahan ada di state sesi bersama, terpisah dari 249 baris historis dan lima cuplikan snapshot. Daftar Kelola Dana/Dashboard memperlihatkan tambahan dengan label Sesi mock serta penjelasan belum termasuk saldo/laporan. Pemberitahuan Laporan menyebut jumlah tambahan tanpa mengubah tabel/agregat historis; total Rp17.228.200 tetap. Copy hero/panel yang sebelumnya mengklaim edit/hapus dan pembaruan otomatis seluruh laporan diganti agar sesuai perilaku mock.
+- Kategori dari sumber bersama, ID stabil, nama/warna mengikuti metadata. Proteksi hapus kategori mencakup tambahan sesi. Preferensi nama donatur hanya untuk pemasukan/default false, belum memengaruhi laporan publik. State hilang setelah refresh/keluar admin, tanpa storage, request, backend atau log palsu.
+
+Bukti kedua modal di 1728×1080, 1366×768, 768×1024 dan 390×844 serta screenshot simpan/integrasi di `tmp/admin114-qa/`, tidak di-stage. Perbedaan tanggal mengikuti locale kalender native; screenshot pendukung yang dipakai tetap bernama Pasted. Sinkronisasi agregat periode serta otorisasi/validasi server menunggu backend; tidak mengubah kontrak API.
+
+## Admin 1.15 — Pagination dan Detail/Edit/Hapus Transaksi
+
+Keempat referensi berikut digunakan sebagai elemen UI, tanpa mengganti layout Admin atau tiga tab Laporan:
+
+| Referensi lokal | Implementasi |
+| --- | --- |
+| `29-admin-pagination-transaksi.png` | Footer pagination 20/30/50/Semua, rentang baris dan Lihat Detail pada tabel Kas Masuk/Kas Keluar di `/admin/laporan` |
+| `30-admin-detail-transaksi.png` | `/admin/laporan/transaksi/:id`: breadcrumb, kembali, kartu informasi dan panel ringkasan kanan |
+| `31-admin-edit-transaksi.png` | `/admin/laporan/transaksi/:id/edit`: form halaman tersendiri dan ringkasan sebelum diedit |
+| `32-admin-hapus-transaksi.png` | Dialog konfirmasi dari detail; tombol aktif hanya untuk teks persis `HAPUS` |
+
+Field Tambah dan Edit berbagi `AdminTransactionFields`, kategori bersama, validasi service, tanggal native serta input rupiah. Pengeluaran memakai rose dan Nama Penerima tanpa checkbox nama publik; pemasukan memakai hijau dan preferensi nama donatur. Field opsional yang tidak ada tidak dipaksakan tampil di detail. Form edit menggunakan textarea uraian sebagaimana referensi, sementara modal Tambah mempertahankan input sebelumnya.
+
+Nomor halaman memakai ellipsis hanya bila ada celah, mengikuti hasil pencarian/rentang sebelum pemotongan baris. Konteks tab, pencarian, tanggal dan pagination disimpan sementara saat membuka detail. Detail/edit dan modal mengikuti grid desktop serta susunan satu kolom/scroll lokal pada mobile. Tidak menambahkan tab keempat.
+
+Semua teks operasi menyebut simulasi sesi. Peringatan hapus permanen pada raster disesuaikan agar tidak mengklaim perubahan database atau Activity Log. Saldo/PNG snapshot tetap; rekap dan total tabel aktif menampilkan hasil simulasi dari sumber transaksi bersama. Bukti visual empat viewport tersedia di `tmp/admin115-qa/` dan tidak di-stage.
+
+## Admin 1.16 — Pengaturan Donasi
+
+Referensi final: `design-references/user/33-admin-pengaturan-donasi.png`. Route `/admin/donasi` memakai AdminLayout, topbar Donasi dan menu Donasi di kelompok Konten Website, sesudah Kontak & Pengaturan.
+
+- Breadcrumb Konten Website → Kontak → Donasi; heading Pengaturan Donasi, badge draf dan banner peringatan mengikuti frame. Desktop memakai kolom konfigurasi dan kolom pratinjau/kesiapan; tablet/mobile bertumpuk tanpa mengubah layout halaman lain.
+- Urutan panel: Scan QRIS, Transfer Bank, Catatan donasi, Konfirmasi Donasi (WhatsApp), lalu footer Batal/Simpan Perubahan. Gambar PNG/JPG maksimal 2 MB dipratinjau lokal; Ganti/Hapus aktif setelah gambar valid tersedia. Toggle nonaktif sampai data lengkap, dan otomatis mati saat kelengkapan hilang.
+- Sesuai frame, hitungan `0 dari 2 siap` merujuk dua metode pembayaran (QRIS/transfer). Kesiapan konfirmasi WhatsApp ditampilkan terpisah. Semua status merujuk simulasi, bukan verifikasi rekening/QRIS atau publikasi.
+- Mini-preview hanya menampilkan metode aktif dan lengkap; tanpa QRIS/transfer tampil empty state. Konfirmasi WhatsApp menampilkan nomor/template literal dengan tombol pratinjau nonaktif, tanpa membuka atau mengirim pesan. Catatan donasi diperbarui langsung.
+- Rekening dan nomor WhatsApp awal kosong karena data resmi belum terverifikasi. Template placeholder dan catatan pengingat merupakan mock. Draf terakhir bertahan selama AdminLayout aktif; Batal mengembalikan isi dan gambar. Refresh/keluar layout menghapus draf, tanpa localStorage/backend atau perubahan Kontak publik.
+
+Bukti visual empat viewport, upload/preview dan status di `tmp/admin116-qa/`; aset referensi serta artefak tidak di-stage. Tidak membuat frame atau URL Figma baru.

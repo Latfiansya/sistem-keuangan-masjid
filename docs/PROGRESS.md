@@ -731,3 +731,465 @@ Status: implementasi backend publik pada branch `fitur/backend-publik` selesai d
 - `npm test --workspace backend`: PASS (18 test HTTP & unit untuk health, 404, JSON invalid, batas 10 KB/413, `API_BASE_PATH` subdirectory, `agenda`, `content`, `check-password` termasuk 400/503/429 brute-force, `finance/report` termasuk rekonsiliasi/inklusif/hari kosong/unavailable/400, serta isolasi data).
 - `npm run build`: PASS.
 - Batasan tersisa: koneksi PostgreSQL (pgAdmin), skema tabel/migrasi/seeder, autentikasi admin & CRUD pengurus ("Masuk Pengurus"), upload file QRIS, dan pengaktifan adapter `VITE_DATA_SOURCE=api` di `frontend/` belum dikerjakan pada tahap ini.
+
+## Admin 1.1 — Login Pengurus (10 November 2026)
+
+Status: halaman login selesai dan tervalidasi pada branch `feature/frontend-admin`; siap review dan commit manual pengguna. Baseline saat mulai `c583969`, tanpa perubahan tracked/staged; `design-references/` tetap untracked.
+
+### Implementasi dan batas autentikasi
+
+- Menambahkan `/admin/login` pada aplikasi React yang sama, di luar PublicLayout. Desktop dua panel mengikuti `10-admin-login.png` (3456 × 2000); foto/gradasi biru–hijau, logo dan font lokal yang sudah tersedia. Tablet/mobile satu kolom, form dan kartu dapat digulir pada layar pendek. CSS terpisah dibatasi `.admin-login*`.
+- Form dimulai kosong, email/password wajib, format email dan karakter kontrol divalidasi; karakter khusus password biasa tidak dihapus/diubah. Input password tersembunyi, autocomplete sesuai tujuan, Enter/submit, fokus error, aria-invalid/describedby, status loading dan pesan kesalahan tersedia. Ref serta tombol/input nonaktif mencegah submit ganda. Request dibatalkan saat halaman dilepas; password dibersihkan setelah submit selesai.
+- Kode backend, API_CONTRACT dan referensi remote ditinjau: belum ada endpoint autentikasi admin. `adminAuthService.loginAdmin()` menyediakan batas integrasi tanpa HTTP atau endpoint karangan. Jeda 500 ms hanya development mode mock untuk menguji loading; semua kredensial ditolak sebagai integrasi belum tersedia. Mode API/build production tidak memakai simulasi autentikasi. Tidak ada akun/password/token/secret aplikasi baru, persistence kredensial, session, role, route protection atau sukses semu.
+- Perlu koordinasi backend untuk metode/path, payload email/password, respons sukses dan error (validasi, kredensial, rate limit), mekanisme akses dan tujuan setelah berhasil. Validasi ulang, hashing password, mitigasi brute force serta pentest tetap kebutuhan backend sebelum autentikasi nyata; bukan klaim keamanan dari UI. Kontrak API tidak diubah sepihak.
+- Hanya login yang dibuat. Komponen/CSS/aset/service/mock publik, backend, dependency dan lockfile tidak diubah. Masuk Pengurus di Footer publik tetap nonaktif; tidak membuat dashboard, menu admin, CRUD, profil, pengaturan akun, lupa password atau registrasi.
+
+### Verifikasi aktual
+
+- `npm run lint`: PASS tanpa peringatan, frontend dan backend.
+- `npm test`: PASS — 41 test frontend unit/SSR (5 baru untuk login) dan 18 test backend. Dua suite browser opsional dilewati pada perintah standar, lalu dijalankan terpisah dengan Chrome QA.
+- Suite browser login: PASS — 4 skenario (5 hasil termasuk induk), mencakup validasi/fokus, Enter/loading, submit berulang, error/retry, refresh, input kosong, isolasi route, tidak ada storage/cookie/HTTP autentikasi. Akun yang dimasukkan pada QA hanya data uji yang selalu ditolak, bukan kredensial aplikasi.
+- Suite regresi publik: PASS — 35 skenario (36 hasil termasuk induk), termasuk CTA/modal, akses langsung/refresh laporan, filter/rekonsiliasi, menu responsive/keyboard, serta unduhan PDF/PNG/ZIP nyata.
+- `npm run build`: PASS. Preview build production juga diperiksa pada tujuh viewport: 1728×1000, 1366×768, 1024×768, 768×1024, 390×844, 360×800 dan 390×360. Development diuji pada ukuran yang sama. Tidak ada overflow horizontal/elemen terpotong, font/logo gagal atau exception runtime/HTTP gagal. Submit production tetap di login dengan pesan belum tersedia, password dibersihkan, tanpa HTTP autentikasi atau penyimpanan kredensial.
+- Screenshot development/production dibandingkan dengan raster resmi dan ditinjau pada desktop/tablet/mobile. Satu iterasi memperbaiki pemisahan kata judul pada satu kolom serta tracking teks. Bukti lokal di `tmp/admin11-qa/`, diabaikan Git. Pengujian hanya Chrome/emulasi viewport; belum perangkat fisik, Safari/Firefox, pentest atau klaim identik piksel.
+
+README dan DESIGN_MAP diperbarui untuk route, desain dan batas integrasi. Setelah review status, diff, daftar file, whitespace dan file sensitif, hanya sembilan file kode/test/dokumentasi Admin 1.1 disiapkan untuk staging. Screenshot, profil Chrome, build, environment dan referensi desain tidak disertakan. Tidak melakukan commit, push atau merge. Pekerjaan berhenti setelah Login Pengurus; integrasi autentikasi menunggu kesepakatan backend.
+
+Usulan pesan commit: `feat: tambahkan halaman login pengurus dan batas integrasi autentikasi`.
+
+### Tindak lanjut — CTA Footer ke login (10 November 2026)
+
+- Mengganti tombol Masuk Pengurus nonaktif pada Footer dengan React Router `Link` menuju `/admin/login`, mengikuti tautan Footer yang sudah ada. CSS, autentikasi dan backend tidak diubah. README dan DESIGN_MAP diselaraskan.
+- Verifikasi lulus: lint, build, 41 test frontend dan 18 test backend. Dua suite browser opsional dilewati pada `npm test`; pemeriksaan Chrome terpisah mencakup lima halaman publik (Beranda, Agenda, Profil, Kontak dan 404) pada desktop 1366×768 serta mobile 390×844: klik/Enter menuju login tanpa reload dokumen, navigasi Kembali, CTA laporan tetap membuka modal pada halaman asal, serta akses langsung/refresh login. Tidak ada overflow horizontal, exception runtime atau HTTP gagal pada pemeriksaan tersebut.
+- Perubahan tindak lanjut dibiarkan unstaged; sembilan file staged dari pekerjaan login sebelumnya dipertahankan. Tidak melakukan commit atau push. Autentikasi tetap belum terhubung. Usulan pesan commit khusus tindak lanjut: `fix: hubungkan tautan masuk pengurus di footer ke halaman login`.
+
+### Refinement — tampilkan/sembunyikan password (10 November 2026)
+
+- Menambahkan tombol Eye/EyeOff Lucide pada sisi kanan input, default tersembunyi. Tombol `type="button"`, label Tampilkan/Sembunyikan password, aria-controls, target 44 px dan hover/fokus. Toggle hanya mengubah visibilitas, menjaga nilai serta validasi; nonaktif saat submit dan kembali tersembunyi setelah submit selesai. Tinggi/lebar, border dan radius input dipertahankan dengan padding kanan untuk ikon.
+- Perubahan Footer/README/DESIGN_MAP dari tindak lanjut sebelumnya dipertahankan. Footer memakai Link ke `/admin/login`; kini ikut staging sesuai instruksi pengguna. Tidak mengubah autentikasi, service, kontrak API, backend atau dependency dan tidak menambah halaman/komponen.
+- Verifikasi: lint PASS tanpa peringatan, `npm test` PASS (42 test frontend dan 18 backend; dua suite browser opsional dilewati), build PASS. Suite Chrome login dijalankan terpisah: 6 skenario PASS (7 hasil termasuk induk), termasuk toggle mouse/keyboard, hover/fokus, nilai/validasi/geometri input tetap, loading/submit ganda, dan navigasi Footer pada lima halaman publik × desktop/mobile. Layout diperiksa pada tujuh viewport; screenshot desktop/mobile ditinjau, tanpa overflow atau error runtime/HTTP aplikasi. QA terbatas pada Chrome/emulasi viewport.
+- README dan DESIGN_MAP mencatat perilaku terbaru. Staging diperbarui hanya untuk file terkait, mempertahankan pekerjaan login terdahulu. Referensi desain, hasil build, screenshot dan profil Chrome di tmp tetap tidak di-stage. Tidak melakukan commit, push atau merge. Usulan commit gabungan: `feat: lengkapi login pengurus dengan toggle password dan tautan footer`.
+
+## Admin 1.2 — Dashboard Keuangan (10 November 2026)
+
+Status: implementasi dan QA selesai pada `feature/frontend-admin`, baseline commit `28b4fef`. Awal pekerjaan tanpa perubahan tracked/staged; `design-references/` tetap untracked. Referensi final `11-admin-dashboard.png` baru tersedia setelah dikonfirmasi pengguna, lalu digunakan sebagai acuan implementasi.
+
+### Implementasi dan keputusan
+
+- Menambahkan `/admin/dashboard` dalam React yang sama dengan AdminLayout sederhana (sidebar/topbar dan Outlet). Sidebar memuat logo, tiga kelompok navigasi, dashboard aktif dan akun contoh di bawah; topbar memakai judul, ikon Bell nonaktif dan avatar SA. Tidak mengubah PublicLayout, CSS/komponen publik atau desain login.
+- Konten mengikuti referensi: hero hijau/foto masjid dan dua tombol transaksi, tanggal update, empat kartu, resume tiga kategori/total, banner oranye, lima transaksi terbaru dan tiga shortcut. Memakai aset/font lokal serta Lucide yang tersedia, tanpa dependency baru.
+- Data baru di `mocks/adminDashboard.js`, hanya diakses melalui `adminDashboardService`. Saldo akhir dihitung per kategori dan total diturunkan dari kategori untuk kartu/tabel. Rekonsiliasi: 16.864.200 + 1.791.500 − 1.427.500 = 17.228.200. Saldo akhir kategori 12.718.200 / 3.654.000 / 856.000; lima transaksi terakhir merupakan cuplikan, bukan seluruh mutasi periode. Mock laporan publik April tidak diubah.
+- Kolom numerik pertama tabel diperjelas menjadi Saldo Awal, mengoreksi label Saldo Akhir ganda pada raster. Klaim realtime diganti teks netral dan penanda data contoh ditampilkan. Nama/email Super Admin hanya fixture tampilan dari referensi, bukan kredensial, role atau sesi pengguna.
+- Dashboard dapat dibuka langsung/refresh untuk review mock, tanpa mengubah login menjadi sukses palsu atau menerapkan proteksi route. Mode API menampilkan error integrasi tanpa HTTP atau fallback mock. Autentikasi backend belum tersedia; tidak membuat backend, database atau perubahan kontrak API.
+- Seluruh menu/aksi fitur lain nonaktif dengan keterangan: transaksi, laporan admin, kategori, kwitansi, activity log, konten, akun, kode akses, notifikasi dan logout. Tidak membuat route/halaman fiktif.
+- Tablet/mobile: sidebar collapsible dengan fokus awal/kembali, Escape/backdrop/penutupan saat fokus keluar; kartu 2/1 kolom. Tabel memakai petunjuk dan scroll lokal dengan keyboard. Nominal tetap utuh, shortcut/bannernya menyesuaikan. Iterasi visual merapikan pemenggalan kategori dan ruang akun pada sidebar laptop.
+
+### Verifikasi aktual
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 48 test frontend unit/SSR (6 baru untuk dashboard) dan 18 test backend. Tiga suite browser opsional dilewati pada perintah standar, kemudian dijalankan terpisah.
+- Chrome development: 46 skenario browser PASS (49 hasil termasuk 3 induk): 5 dashboard, 6 login dan 35 publik. Mencakup angka/aset/route/refresh, menu dan tabel keyboard, kontrol nonaktif, error mode API tanpa request, toggle/login, serta regresi alur publik/gate/filter dan ekspor PDF/PNG/ZIP nyata.
+- `npm run build`: PASS. Suite dashboard pada preview production: 5 skenario PASS (6 hasil termasuk induk), termasuk fokus navigasi dan akses langsung/refresh dengan atau tanpa trailing slash.
+- Visual/top/full pada 1728×1080, 1366×768, 768×1024 dan 390×844 ditinjau terhadap raster final. Hero desktop 1392×386 / 1078×386 px; kartu 4/4/2/1 kolom. Tidak ada overflow horizontal halaman, nominal kartu terpotong, font/logo gagal, HTTP gagal atau exception runtime aplikasi. Scroll tabel lokal diuji sampai kolom terakhir; tabel mempertahankan semua angka/baris.
+- Screenshot dan metrik ada di `tmp/admin12-qa/development/` serta `tmp/admin12-qa/production/`, termasuk menu mobile. File QA, build dan referensi tidak masuk Git. QA terbatas Chrome/emulasi viewport; belum perangkat fisik/Safari/Firefox dan tidak mengklaim identik piksel atau kesiapan autentikasi produksi.
+
+README dan DESIGN_MAP diperbarui untuk route/layout, mock, batasan dan cara QA. Setelah review status, diff, daftar file, whitespace dan staged diff, hanya 11 file Admin 1.2 disiapkan untuk commit manual. Tidak melakukan commit, push atau merge. Pekerjaan berhenti setelah dashboard selesai.
+
+Usulan pesan commit: `feat: tambahkan dashboard keuangan admin dengan layout dan data mock`.
+
+## Admin 1.3 — Kelola Dana Keuangan (10 November 2026)
+
+Status: halaman selesai dan tervalidasi pada `feature/frontend-admin`, baseline commit `62d6fd2`. Awal kerja tanpa perubahan tracked/staged; referensi `12-admin-kelola-dana.png` baru dibaca setelah pengguna menambahkannya. `design-references/` tetap untracked.
+
+- Route `/admin/kelola-dana` memakai AdminLayout yang sama. Kelola Dana kini menjadi Link Sidebar, menu aktif dan judul Topbar mengikuti route; Dashboard tetap dapat diakses. Pergantian halaman mereset scroll, menu mobile fokus ke tautan aktif dan menutup seperti sebelumnya.
+- Hero hijau/foto masjid, badge MANAJEMEN TRANSAKSI, judul/deskripsi serta panel Kelola Transaksi mengikuti raster final 1856×1395 px, tanpa menyalin margin hitam/bayangan luar aplikasi. Tombol Pemasukan hijau, Pengeluaran oranye dan Lihat Semua nonaktif; status data contoh/fitur belum tersedia tetap jelas. Tidak membuat form/modal/CRUD atau tujuan fiktif.
+- Tabel lama diekstrak menjadi `AdminRecentTransactions`, dipakai Dashboard dan Kelola Dana. Kedua halaman menerima kategori/lima transaksi dari service dan konteks layout yang sama, tanpa mock/service baru atau perubahan nilai. Seluruh markup konten Dashboard setelah ekstraksi dibandingkan dengan baseline sebelum perubahan dan identik; CSS Dashboard tidak diubah.
+- CSS Kelola Dana terpisah dan dibatasi `.admin-funds*`. Tablet/mobile memakai pola menu/scroll tabel yang sudah ada; tombol bertumpuk pada smartphone, tipografi/spacing menyesuaikan. Iterasi visual merapatkan tinggi hero desktop menjadi sekitar 196 px, merapikan judul/deskripsi mobile dan memberi shadow lembut pada panel.
+- Tidak mengubah desain Login, frontend publik, mock laporan publik, backend, kontrak API, autentikasi, dependency atau lockfile. Mode API tetap melaporkan integrasi belum tersedia tanpa request admin dan tanpa fallback mock.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS, 51 test frontend unit/SSR (3 baru) serta 18 test backend; tiga suite browser opsional dilewati pada perintah standar dan dijalankan terpisah.
+- Chrome development: 48 skenario browser PASS (51 hasil termasuk induk), mencakup 7 Dashboard/Kelola Dana, 6 Login dan 35 publik. Navigasi Sidebar bolak-balik tidak reload dokumen, judul/menu aktif benar, scroll kembali atas, DOM tabel tetap identik, saldo Dashboard tetap, serta refresh/trailing slash dan error mode API diuji. Regresi publik termasuk modal/gate/filter serta ekspor PDF/PNG/ZIP nyata lulus.
+- `npm run build`: PASS. Preview build production: 7 skenario Dashboard/Kelola Dana PASS (8 hasil termasuk induk). Visual desktop 1728×1080 / 1366×768, tablet 768×1024 dan mobile 390×844 ditinjau. Tidak ada overflow horizontal halaman, font/logo gagal, HTTP gagal atau exception runtime aplikasi. Scroll tabel lokal dengan keyboard sampai kolom terakhir tetap berfungsi.
+- Screenshot development/production di `tmp/admin13-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport; belum perangkat fisik, Safari/Firefox atau klaim identik piksel. Fitur transaksi tetap belum tersedia dan tidak ada kredensial/autentikasi baru.
+
+README dan DESIGN_MAP diperbarui untuk route, reuse dan batasan. Setelah review status, diff, daftar file, whitespace dan staged diff, hanya 11 file Admin 1.3 disiapkan untuk commit manual. Referensi, hasil build, screenshot dan profil Chrome tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah Kelola Dana selesai.
+
+Usulan pesan commit: `feat: tambahkan halaman kelola dana dengan tabel transaksi bersama`.
+
+## Admin 1.4 — Kategori Dana (10 November 2026)
+
+Status: implementasi dan QA selesai pada `feature/frontend-admin`, baseline commit `58f0710`. Awal kerja tanpa perubahan tracked/staged; `design-references/` tetap untracked. Referensi final `13-admin-kategori-dana.png` (1856×1172 px) dibaca sebelum implementasi.
+
+- Route `/admin/kategori-dana` memakai AdminLayout yang sama. Kategori Dana menjadi Link aktif pada Sidebar dan judul Topbar mengikuti route. Navigasi Dashboard ↔ Kelola Dana ↔ Kategori Dana memakai pola menu/fokus/scroll yang sudah ada, tanpa layout baru.
+- Heading bergaris oranye, subtitle, Tambah Kategori hijau, kartu NO/KATEGORI/AKSI dan tiga kategori mengikuti referensi. Badge hijau/emas/oranye; ikon Pencil/Trash2 memiliki label per kategori dan target 44 px. Semua tujuh aksi nonaktif dengan keterangan belum tersedia, tanpa form, dialog atau operasi CRUD.
+- Resume lama diekstrak menjadi `AdminBalanceSummary`. Dashboard tetap memakai markup/visual semula; Kategori Dana menghilangkan deskripsi tambahan sesuai raster. Tabel memakai Saldo Awal pada kolom nominal pertama, kategori/nominal/tanggal yang sama, dan total akhir tetap 17.228.200. Badge emas Jum'at Berkah hanya styling daftar kategori, bukan perubahan warna sumber atau titik biru resume.
+- Tidak membuat mock/service kedua atau mengubah saldo/transaksi. Seluruh markup konten Dashboard dan Kelola Dana sesudah ekstraksi dibandingkan dengan baseline sebelum perubahan dan identik. Desain Login/publik, CSS Dashboard/Kelola Dana, backend, kontrak API, autentikasi, dependency dan lockfile tidak diubah.
+- CSS baru dibatasi halaman kategori. Tablet memakai Sidebar yang sama; mobile menumpuk heading/tombol. Tabel kategori/resume memiliki scroll lokal, petunjuk dan dukungan keyboard; badge tidak memaksa halaman meluap. API tetap belum terhubung dan tidak dipanggil.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 54 test frontend unit/SSR (3 baru) dan 18 test backend; tiga suite browser opsional dilewati pada perintah standar, lalu dijalankan terpisah.
+- Browser Chrome: 9 skenario admin, 6 login dan 35 publik PASS (50 skenario total), termasuk kesamaan DOM resume, kategori/nilai tidak termutasi, navigasi tiga halaman, menu aktif/judul, scroll tabel sampai kolom terakhir, aksi nonaktif, refresh/trailing slash dan mode API tanpa HTTP/fallback. Regresi publik mencakup modal/gate/filter dan unduhan PDF/PNG/ZIP nyata.
+- Pemeriksaan awal refresh membaca DOM lama sebelum dokumen baru siap; sinkronisasi suite QA diperbaiki memakai penanda dokumen dan readyState. Suite admin kemudian diulang dan 9 skenario lulus; ini perbaikan pengujian, bukan perubahan perilaku aplikasi.
+- `npm run build`: PASS. Preview production juga lulus 9 skenario admin (10 hasil termasuk induk). Visual pada 1728×1080, 1366×768, 768×1024 dan 390×844 ditinjau: tanpa overflow horizontal halaman, font/logo gagal, HTTP gagal atau exception runtime aplikasi. Label Saldo Awal dan total kategori konsisten dengan Dashboard.
+- Screenshot development/production di `tmp/admin14-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport; belum perangkat fisik, Safari/Firefox atau klaim identik piksel. Aksi kategori dan autentikasi nyata tetap belum tersedia.
+
+README dan DESIGN_MAP diperbarui. Setelah review status, diff, daftar file, whitespace dan staged diff, hanya 11 file Admin 1.4 disiapkan untuk commit manual. Referensi, build, screenshot dan profil Chrome tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah halaman Kategori Dana selesai.
+
+Usulan pesan commit: `feat: tambahkan halaman kategori dana dengan resume saldo bersama`.
+
+## Admin 1.5 — Profil Masjid (10 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline `5b78aef`. Awal kerja tanpa perubahan tracked/staged; `design-references/` tetap untracked. Referensi final `14-admin-profil-masjid.png` (1766×1405 px) dibaca sebelum implementasi.
+
+- Route `/admin/profil-masjid` dan tautan Sidebar memakai AdminLayout yang sudah ada. Topbar/menu aktif mengikuti halaman. Tidak mengubah halaman Login, Dashboard, Kelola Dana, Kategori Dana atau frontend publik.
+- Heading beraksen oranye, tombol hijau, kartu putih, banner statis dan empat field mengikuti desain. Foto/font memakai aset lama; CSS baru dibatasi `.admin-profile*`. Smartphone menumpuk heading/tombol dan menambah tinggi textarea; tablet/mobile mempertahankan menu admin yang sama.
+- Service admin minimal membaca salinan field mock publik: nama, heroDescription sebagai deskripsi singkat dan alamat. Kontak kosong karena data sumber belum terverifikasi; tidak menggunakan nomor contoh Figma. Tidak mengubah sumber mock/service publik atau menambah salinan fixture profil.
+- Form controlled mendukung edit semua field, nama wajib dan kontak opsional 8–15 digit dengan pemisah lazim. Error ditampilkan di field dan fokus menuju kesalahan pertama; perubahan field membersihkan error/feedback terkait. Nama menolak karakter kontrol, panjang field dibatasi dan teks dirender sebagai nilai input/textarea.
+- Simpan hanya memvalidasi serta menandai state sementara di komponen. Catatan dan feedback menegaskan simulasi, belum permanen ke server; feedback digulirkan ke area terlihat setelah simpan. Keluar halaman/refresh mengembalikan data awal. Tidak ada HTTP simpan, localStorage, sessionStorage atau cookie; profil publik tetap.
+- Mode API memberi error integrasi profil dan tombol simpan nonaktif tanpa request/fallback mock. Kontrak baca/tulis profil admin dan autentikasi perlu koordinasi backend. Tidak membuat endpoint, database, upload server/crop, form profil tambahan, dependency atau perubahan kontrak API.
+
+### Verifikasi
+
+- `npm run lint`: PASS. `npm test`: PASS — 58 test frontend unit/SSR (4 baru), 18 test backend. Tiga suite browser opsional dilewati pada perintah standar; suite admin/login dijalankan terpisah.
+- Chrome development: 11 skenario admin PASS, termasuk empat viewport, menu aktif, navigasi empat halaman, data/angka sebelumnya, edit seluruh field, validasi nama/kontak, fokus, Enter, simpan simulasi, reset saat keluar/refresh/trailing slash, publik tetap dan mode API tanpa HTTP. Enam skenario Login juga PASS.
+- Pemeriksaan awal QA diperbaiki agar Enter mengirim karakter tombol lengkap dan perpindahan halaman menunggu konten tujuan terpasang. Suite admin diulang dan lulus; tidak mengubah perilaku halaman lama.
+- `npm run build`: PASS. Preview production: 11 skenario admin PASS (12 hasil termasuk induk). Visual ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844, tanpa overflow horizontal halaman, aset gagal atau exception runtime aplikasi.
+- Screenshot awal, validasi dan simulasi di `tmp/admin15-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport; belum perangkat fisik/Safari/Firefox. Penyimpanan permanen, autentikasi dan upload server memang belum tersedia pada milestone ini.
+
+README dan DESIGN_MAP diperbarui. Hanya 10 file terkait Admin 1.5 disiapkan setelah pemeriksaan status/diff/staged diff; referensi, build, log dan artefak QA tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah Profil Masjid selesai.
+
+Usulan pesan commit: `feat: tambahkan halaman profil masjid admin dengan simpan simulasi`.
+
+### Refinement Admin 1.5 — Ganti Foto Masjid
+
+Diminta setelah implementasi awal, sebelum pengguna melakukan commit. Staging 10 file Admin 1.5 dipertahankan; perubahan lanjutan hanya menyentuh halaman/CSS profil, service/validator profil, dua test dan tiga dokumen yang sudah terkait milestone ini.
+
+- Kontrol Ganti Foto berikon Camera, putih semi-transparan dengan shadow di kanan bawah banner. File picker native memiliki label, fokus keyboard, filter JPG/JPEG/PNG/WebP dan hanya satu berkas. Rasio/ukuran/radius banner serta empat field lain tidak diubah. Batalkan Foto mengembalikan aset awal; batal picker mempertahankan preview saat ini.
+- Validator awal pada adminProfileService memeriksa jumlah, ekstensi dan MIME yang sesuai, berkas tidak kosong serta maksimum 5 × 1024 × 1024 byte. Berkas rusak yang gagal ditampilkan menghasilkan error dan kembali ke foto awal. Format/ukuran/jumlah yang ditolak tidak menghapus preview valid sebelumnya. Input direset agar berkas yang sama dapat dipilih kembali.
+- File dan object URL hanya disimpan pada state komponen. Cleanup melepas URL lama saat mengganti foto, membatalkan, gagal membaca gambar atau unmount. Status di bawah foto dan feedback Simpan menegaskan foto hanya dipratinjau, belum tersimpan ke server. Tidak ada request upload, storage permanen, crop, dependency atau perubahan publik/backend/kontrak.
+- Batas integrasi tetap sederhana: state menyimpan File asli dan service menyediakan batas/validator awal. Backend perlu menyepakati endpoint/metode/field multipart, otorisasi dan validasi ulang ekstensi/MIME/isi gambar/ukuran/jumlah, penyimpanan aman serta URL banner yang kelak dibaca konten publik. Batas upload khusus tidak boleh menaikkan batas JSON umum 10 KB.
+
+Verifikasi lanjutan: lint tanpa peringatan; `npm test` lulus 59 test frontend unit/SSR (1 tambahan validator foto) dan 18 backend. Browser development serta preview production lulus 13 skenario admin (14 hasil termasuk induk): native picker lewat Enter, JPG/PNG/WebP, ukuran batas tepat 5 MB pada unit test dan berkas melebihi batas, ekstensi/MIME/jumlah/berkas kosong/rusak, preview/batal, banner tetap, form lain tetap, simpan simulasi dan regresi admin. URL yang dibuat/dilepas dilacak pada penggantian, pembatalan, kegagalan dan keluar halaman; seluruhnya dilepas. Build lulus. Visual diperiksa pada 1728×1080, 1366×768, 768×1024 dan 390×844, tanpa overflow halaman atau exception runtime. Bukti foto di `tmp/admin15-photo-qa/`; tidak di-stage. Pengujian picker menggunakan Chrome dengan intersepsi dialog native, belum perangkat fisik/Safari/Firefox.
+
+Setelah pemeriksaan diff dan staging, total tetap 10 file Admin 1.5; hanya delapan file terkait refinement diperbarui dalam staging. Aset referensi, fixture, log dan hasil build tidak disertakan. Tidak melakukan commit, push atau merge.
+
+Usulan pesan commit yang mencakup hasil akhir: `feat: tambahkan profil masjid admin dengan simulasi simpan dan preview foto`.
+
+## Admin 1.6 — Kelola Agenda (10 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline commit `e51629c`. Awal kerja tanpa perubahan tracked/staged; `design-references/` tetap untracked. Referensi final `15-admin-agenda.png` (1766×1505 px) dibaca sebelum implementasi.
+
+- Route `/admin/agenda` dan tautan Agenda pada Sidebar memakai AdminLayout yang sama. Judul Topbar/menu aktif mengikuti route, navigasi lima halaman admin berfungsi. Tidak mengubah markup/CSS halaman admin lama atau frontend publik.
+- Heading beraksen oranye, Tambah Agenda hijau, 12 kartu putih horizontal dengan kalender, nama, frekuensi/jadwal dan ikon Edit/Hapus mengikuti raster. Menggunakan admin-panel, font dan ikon yang sudah tersedia; CSS tambahan dibatasi `.admin-agenda*`. Aksi ikon 44 px. Pada smartphone tombol heading selebar konten, nama/jadwal membungkus dan aksi berpindah baris agar tetap nyaman.
+- Memakai `getAgenda({ signal })` dari service publik yang sudah ada, tanpa service/fixture baru. Seluruh kelompok/items dipertahankan: 5 Mingguan, 2 Bulanan dan 5 Tahunan / PHBI. Tidak mengubah nilai sumber atau membatasi jumlah berdasarkan screenshot. Jadwal tetap string berulang, bukan tanggal/jam hasil asumsi.
+- Perbedaan referensi dipertahankan sesuai data: mock memakai Peringatan Maulid Nabi Muhammad SAW untuk Bulan Rabi’ul Awwal, sementara raster mengulang nama Peringatan Tahun Baru Islam. Semua jadwal tahunan memakai awalan Bulan; ejaan/kapitalisasi lainnya tetap mengikuti sumber, termasuk Al-Qur’an dan Ibu-Ibu.
+- Semua 25 aksi Tambah/Edit/Hapus nonaktif, memiliki title/label dan catatan belum tersedia. Tidak membuat form/dialog/CRUD/notifikasi sukses. Halaman memiliki loading/error/kosong, pembatalan saat unmount, dan tidak menghubungi API admin. Mode API memakai error adapter agenda lama yang belum dihubungkan, tanpa request/fallback mock.
+- Backend, kontrak API, sumber agenda publik, autentikasi, dependency dan lockfile tidak berubah. README dan DESIGN_MAP diperbarui untuk route serta keputusan perbedaan data.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 60 frontend unit/SSR (1 route baru), 18 backend; tiga suite browser opsional dilewati dalam perintah standar, admin/login dijalankan terpisah.
+- Chrome development: 15 skenario admin dan 6 Login PASS (23 hasil termasuk dua induk). Pengujian baru membandingkan seluruh nama/frekuensi/jadwal dengan mock sumber, jumlah 5/2/5, 25 aksi nonaktif, navigasi lima halaman tanpa reload, menu aktif, refresh/trailing slash dan kesamaan daftar/jadwal publik. Regresi mencakup saldo/tabel, form profil, preview foto/cleanup URL dan login sebelumnya.
+- `npm run build`: PASS. Preview production: 15 skenario admin PASS (16 hasil termasuk induk), termasuk error API tanpa HTTP. Visual ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844: tanpa overflow horizontal halaman, teks/aksi bertabrakan, aset gagal atau exception runtime aplikasi.
+- Screenshot di `tmp/admin16-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport; belum perangkat fisik/Safari/Firefox. Data tetap contoh, CRUD menunggu desain form/dialog dan integrasi admin menunggu kesepakatan backend.
+
+Hanya sembilan file Admin 1.6 di-stage setelah pemeriksaan status, diff, daftar file dan staged diff. Aset referensi, log, screenshot, profil Chrome dan hasil build tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah daftar Agenda selesai.
+
+Usulan pesan commit: `feat: tambahkan halaman agenda admin dari data agenda publik`.
+
+## Admin 1.7 — Kontak & Pengaturan Website (10 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline commit `094caf2`. Awal kerja tanpa perubahan tracked/staged; `design-references/` tetap untracked. Raster final `16-admin-kontak-pengaturan.png` (1766×1056 px), AdminLayout, Profil Masjid Admin dan sumber konten publik diperiksa sebelum implementasi.
+
+- Route `/admin/kontak-pengaturan` memakai AdminLayout yang sama; menu Kontak & Pengaturan aktif dan Topbar berjudul lengkap. Heading oranye, tombol Simpan, kartu Informasi Kontak berikon Phone, empat field dan switch mengikuti referensi. CSS baru dibatasi `.admin-settings*`, tanpa perubahan CSS atau perilaku halaman lama.
+- Service minimal memisahkan state awal dari sumber publik: WhatsApp/email kosong, Maps kosong karena belum terverifikasi, alamat dari salinan mockPublicContent.address. Tidak menganggap contoh raster atau email akun Sidebar sebagai data resmi. Switch default aktif merupakan contoh UI lokal, bukan status keamanan/akses laporan nyata.
+- Semua field controlled dan opsional; WhatsApp divalidasi 8–15 digit, email dengan format ringan/karakter kontrol, URL HTTPS pada domain/path Google Maps yang didukung. Batas panjang input diterapkan. Error per field, aria-invalid/describedby dan fokus kesalahan pertama tersedia. Switch checkbox native ber-role switch mendukung mouse/Space dan target 44 px.
+- Simpan hanya memvalidasi dan menandai state sementara, dengan catatan/feedback eksplisit belum permanen. Edit/toggle membersihkan feedback; keluar/refresh mengembalikan data awal. Tidak ada HTTP simpan, localStorage/sessionStorage/cookie atau penguncian laporan baru. Mode API memberi error integrasi tanpa request/fallback mock, tombol Simpan nonaktif.
+- Alamat/kontak juga muncul di Profil Masjid Admin. State tetap terpisah, tanpa sinkronisasi palsu; integrasi berikutnya perlu sumber API tunggal, pemetaan telepon/WhatsApp/email/alamat/peta, verifikasi dan aturan publikasi. Semantik toggle visibilitas serta otorisasi laporan perlu disepakati backend. Tidak mengubah kontrak API sepihak.
+- Tidak mengubah frontend publik, Login, Dashboard, Kelola Dana, Kategori Dana, Profil Masjid, Agenda, backend, mock/service publik, autentikasi, dependency atau lockfile. Tidak membuat fitur QRIS/rekening/akun. README dan DESIGN_MAP diperbarui.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 64 frontend unit/SSR (4 baru), 18 backend; tiga suite browser opsional dilewati dalam perintah standar, admin/login dijalankan terpisah.
+- Chrome development: 17 skenario admin dan 6 Login PASS (25 hasil termasuk dua induk). Skenario baru mencakup route/menu, edit seluruh field, validasi/fokus, Enter, toggle mouse/Space, simpan simulasi, feedback dibersihkan, reset keluar/refresh/trailing slash, field opsional, profil tidak tersinkron, kontak publik tetap placeholder dan laporan publik masih terbuka setelah toggle dimatikan. Regresi admin lama termasuk tabel/saldo, profil/foto/cleanup URL dan agenda lulus.
+- `npm run build`: PASS. Preview production: 17 skenario admin PASS (18 hasil termasuk induk), termasuk error mode API tanpa HTTP. Visual desktop 1728×1080 / 1366×768, tablet 768×1024 dan mobile 390×844 ditinjau, tanpa overflow halaman, kontrol terpotong, aset gagal atau exception runtime aplikasi.
+- Screenshot di `tmp/admin17-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport, belum perangkat fisik/Safari/Firefox. API admin/penyimpanan permanen dan sumber pengaturan bersama belum tersedia; toggle hanya simulasi antarmuka.
+
+Hanya 10 file Admin 1.7 di-stage setelah review status, diff, daftar file dan staged diff. Referensi, log, screenshot, profil Chrome serta build tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah halaman ini selesai.
+
+Usulan pesan commit: `feat: tambahkan kontak dan pengaturan website admin dengan simpan simulasi`.
+
+## Admin 1.8 — Kelola Akun (10 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, HEAD awal `094caf2`. Saat mulai, sepuluh file Admin 1.7 masih staged dan belum di-commit; pekerjaan/staging tersebut dipertahankan. `design-references/` tetap untracked. AGENTS, AdminLayout/routing/pola sebelumnya serta referensi final `17-admin-kelola-akun.png` (1766×1056 px) diperiksa sebelum implementasi.
+
+- Route `/admin/kelola-akun` dan tautan Sidebar memakai AdminLayout yang sama. Label Super Admin Only dengan Shield, heading oranye, Tambah Akun Admin, panel pencarian dan empat kartu mengikuti referensi. Menggunakan admin-panel, font dan ikon yang sudah ada; CSS baru dibatasi `.admin-accounts*`.
+- Fixture terpisah berisi empat contoh nama/email/role/tanggal: Super Admin, Ahmad Fauzi, Siti Rahmawati aktif; Budi Santoso nonaktif. Tidak menambah password, token atau kredensial. Inisial diselaraskan dengan nama; tanggal memakai formatter Indonesia panjang. Placeholder pencarian diperjelas menjadi nama/email sesuai fungsi halaman.
+- Service menyediakan salinan fixture dan filter murni nama/email. Query controlled diterapkan lewat tombol atau Enter, tanpa membedakan kapital, dengan trim spasi luar. Query kosong menampilkan semua akun; tidak cocok menghasilkan empty state. Tidak mencari berdasarkan role atau memutasi sumber. Pencarian hilang saat keluar/refresh, tanpa URL/storage/cookie.
+- Semua 10 aksi pengelolaan nonaktif dengan label/title: Tambah serta Edit/Nonaktifkan pada akun aktif, Edit/Hapus/Aktifkan pada nonaktif. Tidak membuat form/modal CRUD, registrasi, reset password, aktivasi atau penghapusan sungguhan. Search adalah satu-satunya form interaktif.
+- Label Super Admin Only dan field role hanya data visual, bukan otorisasi atau sistem role. Backend nantinya wajib memverifikasi pengguna terautentikasi serta izin Super Admin pada akses daftar dan setiap operasi akun. Tidak membuat autentikasi, login sukses palsu, endpoint atau perubahan kontrak API. Mode API memberi error integrasi tanpa HTTP/fallback mock.
+- Responsive mengikuti menu lama, tombol tablet/mobile minimum 44 px, teks/email membungkus dan aksi berpindah baris pada smartphone. Tidak mengubah halaman admin sebelumnya, publik, backend, sumber data lama, dependency atau lockfile. README dan DESIGN_MAP diperbarui.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 68 frontend unit/SSR (4 baru), 18 backend; tiga suite browser opsional dilewati dalam perintah standar, admin/login dijalankan terpisah.
+- Chrome development: 19 skenario admin dan 6 Login PASS (27 hasil termasuk dua induk). Skenario baru menguji empat contoh/status/tanggal, 10 aksi nonaktif, pencarian tombol/Enter/nama/email/kapital/spasi/domain, empty state, pemulihan hasil tanpa mutasi, query tidak persisten, refresh/trailing slash dan navigasi enam halaman sebelumnya. Regresi halaman admin lama dan Login lulus.
+- `npm run build`: PASS. Preview production: 19 skenario admin PASS (20 hasil termasuk induk), termasuk mode API tanpa HTTP. Visual ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844, tanpa overflow horizontal halaman, benturan teks/aksi, aset gagal atau exception runtime aplikasi.
+- Screenshot di `tmp/admin18-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport; belum perangkat fisik/Safari/Firefox. Akun tetap contoh, CRUD/API/autentikasi/otorisasi menunggu backend dan desain berikutnya.
+
+Sebelas file memuat perubahan Admin 1.8: App, AdminLayout, halaman/CSS akun, mock, service, dua test serta README/DESIGN_MAP/PROGRESS. Setelah pemeriksaan diff/status/staged diff, hanya perubahan terkait ini ditambahkan ke staging. Total staged menjadi 15 file karena Admin 1.7 yang sudah staged dipertahankan; empat file khusus Admin 1.7 tidak diedit. Aset referensi, log, screenshot, profil Chrome dan build tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah Kelola Akun selesai.
+
+Usulan pesan commit untuk staging gabungan Admin 1.7–1.8: `feat: tambahkan pengaturan website dan kelola akun admin`.
+
+## Admin 1.9 — Kode Akses Laporan Publik (10 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline commit `72def82`. Awal kerja tanpa perubahan tracked/staged; `design-references/` tetap untracked. Raster final `18-admin-kode-akses-laporan.png` (1766×1056 px), AdminLayout/routing, service/modal gate publik, kontrak API dan keberadaan endpoint pemeriksaan backend diperiksa sebelum implementasi.
+
+- Route `/admin/kode-akses-laporan` memakai AdminLayout; menu/Topbar Kode Akses Laporan mengikuti route. Label Super Admin Only, heading oranye, dua kartu status/cara kerja, ikon dan styling mengikuti referensi dengan CSS khusus `.admin-report-access*`.
+- Fixture/service baru hanya memuat metadata contoh active/changedDate/changedTime/changedBy. Status Aktif dan riwayat bukan data backend sebenarnya. Halaman menggunakan delapan simbol placeholder tetap, tanpa nilai kode asli/hash atau impor sandi mock publik. Chip Simulasi menggantikan klaim Terenkripsi; catatan data contoh ditampilkan.
+- Ubah Kode Akses nonaktif dengan keterangan belum tersedia. Tidak ada form perubahan kode, kredensial, HTTP, storage/cookie atau operasi simpan. Mode API memberikan error integrasi metadata tanpa fallback. Autentikasi Super Admin belum dibuat; label hanya visual.
+- Cara Kerja mengikuti koreksi penting M1.8b: gate hanya melalui CTA Beranda/Footer; kode sesuai menutup gate dan mengarah ke /laporan-keuangan. Akses langsung/refresh tetap tanpa gate. Kode bukan autentikasi, otorisasi atau pengamanan data keuangan; tidak membuat JWT, session, route guard atau penguncian laporan sekarang maupun sebagai usulan integrasi.
+- Endpoint publik POST /api/public/report/check-password sudah tersedia, frontend checker masih mock/belum dihubungkan. Integrasi mendatang harus menyatukan perubahan kode oleh Super Admin dengan sumber kode/verifikasi backend yang sama, menyepakati penyimpanan/metadata dan otorisasi pengelola secara terpisah. Respons status tidak mengirim kode/hash; perubahan kode hanya untuk kode yang diperiksa gate. Tidak mengarang endpoint admin baru.
+- Tidak mengubah backend, API_CONTRACT, alur/service/mock gate publik, sandi publik, halaman laporan, halaman admin lama, dependency atau lockfile. README dan DESIGN_MAP diperbarui.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 71 frontend unit/SSR (3 baru) dan 18 backend; tiga suite browser opsional dilewati dalam perintah standar, lalu dijalankan terpisah.
+- Chrome development: 21 skenario admin, 6 Login dan 35 publik PASS (62 skenario; 65 hasil termasuk tiga induk). Pemeriksaan baru mencakup menu/judul, kedua kartu/metadata/placeholder, chip Simulasi, tombol nonaktif, tanpa form/input kode, penjelasan M1.8b, empat viewport, refresh/trailing slash, navigasi tujuh halaman sebelumnya dan error API tanpa HTTP. Suite publik memverifikasi CTA gate, akses langsung/refresh, tanpa persistensi sandi/otorisasi, serta ekspor PDF/PNG/ZIP dan regresi publik lainnya.
+- Setelah teks Cara Kerja diringkas agar mudah dibaca, lint/test/build dan 21 skenario admin diulang dan lulus. `npm run build`: PASS; preview production lulus 21 skenario admin (22 hasil termasuk induk). Visual ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844, tanpa overflow halaman, elemen terpotong, aset gagal atau exception runtime aplikasi.
+- Screenshot di `tmp/admin19-qa/`, tidak di-stage. QA terbatas Chrome/emulasi viewport; belum perangkat fisik/Safari/Firefox. Halaman tetap mock; metadata/perubahan kode dan autentikasi pengelola menunggu kesepakatan/integrasi backend.
+
+Sebelas file terkait Admin 1.9 di-stage setelah review status, diff, daftar file dan staged diff. Aset referensi, log, screenshot, profil Chrome dan build tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah halaman ini selesai.
+
+Usulan pesan commit: `feat: tambahkan halaman kode akses laporan dengan status simulasi`.
+
+## Admin 1.10 — Activity Log (10 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline commit `a1e4ed8`. Awal kerja tanpa perubahan tracked/staged; `design-references/` tetap untracked. AGENTS, AdminLayout, routing, pola halaman/service/test admin dan raster final `19-admin-activity-log.png` (1766×3540 px) diperiksa sebelum implementasi.
+
+- Route `/admin/activity-log` dan menu Sidebar memakai AdminLayout yang sama. Topbar/menu aktif mengikuti route. Hero hijau/foto, badge append-only, empat filter dan pencarian, banner informasi serta timeline mengikuti referensi. CSS dibatasi `.admin-activity*`; tidak mengubah markup/CSS halaman lama.
+- Fixture lokal mandiri berisi sembilan contoh dalam tujuh tanggal: tambah/edit/hapus transaksi, pembuatan/penonaktifan akun, perubahan kode gate, cetak kwitansi dan agenda. Rincian read-only tanpa kode/password asli, token atau rahasia. Perbedaan contoh dengan raster dicatat di DESIGN_MAP; tidak mengubah sumber data halaman lain.
+- Service memberi salinan fixture, filter murni gabungan AND dan pengelompokan tanggal terbaru dahulu tanpa mutasi. Admin/jenis/tanggal/modul serta pencarian nama/judul langsung bekerja; query mengabaikan kapital dan spasi luar. Tersedia loading/error/kosong, abort saat unmount dan pengumuman jumlah hasil. Filter hilang saat keluar/refresh, tanpa persistensi URL/storage/cookie.
+- Tidak membuat pencatat audit di frontend atau aksi ubah/hapus log. Banner menyebut konsep yang belum ditegakkan; integritas, kelengkapan, keamanan pencatatan, pembatasan akses dan penyaringan data sensitif menjadi kebutuhan backend. Perubahan kode contoh tetap hanya untuk gate UI sesuai M1.8b. Mode API memberi error belum tersedia tanpa HTTP/fallback mock; tidak mengarang endpoint.
+- Filter empat kolom menjadi dua pada tablet dan satu pada smartphone. Header/badge membungkus, detail label/nilai menumpuk di mobile, marker dan garis timeline tetap terbaca. Lebar label detail desktop diperbaiki dan kontras badge ditingkatkan dari tinjauan visual.
+- Tidak mengubah backend, API_CONTRACT, frontend publik, halaman admin sebelumnya, autentikasi, sumber mock lama, dependency atau lockfile. Penyesuaian bersama hanya registrasi route, tautan Sidebar dan perluasan test. README dan DESIGN_MAP diperbarui.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 76 frontend unit/SSR (5 baru) dan 18 backend; tiga suite browser opsional dilewati pada perintah standar dan admin/login dijalankan terpisah.
+- Chrome development: 23 skenario admin dan 6 Login PASS (31 hasil termasuk dua induk). Activity Log diuji untuk jumlah/sumber contoh, tujuh grup tanggal, posisi setiap tanggal, empat filter terpisah/gabungan, pencarian kapital/spasi/nama/judul, empty state, pemulihan hasil tanpa mutasi, tanpa aksi log/persistensi, refresh/trailing slash dan navigasi delapan halaman sebelumnya. Regresi admin/Login lama lulus.
+- Pengujian browser awal bersamaan dengan test SSR mengalami kegagalan pemuatan dua dependency Vite dan timeout Dashboard. Setelah lint/unit/build selesai, browser diulang secara berurutan dan seluruhnya lulus tanpa menyembunyikan kegagalan. Tidak ditemukan error runtime aplikasi pada pengulangan.
+- `npm run build`: PASS. Preview production: 23 skenario admin PASS (24 hasil termasuk induk), termasuk error mode API tanpa HTTP. Visual ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844, tanpa overflow horizontal halaman atau rincian kartu bertabrakan. QA terbatas Chrome/emulasi viewport; belum perangkat fisik/Safari/Firefox.
+- Screenshot development/production di `tmp/admin110-qa/`, tidak di-stage. Activity Log tetap data contoh; API, autentikasi/pembatasan akses dan penegakan audit backend belum diintegrasikan.
+
+Sebelas file terkait Admin 1.10 di-stage setelah pemeriksaan status, diff, daftar file dan staged diff. Referensi, screenshot, log, profil Chrome serta hasil build tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah Activity Log selesai.
+
+Usulan pesan commit: `feat: tambahkan activity log admin dengan filter lokal`.
+
+## Admin 1.11 — Kwitansi, Buat Kwitansi dan Notifikasi Unduhan (10 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline `3a1081d`. Awal kerja tanpa perubahan tracked/staged; Admin 1.10 sudah di-commit pengguna dan `design-references/` tetap untracked. AGENTS, AdminLayout/routing, foto/font, pola modal, SOP dan mekanisme ekspor publik diperiksa. Referensi halaman `20-admin-kwitansi.png` (1766×1057 px) dan modal `21-admin-buat-kwitansi.png` (524×641 px) dibaca. File toast `22-admin-notifikasi-unduh-kwitansi.png` belum ditemukan; memakai spesifikasi tertulis pengguna, keterbatasan visual dicatat di DESIGN_MAP.
+
+- Route `/admin/kwitansi`, menu Sidebar aktif dan Topbar memakai AdminLayout yang sama. Heading oranye, Buat Kwitansi, dokumen putih dengan header foto hijau, detail berbaris, terbilang, tanggal, label generated dan Unduh PNG mengikuti referensi. CSS baru dibatasi `.admin-receipt*`; tidak mengubah desain halaman lama.
+- Native dialog berisi lima field controlled/wajib. Nama pemberi maksimal 100 karakter, tujuan 500 karakter, karakter kontrol ditolak dan teks dirender aman oleh React. Nominal digit rupiah bulat positif maksimal 999.999.999.999; metode Tunai/Transfer Bank/QRIS; tanggal dd/mm/yyyy memvalidasi kalender/kabisat. Terbilang Indonesia mendukung satuan sampai miliar, termasuk seratus/seribu dan nominal maksimum.
+- Error per field/aria-invalid/describedby, fokus error pertama, loop Tab/Shift+Tab, Enter, Escape, Batal/X, kunci scroll latar dan pengembalian fokus tersedia. Fokus Tab dirapikan setelah QA awal. Dialog mengikuti visual viewport serta dapat digulir saat ruang menyusut. Batal mempertahankan pratinjau lama; Simpan hanya memperbarui state lokal.
+- Label **Draft / Belum tersimpan ke server** ada dalam pratinjau dan PNG. Nomor **Belum diterbitkan** menggantikan contoh 0, tanpa nomor database/nomor urut palsu. Keluar/refresh mereset draft. Tidak mengubah saldo/transaksi, membuat riwayat kwitansi/log baru, API, database, autentikasi atau persistensi browser.
+- Service PNG baru memakai `html-to-image` yang sudah ada, menunggu foto/font, menyematkan font dan merender komponen dokumen yang sama pada salinan 1120 px/resolusi 2×/tinggi otomatis. PNG tidak menyertakan layout admin, modal atau toast. Download memakai `downloadReportFile` lama beserta cleanup object URL; mekanisme publik tidak diubah. Loading/guard submit ganda, validasi kesiapan/resolusi dan abort saat keluar halaman tersedia; canvas dilepas setelah proses.
+- Toast hijau berikon Download, teks **Kwitansi berhasil diunduh**, radius/shadow, kanan bawah serta role status/aria-live. Muncul setelah PNG dibuat dan anchor unduhan berhasil dipicu, bukan saat klik awal; browser tidak menjamin keputusan akhir pengguna menyimpan ke disk. Gagal render/pemicu unduhan memberi toast merah. Keduanya auto-dismiss sekitar tiga detik dengan cleanup timer. Mobile diberi ruang bawah, tombol dibawa ke tengah viewport dan toast tidak menangkap klik.
+- Backend, API_CONTRACT, frontend publik, halaman admin sebelumnya, sumber mock, dependency dan lockfile tetap. Perubahan bersama hanya registrasi route/tautan Sidebar dan satu ekspektasi navigasi test lama. README dan DESIGN_MAP diperbarui.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 80 frontend unit/SSR (4 baru) dan 18 backend; empat suite browser opsional dilewati pada perintah standar lalu dijalankan terpisah. `npm run build`: PASS.
+- Chrome development: 23 skenario admin, 6 Login, 4 Kwitansi dan 35 publik PASS (68 skenario; 72 hasil termasuk empat induk). Pengujian Kwitansi mencakup empat viewport, kelima field, validasi/kalender/terbilang, keyboard, Batal/X/Escape, preview lokal, reset/trailing slash, navigasi dan jumlah Activity Log tetap sembilan. Regresi publik mencakup UI gate CTA/akses langsung serta ekspor PDF/PNG/ZIP nyata.
+- PNG diunduh Chrome ke disk, signature/dimensi diverifikasi dan berhasil didekode/dibuka. Empat viewport menghasilkan lebar 2240 px; contoh biasa 2240×1034 px, teks panjang/nominal maksimum 2240×1248 px, dengan seluruh isi terbaca. Pembuatan PNG sengaja ditahan untuk memastikan belum ada toast/download sebelum selesai; kegagalan canvas dan anchor disimulasikan untuk menguji error tanpa sukses/file tambahan. Durasi toast dan posisi terhadap tombol diperiksa.
+- Visual ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844, tanpa overflow halaman atau isi kartu/modal terpotong. Screenshot dan PNG di `tmp/admin111-qa/` tidak di-stage. QA terbatas Chrome/emulasi, belum perangkat fisik/Safari/Firefox. Data tetap draft lokal; penerbitan/nomor resmi, penyimpanan dan otorisasi menunggu backend.
+- Preview production: 23 skenario admin dan 4 Kwitansi PASS (29 hasil termasuk dua induk), termasuk unduhan PNG nyata, toast sukses/error/auto-dismiss dan regresi admin. Tidak ditemukan exception runtime aplikasi atau aset gagal pada pengujian akhir.
+
+Tiga belas file terkait Admin 1.11 di-stage setelah review status, diff, daftar file dan staged diff: README, DESIGN_MAP, PROGRESS, App, AdminLayout, AdminReceiptForm, AdminReceiptPage beserta CSS, adminReceiptExportService, util adminReceipt, test unit/browser kwitansi dan satu ekspektasi navigasi pada test dashboard. Referensi, screenshot, PNG unduhan, log, profil Chrome dan build tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah Kwitansi dan toast selesai.
+
+Usulan pesan commit: `feat: tambahkan kwitansi draft dengan ekspor PNG dan notifikasi`.
+
+### Refinement — ukuran tombol dan kalender native (10 November 2026)
+
+- Staging Admin 1.11 sebelumnya dipertahankan; belum ada commit baru. Buat Kwitansi disamakan dengan Tambah Kategori/Agenda: tinggi minimum 40 px desktop/44 px tablet-mobile, font 14 px, padding 10×18 px, gap 8 px dan radius 16 px. Warna/ikon/fungsi tetap; ukuran Unduh PNG tidak berubah.
+- Input tanggal manual diganti `type="date"` tanpa min/max. Draft baru memakai tanggal hari ini melalui getter kalender lokal perangkat, bukan tanggal UTC. Modal yang dibuka ulang memakai tanggal draft tersimpan; perubahan yang dibatalkan tidak menimpanya. Nilai kalender dikonversi ke format draft dd/mm/yyyy yang sudah digunakan preview, validator dan PNG.
+- Tidak mengubah nominal/terbilang, markup pratinjau, service ekspor PNG, toast atau halaman lain. README dan DESIGN_MAP disesuaikan dengan perilaku terbaru.
+- `npm run lint` PASS tanpa peringatan; `npm test` PASS: 82 frontend unit/SSR dan 18 backend, empat suite browser opsional dijalankan terpisah sesuai kebutuhan. `npm run build` PASS. Dua test unit tambahan memeriksa konversi kalender dan tanggal lokal di Los Angeles/Jakarta pada sisi berbeda pergantian tanggal UTC.
+- Chrome development: 23 skenario admin, 6 Login dan 5 Kwitansi PASS (34 skenario/37 hasil termasuk induk). Preview production: 5 skenario Kwitansi PASS (6 hasil termasuk induk). Empat viewport 1728×1080, 1366×768, 768×1024 dan 390×844 tanpa overflow; ukuran tombol dibandingkan langsung dengan Tambah Kategori, ukuran Unduh PNG tetap, tanggal kosong/tidak valid ditolak, tanggal lampau/kabisat dapat disimpan dan tanggal tersimpan tetap saat Batal/Escape/X serta buka ulang. Default lokal diuji dengan waktu 10 November 2026 01:00 UTC di Los Angeles, menghasilkan 9 November. Ekspor PNG nyata serta toast sukses/error/auto-dismiss tetap lulus.
+- Log pemeriksaan di `tmp/admin111-refinement-qa/`; screenshot/PNG diperbarui di `tmp/admin111-qa/development/` dan `production/`. Artefak tidak di-stage. QA terbatas Chrome/emulasi; tampilan kalender mengikuti locale/browser perangkat, preview/PNG tetap dd/mm/yyyy.
+
+Delapan file refinement diperbarui dalam staging: AdminReceiptForm, CSS AdminReceiptPage, util adminReceipt, kedua test Kwitansi, README, DESIGN_MAP dan PROGRESS. Total staging Admin 1.11 tetap 13 file; lima file lainnya dipertahankan. Status/diff/daftar file/staged diff diperiksa. Tidak melakukan commit, push atau merge. Usulan pesan commit gabungan tetap seperti Admin 1.11 di atas.
+
+## Admin 1.12 — Laporan Keuangan (10 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline commit `d4f9341`. Awal kerja tanpa perubahan tracked/staged; Admin 1.11 telah di-commit pengguna. `design-references/` tetap untracked. AGENTS, AdminLayout, Dashboard, Kategori Dana, Kelola Dana, mock/service admin, komponen laporan publik serta mekanisme ekspor PNG diperiksa. Referensi 23/24/25 dibaca; dimensi dan keputusan visual dicatat di DESIGN_MAP.
+
+- Route `/admin/laporan` dan Sidebar Laporan memakai AdminLayout; Topbar Laporan Keuangan. Hero foto hijau, saldo utama, tiga kartu kategori, Detail Oktober 2026, dua panel rincian, resume, banner unduh, navigasi kategori dan tabel detail mengikuti referensi. CSS tambahan dibatasi `.admin-report*` dan menggunakan aset/font/Lucide yang sudah ada.
+- Hanya tiga tab: Kas Masjid, Kotak Jum'at Berkah dan Kotak Pembangunan & Pemeliharaan. Lebar sama/gap konsisten desktop, menumpuk di smartphone; klik/panah kiri-kanan/Home/End memperbarui warna aktif, saldo dan daftar kategori. Pintasan kartu kategori menuju detail. Tidak membuat tab/halaman Laporan Bulanan atau rekap tahunan yang datanya belum tersedia.
+- Data memakai konteks `getAdminDashboard` tanpa fixture atau HTTP baru. Model/filter/preset/validasi/subtotal dipisahkan di adminFinanceReportService. Seluruh nilai kategori dan total tetap: saldo awal Rp16.864.200 + pemasukan Rp1.791.500 − pengeluaran Rp1.427.500 = saldo akhir Rp17.228.200. Komponen AdminBalanceSummary mendapat prop judul/ID opsional dengan default lama; tabel resume identik Dashboard dan ID pada lembar ekspor tidak ganda.
+- Sumber hanya lima transaksi cuplikan: pemasukan 2/Rp520.000, pengeluaran 3/Rp328.500; kategori Kas Masjid 4 cuplikan, Jum'at Berkah 0, Pembangunan 1. Subtotal panel/tabel berasal dari item yang tampil, sedangkan saldo snapshot 20 Oktober tetap. Tidak mengarang 123/251 transaksi atau menukar pemetaan kategori/nilai agar menyerupai raster. Keterangan cuplikan dan keterbatasan agregat ditampilkan dalam UI.
+- Terapkan memfilter rentang cuplikan 1–20 Oktober; tanggal kosong/invalid/terbalik/di luar snapshot ditolak tanpa mengubah hasil sebelumnya. Preset minggu terakhir memakai 14–20 Oktober, bulan berjalan mengembalikan rentang snapshot, tiga bulan nonaktif. Pencarian uraian lokal mengabaikan kapital/spasi luar, pergantian tab membersihkannya. Tersedia empty state dan jumlah hasil. Filter tidak menghitung ulang saldo bulanan dari mutasi yang belum lengkap, tanpa storage/URL persistence.
+- Tambah transaksi pada hero, Edit/Hapus pada panel/tabel nonaktif dengan title/label; tidak membuat CRUD/modal atau menulis data/log. Mode API mengikuti error adapter Dashboard yang belum diintegrasikan tanpa fallback mock maupun endpoint karangan.
+- Unduh PNG memakai html-to-image yang sudah tersedia dan downloadReportFile publik tanpa mengubah mekanisme lama. Lembar terpisah 1120 px/resolusi 2× menyertakan semua kategori, total, tanggal snapshot, label data contoh dan penjelasan bukan riwayat mutasi lengkap; tab/filter tidak mengubah ringkasan. Loading/guard unduhan ganda, abort saat keluar, cleanup canvas/object URL serta toast sukses/error tiga detik tersedia. Sukses hanya setelah PNG dan pemicu unduhan berhasil; bukan jaminan keputusan akhir pengguna menyimpan ke disk. PDF tidak dibuat.
+- Tablet/mobile menumpuk panel dan menyesuaikan kartu/tab; input 16 px, aksi 44 px, tabel scroll lokal. QA awal menemukan caption aksesibilitas tabel menambah lebar root; titik acuannya diperbaiki di kontainer scroll, tanpa menyembunyikan overflow halaman. Tidak mengubah frontend publik, mock/saldo Dashboard, backend, API_CONTRACT, autentikasi, dependency atau lockfile. README/DESIGN_MAP diperbarui.
+
+### Verifikasi
+
+- `npm run lint`: PASS tanpa peringatan. `npm test`: PASS — 88 frontend unit/SSR (6 baru) dan 18 backend; lima suite browser opsional dilewati dalam perintah standar, yang relevan dijalankan terpisah. `npm run build`: PASS.
+- Chrome development: 23 skenario admin lama, 4 Laporan, 6 Login dan 5 Kwitansi PASS (38 skenario/42 hasil termasuk empat induk). Pengujian baru mencakup empat viewport, kesamaan saldo/resume/sumber lima item, tiga tab/warna/keyboard, kategori kosong, pencarian, rentang/preset/validasi, saldo tetap saat filter, scroll tabel lokal, navigasi sepuluh halaman admin, reset/trailing slash dan error API tanpa HTTP.
+- PNG ringkasan benar-benar diunduh Chrome, signature/dimensi diverifikasi, didekode dan dibuka. Semua kategori/total tetap ada meski tab aktif tanpa transaksi/pencarian kosong. PNG dibuat pada resolusi 2×/lebar 2240 px, font terbaca dan seluruh tabel tercakup. Proses render ditahan untuk memastikan belum ada sukses/unduhan sebelum selesai; kegagalan canvas dan anchor menguji error tanpa berkas/sukses tambahan serta auto-dismiss.
+- Preview production: 23 skenario admin lama dan 4 Laporan PASS (27 skenario/29 hasil termasuk dua induk). Visual ditinjau pada 1728×1080, 1366×768, 768×1024 dan 390×844, tanpa overflow halaman atau exception runtime aplikasi pada pengujian akhir.
+- Bukti screenshot/PNG/log di `tmp/admin112-qa/`, tidak di-stage. QA terbatas Chrome/emulasi; belum perangkat fisik/Safari/Firefox. Backend berikutnya perlu data/agregat periode lengkap, cakupan tanggal, pagination/filter transaksi dan otorisasi yang disepakati. Riwayat tiga bulan/tahunan, mutasi lengkap dan PDF belum tersedia.
+- Setelah subtotal panel memakai helper service yang sama dengan detail kategori, lint/unit/build serta empat skenario Laporan di development dan production diulang dan PASS. PNG desktop/mobile sama-sama 2240×1326 px.
+
+Tiga belas file terkait Admin 1.12 di-stage setelah pemeriksaan status, daftar file, diff dan staged diff: App, AdminLayout, AdminBalanceSummary, halaman/CSS AdminFinanceReportPage, adminFinanceReportService, adminFinanceExportService, test unit/browser laporan, penyesuaian test browser dashboard, README, DESIGN_MAP dan PROGRESS. Referensi, screenshot, log, unduhan PNG, profil Chrome serta build tidak disertakan. Tidak melakukan commit, push atau merge; berhenti setelah Admin 1.12 selesai.
+
+Usulan pesan commit: `feat: tambahkan laporan keuangan admin dengan filter kategori dan ekspor PNG`.
+
+### Refinement visual dan kelengkapan mock (11 November 2026)
+
+Status: selesai pada `feature/frontend-admin`; HEAD tetap `d4f9341` dan 13 file Admin 1.12 sebelumnya masih staged/belum di-commit. Tampilan aktual Laporan, Kelola Dana dan Dashboard dipotret sebelum perubahan. Ketiga raster dibaca dalam potongan pada resolusi lebih tinggi untuk meninjau ikon, daftar panjang serta rincian tahunan; tidak mengarang URL/frame Figma.
+
+- Gradient asli Kelola Dana dipindahkan ke token `--admin-finance-hero-overlay` di AdminLayout dan dipakai kedua hero. Tinggi, padding, posisi teks serta posisi foto masing-masing tetap. Filter memakai alignment bawah; Terapkan desktop menjadi 36 px/padding 6×14/font 13, tablet/mobile tetap minimum 44 px. Label tetap di atas input dan form mobile dapat bertumpuk.
+- Ikon sesuai bentuk raster: hero CircleArrowDown/Up 16 px, panel Pemasukan ArrowUpRight dan Pengeluaran ArrowDownRight 24 px, serta tab ArrowUpRight/ArrowDownRight/FileText 16 px. FileText mengambil bentuk ikon kontrol Rekap pada raster; tab Rekap/Laporan Bulanan tidak dikembalikan. Ketiga label kategori dan warna aktif tetap, ikon halaman lain tidak berubah.
+- Fixture baru `mocks/adminFinanceReport.js` hanya untuk Laporan Admin. Semua baris bertanda `mock: true`, dengan asal 163 `reference` dari bagian raster terbaca, 81 `simulation` untuk tambahan/penyesuaian/teks atau nominal yang belum pasti, serta 5 `dashboard` dari salinan cuplikan lama. Tidak mengklaim seluruh data identik atau resmi. Tidak mengimpor mock publik April; riwayat April admin merupakan fixture tersendiri dari referensi admin.
+
+| Kategori | Sebelum (cuplikan) | Sesudah: Oktober | Sesudah: riwayat Jan–Okt |
+| --- | ---: | ---: | ---: |
+| Kas Masjid | 4 | 10 | 172 |
+| Kotak Jum'at Berkah | 0 | 1 | 38 |
+| Kotak Pembangunan & Pemeliharaan | 1 | 2 | 39 |
+| **Total** | **5** | **13** | **249** |
+
+- Oktober sekarang 6 pemasukan dan 7 pengeluaran, total tepat sama dengan agregat Dashboard. Perbedaan dengan 5 pemasukan raster disengaja: pemasukan Jumat menjadi Rp403.000, cuplikan Pembangunan Rp403.000 dipertahankan dan dilengkapi Rp303.000. Dua nilai baru biru/oranye ditandai simulasi; pengeluaran Oktober keduanya tetap nol. Variasi pemasukan/pengeluaran seluruh kategori tersedia pada riwayat sebelumnya. Transaksi berulang mingguan memiliki tanggal/nominal bervariasi dan tidak ada tuple identik.
+- Susunan mengikuti referensi: panel awal di atas menampilkan Oktober, tabel kategori awal di bawah menampilkan 1 Januari–20 Oktober. Terapkan/preset membatasi kedua bagian ke rentang yang dipilih; validasi serta predikat filter tetap, cakupan kini mengikuti riwayat mock. Judul detail menyesuaikan bila rentang historis dipilih. Pencarian, tiga tab, keyboard, empty state serta aksi mutasi nonaktif tetap. Saldo snapshot/resume dan ekspor tidak dihitung ulang dari filter.
+
+| Kategori | Saldo awal Oktober | Pemasukan | Pengeluaran | Saldo akhir |
+| --- | ---: | ---: | ---: | ---: |
+| Kas Masjid | 13.463.200 | 682.500 | 1.427.500 | 12.718.200 |
+| Kotak Jum'at Berkah | 3.251.000 | 403.000 | 0 | 3.654.000 |
+| Kotak Pembangunan & Pemeliharaan | 150.000 | 706.000 | 0 | 856.000 |
+| **Total (Rp)** | **16.864.200** | **1.791.500** | **1.427.500** | **17.228.200** |
+
+- Saldo awal Januari simulasi diturunkan dari baseline Oktober dan mutasi sebelumnya: Kas Masjid Rp1.497.500, Jumat Rp2.088.000, Pembangunan Rp3.484.000. Total riwayat: Rp7.069.500 + Rp74.941.200 − Rp64.782.500 = Rp17.228.200. Rekonsiliasi setiap kategori/bulan dan saldo berjalan nonnegatif diuji. Angka historis ini bukan salinan seluruh rekap tahunan Figma, yang juga mempunyai perbedaan pemetaan kategori; jumlah baris bukan tiruan persis 123/251 pada raster.
+- Tidak mengubah mock/saldo Dashboard, konten/JS Kelola Dana, backend, API_CONTRACT, frontend publik, autentikasi, dependency atau fitur ekspor. Perubahan shared hanya ekstraksi nilai gradient tanpa perubahan visual Kelola Dana. Seluruh operasi CRUD tetap nonaktif.
+
+Verifikasi: lint tanpa peringatan; `npm test` PASS 89 frontend unit/SSR (1 test rekonsiliasi baru) dan 18 backend, lima suite browser opsional dilewati pada perintah standar. Build PASS. Development lulus 23 skenario admin lama + 4 Laporan + 6 Login + 5 Kwitansi (38 skenario/42 hasil termasuk induk); production lulus 23 admin lama + 4 Laporan (27 skenario/29 hasil). Pengujian rentang Januari kemudian ikut pengulangan empat skenario Laporan development/production. Cakupan meliputi empat viewport, semua ID/jumlah baris, dua jenis transaksi tiap kategori, query/rentang/preset, empty state, kesamaan saldo, ukuran/alignment kontrol, ikon/gradient, scroll lokal, navigasi dan error API tanpa HTTP/fallback.
+
+Screenshot Dashboard dan Kelola Dana sebelum/sesudah pada 1728×1080 identik (0 piksel berubah). Ekspor PNG desktop/mobile identik secara SHA-256 terhadap artefak sebelum refinement, tetap 2240×1326, termasuk sukses/error/auto-dismiss. Service serta blok dokumen ekspor tidak diubah. Panjang halaman default Kas Masjid sekitar 13321 px desktop dan 18687 px mobile; seluruh 172 baris tercakup tanpa overflow halaman atau masalah interaksi. Bukti di `tmp/admin112-refinement-qa/`, tidak di-stage. QA terbatas Chrome/emulasi, belum perangkat fisik/Safari/Firefox.
+
+Sebelas file refinement diperbarui/ditambahkan setelah review diff dan validasi: AdminLayout.css, AdminFundsPage.css, halaman/CSS Laporan, fixture, service laporan, dua test serta README/DESIGN_MAP/PROGRESS. Lima file staging lama lainnya dipertahankan; total staging Admin 1.12 menjadi 16 file. Referensi, log, screenshot, hasil unduhan, profil Chrome dan build tidak disertakan. Tidak melakukan commit, push atau merge.
+
+Usulan pesan commit gabungan: `feat: tambahkan laporan admin dengan mock lengkap, filter kategori dan ekspor PNG`.
+
+
+## Admin 1.12 — Koreksi navigasi laporan dan alignment filter (11 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline commit pengguna `7ac0ec7`. Awal kerja tanpa perubahan tracked/staged; `design-references/` tetap untracked. Refinement ini disiapkan sebagai commit terpisah. Tiga referensi dibaca ulang pada potongan resolusi tinggi: ketiganya adalah state satu halaman, bukan tab kategori.
+
+- Tab kategori diganti **Kas Masuk** (ArrowUpRight/hijau), **Kas Keluar** (ArrowDownRight/rose #ca003a), **Rekap Bulanan** (FileText/hijau). Desktop tetap tiga kolom proporsional; keyboard panah/Home/End mengikuti tab baru. Tidak membuat tab keempat Laporan Bulanan. Warna kategori Jum'at Berkah dikembalikan ke biru khusus halaman Laporan; warna kategori global/halaman lain tidak diubah.
+- Kas Masuk memuat 141 transaksi/Rp74.941.200, Kas Keluar 108/Rp64.782.500 dari seluruh kategori. Kartu total/jumlah, pencarian uraian, tabel panjang, badge identitas kategori dan subtotal mengikuti masing-masing jenis laporan. Aksi edit/hapus tetap nonaktif. Dataset 249 baris, nominal dan snapshot tidak berubah.
+- Rekap Bulanan memakai tabel berkelompok: bulan mencakup tiga kategori dan satu TOTAL. Service menghitung saldo awal dari saldo historis serta mutasi sebelum periode, lalu pemasukan/pengeluaran/saldo akhir berdasarkan transaksi periode. Sepuluh bulan Januari–Oktober tercakup, tanpa angka hardcode rekap atau data November/Desember palsu. Filter parsial membawa saldo sebelum hari pertama terpilih; rentang tanpa transaksi menunjukkan mutasi nol dengan saldo tetap. Kartu kategori atas menjadi pintasan ke rekap, dengan komposisi/angka kartu tetap.
+- Rekonsiliasi historis tetap Rp7.069.500 + Rp74.941.200 − Rp64.782.500 = **Rp17.228.200**. Oktober tetap Rp16.864.200 + Rp1.791.500 − Rp1.427.500 = **Rp17.228.200**; saldo akhir kategori Rp12.718.200/Rp3.654.000/Rp856.000. Data masih simulasi dan tidak diklaim identik seluruh angka/123 pemasukan/251 pengeluaran pada raster.
+- Filter tanggal memakai padding vertikal 8 px dan alignment tengah; teks rentang, kelompok tanggal, Terapkan dan jumlah hasil satu garis tengah desktop. Label tanggal terpusat di atas date picker/gap 2 px. Tinggi kartu sekitar 70 px; Terapkan tetap 36 px desktop/44 px tablet-mobile. Tanggal awal, validasi dan alur Terapkan/preset tetap.
+- Markup hero, panel saldo utama, banner unduh dan dokumen ekspor diverifikasi identik dengan HEAD. Algoritma ekspor, backend, API_CONTRACT, mock Dashboard/fixture laporan, Dashboard, Kelola Dana dan frontend publik tidak diubah. Pemulihan identitas biru juga berlaku pada titik kategori di resume/PNG; nominal, ukuran dan perilaku ekspor tetap. Tidak menambah dependency atau fitur lain. README dan DESIGN_MAP dikoreksi agar tidak mempertahankan interpretasi navigasi sebelumnya.
+
+Verifikasi:
+
+- Lint PASS tanpa peringatan, `npm test` PASS: **91 frontend unit/SSR dan 18 backend**; lima suite browser opsional dijalankan terpisah sesuai kebutuhan. Dua test baru memeriksa pemisahan 141+108 transaksi tanpa kehilangan/duplikasi dan rekonsiliasi bulanan/kategori termasuk rentang parsial/kosong. Test unit laporan akhir 9/9 PASS. Build PASS.
+- Chrome development: 23 skenario admin lama + 4 Laporan + 6 Login + 5 Kwitansi PASS (**38 skenario/42 hasil termasuk induk**). Preview production: 23 admin lama + 4 Laporan PASS (**27 skenario/29 hasil**). Cakupan: empat viewport, tepat tiga tab/label/ikon/warna/keyboard, seluruh ID/jenis/kategori, pencarian/empty state, filter/preset/validasi, rekap dan carry saldo, snapshot tetap, scroll lokal, navigasi lama serta mode API tanpa endpoint/fallback karangan.
+- Screenshot ketiga tab di **1728×1080** dibandingkan dengan referensi 23/24/25: tabel lintas kategori untuk Kas Masuk/Keluar dan tabel bulan/kategori untuk Rekap. Adaptasi **1366×768, 768×1024, 390×844** ditinjau tanpa overflow halaman. Perbedaan data mengikuti dataset yang dipertahankan, bukan angka tahunan raster. QA terbatas Chrome/emulasi, belum perangkat fisik/Safari/Firefox.
+- PNG desktop/mobile benar-benar diunduh, didekode/dibuka dan tetap **2240×1326 px**, seluruh kategori/total tercakup. Toast sukses hanya setelah PNG/pemicu unduhan selesai; kegagalan render/pemicu dan auto-dismiss sekitar tiga detik PASS. Service ekspor dan handler toast tetap.
+- Bukti di `tmp/admin112-navigation-qa/`: `development/laporan-1728-income.png`, `laporan-1728-expense.png`, `laporan-1728-monthly.png`, varian full/viewport lain, screenshot filter, PNG dan log development/production. Semua artefak/referensi/build dikecualikan dari staging.
+
+Delapan file terkait refinement diperiksa dan di-stage: README, DESIGN_MAP, PROGRESS, AdminFinanceReportPage.jsx/CSS, adminFinanceReportService.js serta test unit/browser laporan. Tidak melakukan commit, push atau merge; HEAD tetap baseline pengguna.
+
+Usulan pesan commit: `fix: koreksi navigasi laporan dan alignment filter tanggal`.
+
+
+## Admin 1.13 — Patch Tambah, Edit dan Hapus Kategori Dana (11 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline commit pengguna `3d52acd`. Awal kerja tanpa perubahan tracked/staged; `design-references/` tetap untracked. Halaman Kategori, AdminLayout, mock Dashboard, fixture 249 transaksi dan pemakaian warna Dashboard/Laporan diperiksa. AGENTS dan SOP dibaca. Referensi `26-admin-hapus-kategori.png` (524×311) serta `27-admin-tambah-edit-kategori.png` (768×433) dibaca; nilai sembilan swatch diambil langsung dari raster.
+
+- Satu `AdminCategoryDialog` menangani Tambah/Edit dan konfirmasi Hapus. Form controlled memuat Nama Kategori dan sembilan radio warna, centang/outline terpilih, Batal/Simpan/X, validasi per field, fokus error pertama, Enter, Escape, trap Tab/Shift+Tab dan fokus kembali. Hapus memfokuskan Batalkan; setelah kategori baru dihapus fokus kembali ke Tambah. Dialog native mengunci latar dan memulihkan scroll/fokus saat ditutup.
+- Nama wajib, maksimal 100 karakter dan tanpa karakter kontrol. Normalisasi NFKC, trim, penggabungan spasi dan perbandingan tanpa kapital mencegah duplikat; edit mengecualikan ID sendiri. Warna wajib salah satu dari sembilan pilihan. React merender nama sebagai teks; nilai warna berasal dari allowlist, tanpa HTML/CSS bebas dari input.
+- `adminCategoryService` melakukan perubahan immutable pada state AdminLayout, dalam mode mock saja. Tambah menghasilkan ID mock unik dan saldo nol; edit hanya mengganti nama/warna dengan ID tetap. State bertahan saat navigasi halaman admin, hilang setelah refresh atau keluar layout admin. Tidak menggunakan localStorage, request HTTP, backend, database, autentikasi atau Activity Log baru. Semua feedback menyebut sesi mock/belum ke server.
+- Hapus memakai judul **Hapus Kategori?** dan tombol **Ya, Hapus Kategori**, mengoreksi teks Hapus Transaksi pada raster. Klaim database/log pada raster diganti penjelasan simulasi. Konfirmasi kategori terpakai/saldo bukan nol nonaktif dan diberi alasan; service juga menolak penghapusan. Cakupan pemeriksaan seluruh 249 transaksi laporan, bukan hanya lima terbaru. Ketiga kategori awal dilindungi; kategori baru tanpa transaksi dan saldo dapat dihapus. Riwayat tidak pernah dihapus/disesuaikan.
+- Definisi bersama `utils/adminCategoryColors.js` memuat sembilan swatch referensi beserta varian titik, badge, teks dan latar untuk keterbacaan. Dipakai Kategori, AdminBalanceSummary, AdminRecentTransactions dan kartu/panel/tabel/rekap Laporan. Varian awal Dashboard/Laporan tetap; override emas lokal pada badge Jum'at Berkah di daftar dihapus agar memakai identitas warna bersama. Mengganti warna tidak memengaruhi warna jenis transaksi: Kas Masuk hijau, Kas Keluar rose dan Rekap hijau.
+- Dataset, fixture dan seluruh nominal tetap. Snapshot Rp16.864.200 + Rp1.791.500 − Rp1.427.500 = **Rp17.228.200**; saldo kategori Rp12.718.200/Rp3.654.000/Rp856.000. Report tetap 141 pemasukan + 108 pengeluaran. Kategori baru muncul dengan nilai nol pada resume/rekap; total tidak berubah. Nama dan warna mengikuti ID, bukan mengubah deskripsi/riwayat transaksi. Service perhitungan dan algoritma ekspor tidak diubah; identitas pada titik PNG mengikuti metadata sesi melalui komponen resume bersama.
+
+Verifikasi:
+
+- `npm run lint` PASS tanpa peringatan. `npm test` PASS: **96 frontend unit/SSR** dan **18 backend**; enam suite browser opsional dijalankan terpisah sesuai relevansi. Lima test kategori baru memeriksa validasi/normalisasi/allowlist, sembilan warna/ID unik, edit immutable, proteksi hapus termasuk transaksi historis saat saldo nol, kategori baru/rekap nol, render laporan dan penolakan mode API. Build PASS.
+- Chrome development dan production masing-masing lulus **31 skenario/34 hasil termasuk tiga induk**: 4 Kategori baru, 23 admin lama serta 4 Laporan. Setelah swatch disamakan dengan nilai raster dan pemeriksaan Enter/PNG diperluas, 4 skenario Kategori development dan 8 Kategori+Laporan production diulang dan PASS. Tidak ada exception runtime aplikasi atau HTTP admin pada hasil akhir.
+- Empat viewport **1728×1080, 1366×768, 768×1024 dan 390×844**: modal Tambah/Edit, sembilan radio, prefill, kosong/duplikat, keyboard/Escape/X, fokus kembali, tambah/edit/hapus mock, dialog perlindungan dan overflow lulus. Smartphone memakai susunan warna 3×3 serta input 16 px. Nama/warna sembilan pilihan mengikuti ID pada Dashboard, Kelola Dana, kedua jenis transaksi Laporan dan Rekap. Kategori baru juga bertahan saat navigasi dan tetap bersaldo nol. Refresh mengembalikan fixture; Activity Log tetap sembilan contoh; storage/cookie kosong.
+- Regresi Laporan memverifikasi 249 transaksi, rentang/preset/pencarian, rekap parsial/kosong, saldo tetap serta PNG nyata yang dapat didekode pada desktop/mobile. Toast sukses/error/auto-dismiss tetap PASS. Dom warna dan kategori tambahan pada dokumen ekspor juga diperiksa. Backend, API_CONTRACT, frontend publik, dependency dan lockfile tidak berubah.
+- Screenshot/PNG/log di `tmp/admin113-qa/`, tidak di-stage. Contoh: `production/tambah-1728.png`, `edit-390.png`, `hapus-1728.png`, `hapus-dilindungi-390.png`, `warna-laporan-rekap.png`. QA terbatas Chrome/emulasi; belum perangkat fisik/Safari/Firefox. Proteksi dan validasi ini hanya mock; integrasi nanti memerlukan validasi ulang, otorisasi dan pemeriksaan relasi transaksi oleh backend, tanpa menetapkan endpoint sekarang.
+
+Tujuh belas file terkait patch diperiksa dan di-stage: README/DESIGN_MAP/PROGRESS; AdminCategoryDialog baru; AdminLayout JSX/CSS; AdminBalanceSummary; AdminRecentTransactions; halaman/CSS Kategori dan Laporan; adminCategoryService serta adminCategoryColors baru; test unit kategori, test browser kategori baru dan penyesuaian test browser dashboard. Referensi, log, screenshot, profil Chrome dan build tidak disertakan. Tidak melakukan commit, push atau merge; HEAD tetap baseline pengguna.
+
+Usulan pesan commit: `feat: tambahkan kelola kategori dana mock dengan warna bersama`.
+
+
+## Admin 1.14 — Form Tambah Pemasukan dan Pengeluaran (11 November 2026)
+
+Status: selesai pada `feature/frontend-admin`, baseline commit pengguna `37711a4`. Staging diperiksa sebelum coding: kosong, Admin 1.13 sudah di-commit; hanya `design-references/` untracked. Tidak menimpa/mencampurkan staging patch kategori sebelumnya. AGENTS, SOP, Kelola Dana, state kategori, seluruh mock keuangan serta pola modal Kwitansi dibaca.
+
+Referensi bernama `28-admin-tambah-pemasukan.png` belum ditemukan saat pemeriksaan. Frame Tambah Pemasukan yang cocok dengan rincian pengguna tersedia sebagai `design-references/user/Pasted 2026-11-11 at 1.49.23 AM.png` (768×906); file tersebut digunakan tanpa rename/staging aset. Hal ini disampaikan saat pengerjaan, tanpa membuat desain/URL Figma pengganti.
+
+- Satu `AdminTransactionForm` melayani pemasukan dan pengeluaran. Pemasukan mengikuti surface hijau muda, header kembali/judul/subtitle, panel putih, label/field, checkbox dan Batal/Simpan. Pengeluaran memakai struktur sama dengan surface/aksen/tombol rose, Uraian Pengeluaran dan Nama Penerima; checkbox nama publik tidak dirender. Tombol Pengeluaran pada panel Kelola Dana menjadi #ca003a, Pemasukan tetap hijau. Warna kategori oranye tidak diubah.
+- Controlled field: tanggal native wajib/default hari ini menurut kalender lokal, kategori wajib dari state bersama, uraian wajib, nominal positif, nama orang opsional dan keterangan opsional. Tanggal dipilih/diubah termasuk tanggal lampau; setiap form baru kembali kosong selain tanggal hari ini. Kategori baru dari Admin 1.13 tersedia tanpa hardcode ulang daftar.
+- Validasi kalender/kategori tersedia, teks wajib, nominal rupiah bulat positif maksimum 999.999.999.999 tanpa pemisah/desimal; nama maksimum 100, uraian/keterangan 500. Karakter kontrol ditolak, baris baru/tab hanya di keterangan. Input nominal menerima lebih dari 12 karakter agar angka 13 digit ditolak dengan pesan, bukan terpotong menjadi nominal lain. Error per field/fokus pertama, Enter, Escape, Batal/tombol kembali, trap Tab/Shift+Tab dan fokus kembali tersedia. Dialog mengikuti visual viewport, scroll lokal dan membersihkan listener/scroll lock.
+- `adminTransactionService` menyimpan tambahan immutable di `dashboard.sessionTransactions` pada AdminLayout, ID unik berawalan mock dan kategori melalui ID stabil; `source: session`/`mock: true`. Preferensi nama publik default false dan hanya dapat true untuk pemasukan. Nama kosong tetap kosong; tidak mengirim/menerbitkan nama ke frontend publik. Pengeluaran selalu menyimpan flag false. Semua feedback menyebut simulasi/belum ke server.
+- `getAdminRecentTransactions` menggabungkan tambahan dengan lima cuplikan untuk Kelola Dana dan Dashboard, urutan tanggal menurun. Label Sesi mock, caption dan keterangan menjelaskan tambahan belum termasuk snapshot/laporan. Nama/warna kategori mengikuti sumber bersama; guard kategori kini juga memeriksa transaksi sesi sehingga kategori baru yang sudah dipakai tidak dapat dihapus.
+- **Batas sinkronisasi disengaja dan terlihat di UI:** tambahan belum dimasukkan ke saldo/agregat atau laporan historis. Fixture 249 transaksi, lima cuplikan dan snapshot Rp16.864.200 + Rp1.791.500 − Rp1.427.500 = **Rp17.228.200** tetap; 141 pemasukan/108 pengeluaran serta rekap bulanan tidak berubah. Laporan menampilkan jumlah tambahan yang belum tercakup, tanpa menyajikan total baru yang keliru. Copy hero/panel lama yang mengklaim edit/hapus atau pembaruan otomatis semua laporan dikoreksi. Sinkronisasi agregat/periode baru menunggu integrasi yang disepakati; daftar sesi saja tersinkron antarhalaman admin.
+- Tidak membuat edit/hapus transaksi, endpoint, database, Activity Log, autentikasi atau storage permanen. Refresh/keluar layout admin menghapus tambahan. Backend, API_CONTRACT, frontend publik, fixture, service perhitungan/ekspor, warna kategori, dependency dan lockfile tetap.
+
+Verifikasi:
+
+- Lint PASS tanpa peringatan. `npm test` PASS: **101 frontend unit/SSR dan 18 backend**; tujuh suite browser opsional dijalankan terpisah sesuai relevansi. Lima test unit transaksi baru memeriksa tanggal lokal/validasi, nominal/teks/opsional, ID/privasi/immutability, riwayat dan rekap 249 tetap, kategori baru dan proteksi relasi serta penolakan mode API. Test Kelola Dana akhir **8/8 PASS**. Build PASS.
+- Chrome development dan preview production masing-masing PASS **35 skenario/39 hasil termasuk empat induk**: 4 tambah transaksi, 4 kategori, 23 admin lama dan 4 Laporan. Setelah penambahan kasus angka 13 digit, lint/unit/build dan empat skenario transaksi pada development/production diulang dan PASS. PNG nyata/toast sukses-error-auto-dismiss Laporan tetap lulus dalam regresi; tidak mengubah algoritma ekspor.
+- Visual kedua modal pada **1728×1080, 1366×768, 768×1024 dan 390×844** ditinjau, tanpa overflow halaman/modal horizontal. Modal mobile dapat digulir hingga footer; field/input 16 px dan tombol nyaman. Uji kedua tombol/tema, date picker native/nilai, kategori termasuk kategori baru, empat field wajib, negatif/nol/desimal/scientific/pemisah/kelebihan digit, preferensi checkbox klik/Space, Enter simpan, Batal/Escape/kembali, fokus/scroll lock, row/ID unik dan state lintas halaman PASS.
+- Tanggal default diuji dengan waktu 11 November 2026 01:00 UTC pada zona Los Angeles: menghasilkan **10 November**, bukan tanggal UTC. Buka ulang tidak membawa tanggal draft yang dibatalkan. Refresh mereset daftar ke lima cuplikan, kategori tambahan hilang sesuai sesi, Activity Log tetap sembilan contoh, storage/cookie kosong dan mode API tidak mengirim request atau menampilkan form mock.
+- Bukti di `tmp/admin114-qa/`: `production/income-1728-top.png`, `expense-1728-top.png`, `income-390-bottom.png`, `expense-390-bottom.png`, screenshot simpan/integrasi serta log unit/build/browser. Semua artefak, profil Chrome dan cache QA diabaikan Git. QA terbatas Chrome/emulasi, belum perangkat fisik/Safari/Firefox. Validasi ulang server, privasi publik, otorisasi dan pembukuan/agregat perlu disepakati dengan backend tanpa menetapkan kontrak sekarang.
+
+Enam belas file terkait Admin 1.14 diperiksa dan di-stage: README/DESIGN_MAP/PROGRESS; AdminTransactionForm dan adminTransactionService baru; AdminLayout JSX/CSS; AdminRecentTransactions; Dashboard/Laporan/Kelola Dana serta CSS Kelola Dana; guard adminCategoryService; test unit/browser Kelola Dana dan penyesuaian test browser dashboard. Aset referensi, screenshot/log, hasil build, .env dan dependency tidak disertakan. Tidak melakukan commit, push atau merge; HEAD tetap baseline pengguna.
+
+Usulan pesan commit: `feat: tambahkan form pemasukan dan pengeluaran sesi mock`.
+
+## Admin 1.15 — Pagination, Detail, Edit dan Hapus Transaksi
+
+- Tabel Kas Masuk/Kas Keluar kini memakai 20 baris default, pilihan 30/50/Semua, informasi X–Y dari Z, sebelumnya/berikutnya, nomor dan ellipsis tanpa duplikat. Filter/pencarian berjalan sebelum pagination; tab, ukuran dan filter mereset halaman, halaman di luar rentang dijepit secara aman. Total footer/kartu tetap seluruh hasil filter, bukan hanya halaman terlihat.
+- Aksi tabel diganti Lihat Detail berbasis ID stabil. Route `/admin/laporan/transaksi/:id` dan `.../:id/edit` memakai AdminLayout, sidebar Laporan aktif dan topbar Transaksi. Breadcrumb, kembali, ID tidak ditemukan, detail dua jenis, form edit terisi, Batal dan Simpan tersedia. Konteks daftar saat membuka detail disimpan sementara pada AdminLayout agar kembali tidak kehilangan tab, rentang, pencarian dan ukuran/halaman.
+- Field tambah/edit berbagi komponen, kategori, date picker, input rupiah dan validasi yang sama. Uraian edit memakai textarea. Jenis dan ID transaksi tetap; nama/warna kategori mengikuti metadata bersama. Pengeluaran tidak menampilkan kontrol visibilitas nama donatur. Detail hanya menampilkan field opsional yang tersedia.
+- Dialog hapus native berisi ringkasan dan input konfirmasi persis `HAPUS`; tersedia Batal/X/Escape, trap fokus dan pengembalian fokus. Penutupan/navigasi membersihkan dialog dan scroll lock. Tidak mengklaim penghapusan database atau pencatatan Activity Log.
+- `adminTransactionData` menggabungkan fixture dengan tambahan sesi lalu menerapkan perubahan berdasarkan ID dan daftar ID terhapus. Semua perubahan berada dalam state AdminLayout. `adminTransactionService` memvalidasi edit/hapus dalam mode mock; tidak ada HTTP atau penyimpanan permanen. Daftar Dashboard/Kelola Dana membaca data aktif yang sama; perubahan diberi label sesi dan penjelasan snapshot tetap. Proteksi kategori membaca relasi transaksi aktif.
+- Berbeda dari batas Admin 1.14, tambahan/edit/hapus sekarang ikut tabel, total filter dan rekap simulasi Laporan. Saldo awal historis dihitung dari fixture asli; aliran kas rekap memakai data aktif. Fixture asli **249 transaksi**, cuplikan asli, dan snapshot **Rp17.228.200** tidak dimutasi. Hero, kartu saldo, resume snapshot dan PNG snapshot tetap mengikuti baseline dan diberi penjelasan yang membedakannya dari simulasi. Refresh mengembalikan transaksi historis; ID tambahan sesi hilang.
+- Empat preset terbaru yang berfungsi dipertahankan sesuai konfirmasi pengguna. Refinement lokal label Nominal Kwitansi, placeholder HAPUS dan footer kartu saldo Laporan disertakan dalam staging gabungan Admin 1.16 sesuai arahan pengguna.
+
+Verifikasi: lint tanpa peringatan, **107 frontend unit/SSR dan 18 backend PASS**, build PASS. Delapan induk browser opsional dilewati pada `npm test` dan suite relevan dijalankan terpisah melalui Chrome. Uji mencakup pagination/ellipsis/kosong, pencarian/filter, ID stabil, edit/batal/validasi, konfirmasi HAPUS, konsistensi pembaca dan rekonsiliasi saldo aktif, refresh/detail langsung, kategori/warna dan regresi halaman admin serta PNG/toast. Tampilan detail/edit/hapus dan tabel diperiksa pada 1728×1080, 1366×768, 768×1024 dan 390×844. Tidak mengubah frontend publik April 2026, backend, kontrak API, dependency, autentikasi atau mock Activity Log. Artefak/screenshot/log QA di `tmp/admin115-qa/`, diabaikan Git.
+
+Batasan: state hanya selama sesi layout admin; belum ada endpoint atau otorisasi server untuk baca/edit/hapus. Snapshot tidak berubah menjadi pembukuan baru. QA perangkat memakai emulasi Chrome; belum pengujian perangkat fisik lintas browser.
+
+Usulan pesan commit: `feat: tambahkan pagination dan alur detail edit hapus transaksi mock`.
+
+## Admin 1.16 — Pengaturan Donasi
+
+- Menambahkan `/admin/donasi` dan menu Donasi pada Konten Website. Menggunakan layout/font yang ada; heading, breadcrumb, status draf, peringatan, dua kolom konfigurasi/pratinjau, kesiapan dan footer mengikuti referensi `33-admin-pengaturan-donasi.png`.
+- `adminDonationService` menyediakan konfigurasi awal terpisah dari Kontak publik. Rekening dan nomor WhatsApp tidak diisi dengan data Figma. Data rekening publik hanya boleh menjadi sumber awal bila `verified`; saat ini tetap kosong. Template berisi placeholder literal dan catatan awal berupa pengingat.
+- QRIS menerima tepat satu PNG/JPG maksimal 2 MB. Memeriksa ekstensi/MIME, signature, berkas kosong dan decode gambar; pilihan tidak valid tidak mengganti gambar valid sebelumnya. URL sementara validasi selalu dilepas. URL pratinjau dikelola melalui effect/ref gambar, dilepas saat diganti/dihapus, toggle berubah atau halaman ditinggalkan. Nomor permintaan mencegah hasil decode lama menimpa Batal/navigasi.
+- Form rekening, WhatsApp, template dan catatan memakai controlled state. Nomor rekening disimpan sebagai string agar nol di awal tetap; validasi digit tanpa daftar bank tertentu. WhatsApp memakai format internasional 8–15 digit tanpa +/spasi/tanda baca. Template/catatan mendukung baris baru dengan batas panjang dan pemeriksaan karakter kontrol.
+- Satu fungsi kesiapan/normalisasi menghasilkan status, toggle dan preview. Data wajib yang dikosongkan/tidak valid otomatis mematikan toggle. Gambar dihapus juga mematikan QRIS. Dua metode pembayaran dihitung sebagai QRIS/transfer sesuai referensi; konfirmasi WhatsApp mempunyai status terpisah. Preview hanya menampilkan konfigurasi yang lengkap dan aktif; tombol WhatsApp tidak mengirim/membuka pesan.
+- Simpan menerima konfigurasi belum lengkap sebagai draf; format nonkosong yang tidak valid ditandai. Draf disimpan di state AdminLayout, termasuk referensi File tanpa menyimpan object URL permanen. Batal mengembalikan isi/toggle/gambar ke draf terakhir. Draf bertahan ketika berpindah halaman admin dan hilang setelah refresh/keluar AdminLayout. Tidak menulis localStorage, backend, kontak publik atau Activity Log.
+- Lint tanpa peringatan, **112 frontend unit/SSR dan 18 backend PASS**, build PASS. Lima test service/route memeriksa sumber kosong/isolasi, kesiapan/visibilitas, validasi, batas upload, mode API dan route/sidebar. Sembilan suite browser opsional dilewati oleh `npm test` dan QA browser relevan dijalankan terpisah.
+- Chrome development/preview production: lima skenario Donasi meliputi empat viewport 1728×1080, 1366×768, 768×1024, 390×844; navigasi, draf parsial, PNG/JPG, tipe/size/signature/rusak/jumlah berkas, ganti/hapus/Batal, keyboard, object URL, decode tertunda saat Batal/keluar, rekening/WA/template, preview, refresh, storage kosong, Kontak publik tetap placeholder serta mode API tanpa request/fallback karangan. Regresi 23 skenario admin sebelumnya juga lulus setelah ekspektasi navigasi menambahkan menu Donasi. Artefak di `tmp/admin116-qa/`, tidak di-stage.
+- Backend dan `docs/API_CONTRACT.md` tidak diubah. API baca/perbarui konfigurasi, upload/ganti/hapus QRIS terautentikasi, validasi server dan proyeksi data publik tetap perlu disepakati. Kelengkapan frontend tidak berarti rekening/QRIS sudah disetujui; status publik `verified` tidak diubah menjadi true oleh formulir ini. Nomor konfirmasi donasi juga belum disinkronkan dengan Kontak & Pengaturan.
+
+Sesuai arahan terbaru pengguna, staging Admin 1.15 dan Admin 1.16 digabung, termasuk refinement lokal label Nominal Kwitansi, placeholder HAPUS dan penghapusan footer kartu saldo kategori. Aset referensi, hasil build, log, cache/profil browser dan credential tidak disertakan. Tidak melakukan commit, push atau merge.
+
+Batasan: seluruhnya simulasi sesi; belum ada upload server, publikasi, WhatsApp API, transaksi donasi otomatis atau penyimpanan permanen. QA memakai emulasi Chrome, belum perangkat fisik lintas browser.
+
+Usulan pesan commit gabungan: `feat: lengkapi pengelolaan transaksi dan pengaturan donasi admin`.

@@ -1,0 +1,101 @@
+import assert from 'node:assert/strict'
+import { after, before, test } from 'node:test'
+import { fileURLToPath } from 'node:url'
+import { createServer } from 'vite'
+import { createElement as h } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { MemoryRouter } from 'react-router'
+
+const createTestServer = (mode) => createServer({
+  root: fileURLToPath(new URL('../', import.meta.url)),
+  server: { middlewareMode: true, ws: false, hmr: false }, appType: 'custom',
+  define: { 'import.meta.env.VITE_DATA_SOURCE': JSON.stringify(mode) },
+})
+let server
+let service
+let App
+let Page
+before(async () => {
+  server = await createTestServer('mock')
+  service = await server.ssrLoadModule('/src/services/adminActivityLogService.js')
+  ;({ default: App } = await server.ssrLoadModule('/src/App.jsx'))
+  ;({ default: Page } = await server.ssrLoadModule('/src/pages/AdminActivityLogPage.jsx'))
+})
+after(async () => { await server?.close() })
+
+test('sembilan skenario contoh memuat jenis yang diperlukan, tanpa field kredensial dan salinannya terisolasi', async () => {
+  const activities = await service.getAdminActivityLog()
+  const before = structuredClone(activities)
+  assert.equal(activities.length, 9)
+  assert.equal(new Set(activities.map((activity) => activity.id)).size, 9)
+  for (const type of ['add', 'edit', 'delete', 'code', 'account']) assert.ok(activities.some((activity) => activity.type === type))
+  for (const activity of activities) {
+    assert.deepEqual(Object.keys(activity).sort(), ['admin', 'date', 'details', 'id', 'module', 'time', 'title', 'type', 'typeLabel'])
+    assert.match(activity.date, /^2026-06-\d{2}$/)
+    assert.match(activity.time, /^\d{2}:\d{2}$/)
+    for (const detail of activity.details) assert.ok(Object.keys(detail).every((key) => ['label', 'value', 'format', 'tone'].includes(key)))
+  }
+  activities[0].details[0].value = 0
+  activities.pop()
+  assert.deepEqual(await service.getAdminActivityLog(), before)
+  const controller = new AbortController()
+  controller.abort()
+  await assert.rejects(service.getAdminActivityLog({ signal: controller.signal }), { name: 'AbortError' })
+})
+
+test('filter admin/jenis/tanggal/modul memakai AND dan pencarian nama/judul mengabaikan kapital/spasi luar', async () => {
+  const activities = await service.getAdminActivityLog()
+  const before = structuredClone(activities)
+  const filter = (filters) => service.filterAdminActivities(activities, filters)
+  assert.equal(filter({ admin: 'Ahmad' }).length, 3)
+  assert.equal(filter({ type: 'account' }).length, 2)
+  assert.equal(filter({ date: '2026-06-14' }).length, 2)
+  assert.equal(filter({ module: 'Keuangan' }).length, 4)
+  assert.equal(filter({ query: ' SITI ' }).length, 2)
+  assert.equal(filter({ query: 'KONSUMSI' }).length, 1)
+  assert.equal(filter({ admin: 'Ahmad', type: 'edit', date: '2026-06-14', module: 'Keuangan', query: 'konsumsi' })[0].id, 'demo-log-01')
+  assert.deepEqual(filter({ admin: 'Siti', date: '2026-06-14' }), [])
+  assert.deepEqual(filter({ query: 'tidak ada' }), [])
+  assert.deepEqual(filter({ query: '<script>' }), [])
+  assert.equal(filter({ query: '   ' }).length, 9)
+  assert.deepEqual(activities, before)
+})
+
+test('tujuh kelompok tanggal terurut menurun, setiap item tepat satu kali dan urutan sumber per tanggal tetap', async () => {
+  const activities = await service.getAdminActivityLog()
+  const before = structuredClone(activities)
+  const groups = service.groupAdminActivities(activities)
+  assert.deepEqual(groups.map((group) => group.date), ['2026-06-14', '2026-06-13', '2026-06-12', '2026-06-11', '2026-06-10', '2026-06-09', '2026-06-08'])
+  assert.deepEqual(groups.map((group) => group.items.length), [2, 1, 1, 1, 2, 1, 1])
+  for (const group of groups) assert.deepEqual(group.items, activities.filter((activity) => activity.date === group.date))
+  assert.equal(groups.flatMap((group) => group.items).length, 9)
+  assert.deepEqual(service.groupAdminActivities([]), [])
+  assert.deepEqual(activities, before)
+})
+
+test('mode API memberi error integrasi tanpa HTTP atau fallback riwayat contoh', async () => {
+  const api = await createTestServer('api')
+  const originalFetch = globalThis.fetch
+  let calls = 0
+  globalThis.fetch = async () => { calls++; throw new Error('HTTP tidak diharapkan.') }
+  try {
+    const apiService = await api.ssrLoadModule('/src/services/adminActivityLogService.js')
+    await assert.rejects(apiService.getAdminActivityLog(), /Activity Log melalui API belum tersedia/)
+    assert.equal(calls, 0)
+  } finally { globalThis.fetch = originalFetch; await api.close() }
+})
+
+test('route/menu aktif dan copy append-only jelas berupa konsep mock, tanpa tombol atau form mutasi log', () => {
+  for (const path of ['/admin/activity-log', '/admin/activity-log/']) {
+    const html = renderToStaticMarkup(h(MemoryRouter, { initialEntries: [path] }, h(App)))
+    assert.match(html, /<h1>Activity Log<\/h1>/)
+    assert.match(html, /aria-current="page"[^>]*href="\/admin\/activity-log"/)
+    assert.match(html, /Memuat aktivitas contoh/)
+    assert.doesNotMatch(html, /public-layout|public-footer|admin-login-form/)
+  }
+  const html = renderToStaticMarkup(h(Page))
+  assert.match(html, /APPEND-ONLY · TIDAK DAPAT DIHAPUS/)
+  assert.match(html, /Saat ini hanya data contoh; integritas dan kelengkapan pencatatan belum ditegakkan/)
+  assert.equal((html.match(/<select\b/g) || []).length, 3)
+  assert.doesNotMatch(html, /<button|<form|<dialog|type="password"/)
+})

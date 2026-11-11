@@ -58,6 +58,22 @@ button:disabled { cursor: not-allowed; }
 .home-main { flex: 1; }
 .hero { position: relative; isolation: isolate; overflow: hidden; min-height: clamp(620px, 52vw, 900px); border-radius: 0 0 28px 28px; background: linear-gradient(125deg, #176dc6, #6ca3d7 58%, #a6c6de); box-shadow: 0 6px 16px #40634514; padding: clamp(148px, 11.5vw, 196px) max(7%, calc((100% - 1488px) / 2)) 48px; display: flex; flex-direction: column; align-items: flex-start; }
 .hero-image { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; object-position: center bottom; }
+/* Petakan kanvas overlay ke koordinat foto asli; ukuran cover dan crop mengikuti background. */
+.hero-building-layer { position: absolute; inset: 0; z-index: -2; container-type: size; pointer-events: none; --hero-image-position-x: .5; }
+.hero-building-overlay {
+  --photo-width: max(100cqw, calc(100cqh * 1928 / 1089));
+  --photo-height: max(100cqh, calc(100cqw * 1089 / 1928));
+  position: absolute;
+  left: calc((100cqw - var(--photo-width)) * var(--hero-image-position-x) + var(--photo-width) * 248 / 1928);
+  top: calc(100cqh - var(--photo-height) + var(--photo-height) * 3 / 1089);
+  width: calc(var(--photo-width) * 3456 * .485 / 1928);
+  height: auto;
+  max-width: none;
+  filter: none;
+  pointer-events: none;
+}
+@media (min-width: 1024px) { .hero-building-layer { --hero-image-position-x: 1; } }
+@media (max-width: 767px) { .hero-building-layer { --hero-image-position-x: .72; } }
 .hero::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, #10326e40 0%, #10326e0a 55%, #00000012 100%); }
 .hero::after { content: ""; position: absolute; inset: auto 0 0; height: clamp(52px, 6vw, 104px); z-index: -1; pointer-events: none; background: linear-gradient(180deg, #dcecf700, #dcecf7); }
 .hero-copy { max-width: 840px; color: white; text-shadow: 0 2px 10px #10326e40; }
