@@ -32,11 +32,13 @@ export default function AdminLayout() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const transactionPage = pathname.startsWith('/admin/laporan/transaksi/')
-  const currentPage = navigation.flatMap((group) => group.items).find((item) => item.to === (transactionPage ? '/admin/laporan' : pathname.replace(/\/$/, '')))
-  const title = transactionPage ? 'Transaksi' : currentPage?.title || currentPage?.label || 'Dashboard Keuangan'
+  const downloadPage = pathname.startsWith('/admin/laporan/unduh')
+  const currentPage = navigation.flatMap((group) => group.items).find((item) => item.to === (transactionPage || downloadPage ? '/admin/laporan' : pathname.replace(/\/$/, '')))
+  const title = transactionPage ? 'Transaksi' : downloadPage ? (pathname.includes('/pratinjau') ? 'Pratinjau & Unduh Laporan' : 'Pengaturan Unduhan') : currentPage?.title || currentPage?.label || 'Dashboard Keuangan'
   const [dashboard, setDashboard] = useState(null)
   const [error, setError] = useState('')
   const [reportView, setReportView] = useState(null)
+  const [reportDownload, setReportDownload] = useState(null)
   const [donationDraft, setDonationDraft] = useState(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuButton = useRef(null)
@@ -114,7 +116,7 @@ export default function AdminLayout() {
           <h1>{title}</h1>
           <AdminHeaderActions key={pathname} account={account} dashboard={dashboard} onOpen={() => setMenuOpen(false)} />
         </header>
-        <main id="admin-content" className="admin-content" tabIndex={-1}><Outlet context={{ dashboard, error, saveCategory, deleteCategory, addTransaction, editTransaction, deleteTransaction, reportView, setReportView, donationDraft, setDonationDraft }} /></main>
+        <main id="admin-content" className="admin-content" tabIndex={-1}><Outlet context={{ dashboard, error, saveCategory, deleteCategory, addTransaction, editTransaction, deleteTransaction, reportView, setReportView, reportDownload, setReportDownload, donationDraft, setDonationDraft }} /></main>
       </div>
     </div>
   )

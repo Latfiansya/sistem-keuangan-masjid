@@ -1,0 +1,124 @@
+
+.admin-download-flow { color: #253247; }
+.admin-download-flow *, .admin-download-flow *::before, .admin-download-flow *::after { box-sizing: border-box; }
+.admin-download-flow button, .admin-download-flow input, .admin-download-flow select { font: inherit; }
+.admin-download-flow button { cursor: pointer; }
+.admin-download-flow button:disabled { cursor: wait; opacity: .65; }
+.admin-download-breadcrumb { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: #8093ad; font-size: 12px; }
+.admin-download-breadcrumb a { color: #5b7890; text-decoration: none; }
+.admin-download-back { display: inline-flex; align-items: center; gap: 7px; margin: 20px 0; color: #006b00; text-decoration: none; font-size: 13px; font-weight: 650; }
+.admin-download-heading { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+.admin-download-heading h2 { margin: 0; padding-left: 15px; border-left: 4px solid #ec6e00; font-size: 27px; font-weight: 750; letter-spacing: -.7px; }
+.admin-download-heading p { margin: 9px 0 0; padding-left: 19px; color: #7b8fa9; font-size: 13px; line-height: 1.7; }
+.admin-download-heading-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.admin-download-heading-actions a, .admin-download-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 18px; border: 1px solid #dce7df; border-radius: 13px; background: white; color: #006b00; font-size: 13px; font-weight: 650; text-decoration: none; }
+.admin-download-heading-actions .admin-download-primary { border-color: #006b00; background: #006b00; color: white; }
+.admin-download-settings { box-shadow: 0 6px 22px #1c3d5910; }
+.admin-download-mode { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin: 0 0 24px; padding: 0; border: 0; }
+.admin-download-mode label { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 8px; border: 1px solid #dce5ef; border-radius: 10px; color: #61748f; background: #f7f9fc; cursor: pointer; font-size: 12px; }
+.admin-download-mode input, .admin-download-format input { width: 16px; height: 16px; margin: 0; accent-color: #006b00; flex-shrink: 0; }
+.admin-download-mode .is-selected, .admin-download-format .is-selected { color: #006b00; border-color: #006b00; background: #effcf5; }
+.admin-download-date-range { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+.admin-download-date-range label { display: grid; gap: 7px; min-width: 0; color: #61748f; font-size: 12px; }
+.admin-download-date-range input { width: 100%; min-width: 0; min-height: 44px; padding: 10px; border: 1px solid #dce5ef; border-radius: 10px; color: #253247; background: #f7f9fc; }
+.admin-download-format { margin: 22px 0; padding: 0; border: 0; }
+.admin-download-format legend { margin-bottom: 12px; font-size: 14px; font-weight: 700; }
+.admin-download-format > div { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.admin-download-format label { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 12px; border: 1px solid #dce5ef; border-radius: 11px; background: #f7f9fc; cursor: pointer; font-size: 13px; font-weight: 650; }
+.admin-download-document-summary { padding: 20px 24px; border: 1px solid #dfe9e3; border-radius: 18px; background: white; box-shadow: 0 4px 18px #1c3d5908; }
+.admin-download-document-summary dl { display: grid; grid-template-columns: 2fr 2fr 1fr 1fr; gap: 20px; margin: 0; }
+.admin-download-document-summary dt { margin-bottom: 6px; color: #7a91ae; font-size: 11px; }
+.admin-download-document-summary dd { margin: 0; font-size: 13px; font-weight: 700; line-height: 1.7; }
+.admin-download-document-summary p { margin: 14px 0 0; color: #768ba4; font-size: 11px; line-height: 1.8; }
+.admin-download-progress { margin: 12px 0; color: #61748f; font-size: 12px; }
+.admin-download-progress:empty { display: none; }
+.admin-download-preview-pages { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 28px; margin-top: 24px; padding: 24px; border-radius: 18px; background: #e6edf4; }
+.admin-download-preview-pages:empty { display: none; }
+.admin-download-preview-page { width: min(100%, 900px); min-width: 0; }
+.admin-download-preview-page > h4 { margin: 0 0 10px; color: #61748f; font-size: 12px; font-weight: 650; }
+.admin-download-page-frame { position: relative; width: 100%; aspect-ratio: 794 / 1123; overflow: hidden; background: white; box-shadow: 0 3px 18px #15345016; }
+.admin-download-page-frame > .admin-download-sheet { position: absolute; top: 0; left: 0; transform-origin: top left; transform: scale(var(--admin-download-scale, 1)); }
+.admin-download-measurement { position: fixed; top: 0; left: -10000px; width: 794px; visibility: hidden; pointer-events: none; }
+.admin-download-settings { padding: 30px 34px; border-radius: 24px; background: white; }
+.admin-download-settings h3 { margin: 0; font-size: 26px; font-weight: 750; letter-spacing: -.6px; }
+.admin-download-settings-columns { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; }
+.admin-download-settings h4, .admin-download-types legend { margin: 0 0 9px; padding: 0; font-size: 14px; font-weight: 700; }
+.admin-download-settings h4 small { margin-left: 6px; color: #859bb8; font-weight: 400; }
+.admin-download-help { margin: 0 0 10px; color: #859bb8; font-size: 11px; line-height: 1.7; }
+.admin-download-presets { display: flex; gap: 8px; margin-bottom: 24px; }
+.admin-download-presets button, .admin-download-months button { min-height: 36px; border: 1px solid #dce5ef; border-radius: 11px; color: #61748f; background: #f7f9fc; font-size: 12px; }
+.admin-download-presets button { flex: 1; }
+.admin-download-presets button[aria-pressed=true], .admin-download-months button[aria-pressed=true] { color: white; border-color: #006b00; background: #006b00; }
+.admin-download-year { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; padding: 0 12px; border: 1px solid #dce5ef; border-radius: 10px; color: #006b00; background: #f7f9fc; }
+.admin-download-year select { flex: 1; min-width: 0; min-height: 38px; border: 0; color: inherit; background: transparent; font-size: 12px; font-weight: 700; text-align: center; }
+.admin-download-months { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.admin-download-month-range { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+.admin-download-month-range label { display: grid; gap: 6px; min-width: 0; color: #61748f; font-size: 11px; }
+.admin-download-month-range input { width: 100%; min-width: 0; min-height: 42px; padding: 9px; border: 1px solid #dce5ef; border-radius: 10px; background: #f7f9fc; color: #253247; font-size: 12px; }
+.admin-download-selected-period { padding: 8px 12px; border-radius: 9px; background: #ecfdf5; color: #006b00; font-size: 11px; line-height: 1.6; }
+.admin-download-types { margin: 0; padding: 0; border: 0; }
+.admin-download-types label { display: flex; align-items: center; gap: 12px; min-height: 54px; margin-bottom: 8px; padding: 10px 12px; border: 1px solid #dce5ef; border-radius: 11px; background: #f7f9fc; cursor: pointer; }
+.admin-download-types label.is-selected { border-color: #006b00; background: #effcf5; }
+.admin-download-types input { flex-shrink: 0; width: 18px; height: 18px; margin: 0; accent-color: #006b00; }
+.admin-download-types strong, .admin-download-types small { display: block; font-size: 12px; line-height: 1.6; }
+.admin-download-types small { color: #728ba8; font-size: 11px; }
+.admin-download-selection { margin-top: 22px; padding: 16px; border: 1px solid #a7edba; border-radius: 14px; color: #006b00; background: #f0fcf5; }
+.admin-download-selection dl:not(.admin-download-totals) { display: grid; gap: 8px; margin: 12px 0; font-size: 11px; }
+.admin-download-selection dl:not(.admin-download-totals) > div { display: grid; grid-template-columns: 72px 1fr; gap: 10px; }
+.admin-download-selection dt { color: #7a91ae; }
+.admin-download-selection dd { margin: 0; color: #142034; font-weight: 700; }
+.admin-download-selection p { margin: 9px 0 0; color: #6e8b9d; font-size: 10px; line-height: 1.7; }
+.admin-download-totals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 15px 0; }
+.admin-download-totals > div { min-width: 0; }
+.admin-download-totals dt { font-size: 10px; }
+.admin-download-totals dd { margin: 6px 0 0; font-size: 14px; font-weight: 750; overflow-wrap: anywhere; }
+.admin-download-total--income dd, .admin-download-amount--income { color: #008b43; }
+.admin-download-total--expense dd, .admin-download-amount--expense { color: #d12c52; }
+.admin-download-selection .admin-download-totals { display: block; padding-top: 5px; border-top: 1px solid #b9ebc7; }
+.admin-download-selection .admin-download-totals > div { display: grid; grid-template-columns: 95px 1fr; align-items: baseline; gap: 10px; margin: 6px 0; }
+.admin-download-selection .admin-download-totals dd { margin: 0; font-size: 12px; }
+.admin-download-settings > footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 22px; }
+.admin-download-settings > footer button { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 44px; padding: 10px 24px; border: 0; border-radius: 13px; color: #61748f; background: #f1f6fc; font-size: 13px; font-weight: 650; }
+.admin-download-settings > footer .admin-download-primary { color: white; background: #006b00; box-shadow: 0 3px 9px #006b0033; }
+.admin-download-error { padding: 10px 12px; border-radius: 9px; color: #a32045; background: #fff1f2; font-size: 12px; line-height: 1.6; }
+
+.admin-download-settings > footer a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 24px; border-radius: 13px; color: #61748f; background: #f1f6fc; font-size: 13px; font-weight: 650; text-decoration: none; }
+.admin-download-sheet { display: flex; flex-direction: column; width: 794px; height: 1123px; padding: 32px; background: white; color: #253247; font-family: "Plus Jakarta Sans", sans-serif; font-size: 11px; line-height: 1.55; }
+.admin-download-sheet--measure { height: auto; }
+.admin-download-sheet-header { display: flex; align-items: center; gap: 18px; flex-shrink: 0; padding: 15px 18px; border-radius: 12px; color: white; background: #006b00; }
+.admin-download-sheet-header img { width: 142px; height: 43px; object-fit: contain; }
+.admin-download-sheet-header strong { font-size: 11px; letter-spacing: .2px; }
+.admin-download-sheet-header h3 { margin: 3px 0; font-size: 23px; line-height: 1.3; }
+.admin-download-sheet-header p { margin: 0; font-size: 10px; color: #e4f6dc; }
+.admin-download-sheet-content { flex: 1; min-height: 0; }
+.admin-download-section-title { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 18px 0 12px; padding: 8px 12px; border-radius: 8px; color: #087831; background: #edf9ef; }
+.admin-download-section-title h4 { margin: 0; font-size: 17px; }
+.admin-download-section-title span { font-size: 10px; }
+.admin-download-section-title--expense { background: #fff0f3; color: #ba224b; }
+.admin-download-section-title--monthly { background: #eef4fd; color: #2460b4; }
+.admin-download-sheet .admin-download-totals > div { padding: 9px 10px; border: 1px solid #ddebe1; border-radius: 8px; background: #f8fcf9; }
+.admin-download-sheet .admin-download-totals dd { font-size: 14px; }
+.admin-download-sheet-note { margin: 10px 0 14px; font-size: 9px; line-height: 1.6; color: #65798f; }
+.admin-download-sheet table { width: 100%; border-spacing: 0; border-collapse: collapse; table-layout: fixed; }
+.admin-download-sheet th, .admin-download-sheet td { padding: 9px 8px; border-bottom: 1px solid #e4ece7; overflow-wrap: anywhere; vertical-align: top; font-size: 11px; }
+.admin-download-sheet thead th { color: #506a5a; background: #edf6ef; text-align: left; font-size: 10px; font-weight: 700; }
+.admin-download-sheet tbody th { text-align: left; font-weight: 600; }
+.admin-download-sheet td:last-child, .admin-download-sheet thead th:last-child { text-align: right; }
+.admin-download-ledger th:nth-child(1) { width: 110px; }
+.admin-download-ledger th:nth-child(2) { width: 166px; }
+.admin-download-ledger th:nth-child(4) { width: 115px; }
+.admin-download-balances th:first-child { width: 238px; }
+.admin-download-balances td { text-align: right; font-size: 10px; }
+.admin-download-balances thead th { text-align: right; }
+.admin-download-balances thead th:first-child { text-align: left; }
+.admin-download-balances small { display: block; margin-bottom: 3px; color: #738898; font-size: 10px; }
+.admin-download-category { color: var(--category-color, #253247); }
+.admin-download-category i { display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: var(--category-dot); }
+.admin-download-total-row { font-weight: 750; background: #eff8f1; }
+.admin-download-empty td { padding: 28px 12px; color: #748398; text-align: center !important; }
+.admin-download-sheet-footer { display: flex; justify-content: space-between; gap: 12px; flex-shrink: 0; margin-top: 16px; padding-top: 8px; border-top: 1px solid #dce7df; color: #758392; font-size: 9px; }
+
+@media (max-width: 1100px) { .admin-download-heading { align-items: flex-start; flex-direction: column; } .admin-download-mode { grid-template-columns: 1fr; } .admin-download-settings-columns { gap: 24px; } }
+@media (max-width: 767px) { .admin-download-settings { padding: 24px; } .admin-download-settings-columns { grid-template-columns: 1fr; } .admin-download-mode { grid-template-columns: repeat(3, minmax(0, 1fr)); } .admin-download-mode label { flex-direction: column; text-align: center; font-size: 11px; } .admin-download-heading h2 { font-size: 24px; } .admin-download-document-summary dl { grid-template-columns: 1fr 1fr; } .admin-download-preview-pages { padding: 14px; } }
+@media (max-width: 479px) { .admin-download-settings { padding: 20px 16px; border-radius: 18px; } .admin-download-heading-actions { width: 100%; flex-wrap: wrap; } .admin-download-heading-actions > * { flex: 1; padding-inline: 12px; } .admin-download-date-range, .admin-download-month-range { grid-template-columns: 1fr; } .admin-download-document-summary { padding: 18px; } .admin-download-document-summary dl { gap: 14px; } .admin-download-preview-pages { padding: 8px; } }
+.admin-download-settings .admin-download-period h3 { margin-bottom: 18px; font-size: 19px; }

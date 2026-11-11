@@ -458,3 +458,20 @@ Referensi final: `design-references/user/33-admin-pengaturan-donasi.png`. Route 
 - Rekening dan nomor WhatsApp awal kosong karena data resmi belum terverifikasi. Template placeholder dan catatan pengingat merupakan mock. Draf terakhir bertahan selama AdminLayout aktif; Batal mengembalikan isi dan gambar. Refresh/keluar layout menghapus draf, tanpa localStorage/backend atau perubahan Kontak publik.
 
 Bukti visual empat viewport, upload/preview dan status di `tmp/admin116-qa/`; aset referensi serta artefak tidak di-stage. Tidak membuat frame atau URL Figma baru.
+
+## Admin 1.17 — Unduh Laporan Keuangan PDF/PNG
+
+Referensi final: `design-references/user/34-admin-unduh-laporan-pengaturan.png` dan `35-admin-unduh-laporan-pratinjau.png`. Sesuai refinement pengguna, shell modal pada raster diadaptasi menjadi dua halaman dalam AdminLayout:
+
+- `/admin/laporan/unduh`: Pengaturan Unduhan.
+- `/admin/laporan/unduh/pratinjau`: Pratinjau & Unduh Laporan.
+
+Banner oranye Laporan tetap; tombol Unduh Laporan menuju pengaturan sambil mempertahankan konteks filter/pagination daftar. Menu Laporan tetap aktif pada kedua halaman. Breadcrumb, Kembali ke Laporan/Pengaturan dan Ubah Pengaturan mengikuti pola navigasi Detail/Edit Transaksi.
+
+Pengaturan memakai kartu putih dua kolom dan heading beraksen oranye. Pilihan radio menentukan satu mode periode aktif: Periode Cepat (minggu/bulan/tiga bulan berdasarkan kalender lokal), Rentang Bulan (tahun/grid bulan dan month picker awal–akhir), atau Rentang Tanggal (dua date picker native, inklusif). Hanya kontrol mode aktif yang ditampilkan. Tiga checkbox adalah Kas Masuk, Kas Keluar dan Rekap Bulanan; Laporan Bulanan dihapus. PDF/PNG dipilih melalui radio di pengaturan, dengan PDF default. Panel Ringkasan Pilihan menampilkan periode, jenis, format dan nominal efektif.
+
+Pratinjau memakai seluruh lebar area konten, ringkasan dokumen mendatar yang ringkas, dan semua lembar A4 portrait berurutan dalam satu kolom. Lebar pratinjau maksimum 900 px dengan skala proporsional; tablet/mobile menyesuaikan ruang. Satu tombol unduh mengikuti format terpilih (PNG jamak berupa ZIP); tidak ada pemilih format atau badge halaman pada header. Jumlah halaman tetap tercantum di ringkasan dokumen.
+
+Template `AdminDownloadSheet`, identitas masjid, kategori, warna, perhitungan dan pagination berbasis tinggi DOM tetap. Setiap bagian dimulai pada halaman baru, baris tidak dibelah dan header tabel diulang. Rekap Bulanan tetap memuat saldo awal, pemasukan, pengeluaran, saldo akhir dan total tiap bulan/kategori; kartu saldo periode tetap terdapat di dokumen, sehingga penghapusan opsi Laporan Bulanan tidak menghilangkan informasi saldo. PDF A4 portrait dan PNG 1588×2246 px menggunakan lembar pratinjau yang sama. Toast sukses/error tetap mengikuti gaya Laporan.
+
+Pilihan hanya disimpan selama AdminLayout aktif, tanpa localStorage. Ubah Pengaturan dan Back/Forward mempertahankan pilihan; pratinjau langsung/refresh tanpa konfigurasi diarahkan ke pengaturan. Data admin Oktober tetap menjadi default, bukan April pada contoh raster. Template publik A4 landscape tidak berubah. Bukti visual dan contoh berkas refinement di `tmp/admin117-refinement-qa/`, tidak di-stage.

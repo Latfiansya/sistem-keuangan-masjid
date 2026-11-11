@@ -1,11 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useLocation, useOutletContext } from 'react-router'
-import { ArrowDownCircle, ArrowDownRight, ArrowDownToLine, ArrowUpCircle, ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, CircleAlert, Download, FileText, Landmark, LoaderCircle, Pencil, Search, ShieldCheck, Trash2, Wallet } from 'lucide-react'
+import { Link, useLocation, useNavigate, useOutletContext } from 'react-router'
+import { ArrowDownCircle, ArrowDownRight, ArrowUpCircle, ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, Download, FileText, Landmark, Pencil, Search, ShieldCheck, Trash2, Wallet } from 'lucide-react'
 import { paginateAdminTransactions } from '../utils/adminPagination.js'
 import AdminBalanceSummary from '../components/AdminBalanceSummary.jsx'
 import { buildAdminFinanceReport, buildAdminMonthlyRecap, filterAdminFinanceTransactions, getAdminFinancePreset, summarizeAdminFinanceTransactions, validateAdminFinanceRange } from '../services/adminFinanceReportService.js'
-import { createAdminFinanceSummaryPng } from '../services/adminFinanceExportService.js'
-import { downloadReportFile } from '../services/reportExportService.js'
 import { formatReportDate, formatReportMonth, formatReportNumber, formatRupiah } from '../utils/reportFormatters.js'
 import { adminCategoryColorStyle } from '../utils/adminCategoryColors.js'
 import './AdminFinanceReportPage.css'
@@ -94,13 +92,9 @@ function AdminFinanceReportContent({ report }) {
   const [query, setQuery] = useState(() => reportView?.query ?? '')
   const [page, setPage] = useState(() => reportView?.page || 1)
   const [pageSize, setPageSize] = useState(() => reportView?.pageSize || 20)
-  const [exporting, setExporting] = useState(false)
-  const [toast, setToast] = useState(null)
-  const exportSheet = useRef(null)
-  const exportController = useRef(null)
   const tabPanel = useRef(null)
   const reportNavigation = useRef(null)
-  const downloadButton = useRef(null)
+  const navigate = useNavigate()
   const periodLabel = formatReportMonth(report.month)
   const monthLabel = periodLabel.split(' ')[0]
   const snapshotLabel = formatReportDate(report.updatedDate)
@@ -131,13 +125,6 @@ function AdminFinanceReportContent({ report }) {
 
   function rememberView() { setReportView?.({ range, draftRange, historyRange, tabId, query, page: paginateAdminTransactions(ledgerTransactions, page, pageSize).page, pageSize, activePreset }) }
 
-  useEffect(() => () => exportController.current?.abort(), [])
-  useEffect(() => {
-    if (!toast) return
-    const timer = setTimeout(() => setToast(null), 3000)
-    return () => clearTimeout(timer)
-  }, [toast])
-
   function applyRange(event) {
     event.preventDefault()
     try { validateAdminFinanceRange(report, draftRange); setRange({ ...draftRange }); setHistoryRange({ ...draftRange }); setRangeError(''); setActivePreset(null); setPage(1) }
@@ -163,22 +150,6 @@ function AdminFinanceReportContent({ report }) {
     event.currentTarget.parentElement.children[next].focus()
   }
 
-  async function handleDownload() {
-    if (exportController.current) return
-    const controller = new AbortController()
-    exportController.current = controller
-    setExporting(true); setToast(null)
-    if (window.innerWidth < 480) downloadButton.current?.scrollIntoView({ block: 'center' })
-    try {
-      const file = await createAdminFinanceSummaryPng({ sheet: exportSheet.current, updatedDate: report.updatedDate, signal: controller.signal })
-      controller.signal.throwIfAborted()
-      downloadReportFile(file)
-      setToast({ type: 'success', message: 'Laporan berhasil diunduh' })
-    } catch (cause) {
-      if (!controller.signal.aborted) setToast({ type: 'error', message: `Laporan gagal diunduh. ${cause.message}` })
-    } finally { exportController.current = null; if (!controller.signal.aborted) setExporting(false) }
-  }
-
   return <div className="admin-report">
     {state?.message && <p className="admin-report-notice" role="status">{state.message}</p>}
     <header className="admin-report-hero"><span><Landmark size={14} aria-hidden="true" />MASJID AL-HIDAYAH</span><h2>LAPORAN<br />KEUANGAN</h2><p>Ringkasan pemasukan, pengeluaran, dan saldo<br className="admin-desktop-break" /> dana masjid dalam satu tampilan.</p><div><button type="button" disabled title="Tambah pemasukan belum tersedia"><ArrowDownCircle size={16} aria-hidden="true" />Tambah Pemasukan</button><button type="button" disabled title="Tambah pengeluaran belum tersedia"><ArrowUpCircle size={16} aria-hidden="true" />Tambah Pengeluaran</button></div></header>
@@ -187,11 +158,11 @@ function AdminFinanceReportContent({ report }) {
     <section className="admin-report-detail" aria-labelledby="admin-report-detail-title"><div className="admin-report-detail-heading"><div><h2 id="admin-report-detail-title">Detail {range.startDate.slice(0, 7) === report.month ? periodLabel : 'Riwayat Mock'}</h2><p>Rincian pemasukan dan pengeluaran simulasi untuk rentang terpilih.</p></div><div className="admin-report-presets">{[['week', '1 minggu terakhir'], ['month', '1 bulan terakhir'], ['quarter', '3 bulan terakhir'], ['currentMonth', 'Bulan ini']].map(([id, label]) => <button key={id} type="button" aria-pressed={activePreset === id} onClick={() => applyPreset(id)}>{id === 'currentMonth' && <CalendarDays size={14} aria-hidden="true" />}{label}</button>)}</div></div>
       <form className="admin-report-filters" noValidate onSubmit={applyRange} aria-label="Filter tanggal transaksi mock"><span><CalendarDays size={16} aria-hidden="true" />Rentang transaksi:</span>{[['startDate', 'Dari tanggal'], ['endDate', 'Sampai tanggal']].map(([key, label]) => <label key={key}><span>{label}</span><input name={key} type="date" required value={draftRange[key]} onChange={(event) => { setDraftRange((previous) => ({ ...previous, [key]: event.target.value })); setRangeError(''); setActivePreset(null); setPage(1) }} aria-invalid={Boolean(rangeError)} aria-describedby={rangeError ? 'admin-report-range-error' : undefined} /></label>)}<button type="submit">Terapkan</button><p>{transactions.length} dari {report.transactions.length} transaksi mock</p></form>
       {rangeError && <p className="admin-report-error" id="admin-report-range-error" role="alert">{rangeError}</p>}
-      <aside className="admin-report-notice"><ShieldCheck size={18} aria-hidden="true" /><p>Data mock khusus review · {report.historicalTransactionCount} transaksi historis mock, {report.transactions.length} transaksi aktif; bukan riwayat resmi. Ringkasan saldo tetap snapshot {snapshotLabel}. Filter tanggal juga membatasi ketiga tampilan laporan di bawah.{report.sessionChangeCount > 0 && <> Ada perubahan sesi: tabel, total filter, dan rekap memakai data aktif. Saldo serta PNG snapshot tetap memakai baseline.</>}</p></aside>
+      <aside className="admin-report-notice"><ShieldCheck size={18} aria-hidden="true" /><p>Data mock khusus review · {report.historicalTransactionCount} transaksi historis mock, {report.transactions.length} transaksi aktif; bukan riwayat resmi. Ringkasan saldo tetap snapshot {snapshotLabel}. Filter tanggal juga membatasi ketiga tampilan laporan di bawah.{report.sessionChangeCount > 0 && <> Ada perubahan sesi: tabel, total filter, dan rekap memakai data aktif. Saldo snapshot tetap memakai baseline; ekspor dokumen menggunakan transaksi aktif.</>}</p></aside>
       <div className="admin-report-transaction-panels"><TransactionPanel type="income" transactions={transactions} categories={report.categories} /><TransactionPanel type="expense" transactions={transactions} categories={report.categories} /></div>
     </section>
     <AdminBalanceSummary categories={report.categories} totals={report.totals} updatedDate={report.updatedDate} title={`Resume Saldo Bulan ${monthLabel}`} titleId="admin-report-balance-title" />
-    <section className="admin-report-download"><div><h2>Unduh Ringkasan Laporan</h2><p>PNG ringkasan snapshot {snapshotLabel} · data contoh, seluruh kategori.</p></div><button ref={downloadButton} type="button" onClick={handleDownload} disabled={exporting}>{exporting ? <LoaderCircle size={16} className="admin-report-spinner" aria-hidden="true" /> : <Download size={16} aria-hidden="true" />}{exporting ? 'Membuat PNG…' : 'Unduh PNG'}</button></section>
+    <section className="admin-report-download"><div><h2>Unduh Laporan Keuangan</h2><p>Pilih periode dan jenis laporan, lalu pratinjau PDF atau PNG.</p></div><button type="button" onClick={() => { rememberView(); navigate('/admin/laporan/unduh') }}><Download size={16} aria-hidden="true" />Unduh Laporan</button></section>
     <div ref={reportNavigation} id="kas-masuk" role="tablist" className="admin-report-tabs" aria-label="Jenis laporan">{reportTabs.map(({ id, label, icon: Icon }, index) => <button key={id} type="button" role="tab" id={`admin-report-tab-${id}`} aria-selected={tabId === id} aria-controls="admin-report-ledger-panel" tabIndex={tabId === id ? 0 : -1} className={`admin-report-view--${id}`} onClick={() => selectTab(id)} onKeyDown={(event) => handleTabKey(event, index)}><Icon size={16} aria-hidden="true" />{label}</button>)}</div>
     <section ref={tabPanel} id="admin-report-ledger-panel" role="tabpanel" aria-labelledby={`admin-report-tab-${tabId}`} tabIndex={0} className={`admin-report-ledger admin-report-view--${tabId}`}>
       <div className="admin-report-ledger-heading"><div><h2>{selectedTab.label}{tabId === 'monthly' ? ` ${historyRange.startDate.slice(0, 4)}` : ''}</h2><p>{tabId === 'income' ? 'Semua pemasukan dana masjid' : tabId === 'expense' ? 'Semua pengeluaran dana masjid' : 'Ringkasan saldo & aliran kas setiap bulan dan kategori'} · data mock<br />{formatReportDate(historyRange.startDate)}–{formatReportDate(historyRange.endDate)}</p></div>{tabId === 'monthly' && <span><CalendarDays size={14} aria-hidden="true" />Tahun {historyRange.startDate.slice(0, 4)}</span>}</div>
@@ -202,9 +173,6 @@ function AdminFinanceReportContent({ report }) {
         <p className="sr-only" role="status">{ledgerTransactions.length} transaksi mock {selectedTab.label}.</p>
       </>}
     </section>
-    <div className="admin-report-export" aria-hidden="true"><div ref={exportSheet} className="admin-report-export-sheet"><header><h2>Ringkasan Laporan Keuangan</h2><p>Masjid Al-Hidayah Sorolaten · {periodLabel}</p><strong>Data contoh · Snapshot {snapshotLabel}</strong><p>Ringkasan mengikuti Dashboard admin. Transaksi sumber hanya cuplikan; dokumen ini bukan riwayat mutasi lengkap.</p></header><AdminBalanceSummary categories={report.categories} totals={report.totals} updatedDate={report.updatedDate} title="Resume Saldo Seluruh Kategori" titleId="admin-report-export-title" showDescription={false} /><footer>Nominal dalam Rupiah · Saldo akhir = saldo awal + pemasukan − pengeluaran</footer></div></div>
-    {exporting && <p className="sr-only" role="status">Sedang membuat PNG ringkasan laporan.</p>}
-    {toast && <div className={`admin-report-toast admin-report-toast--${toast.type}`} role="status" aria-live="polite">{toast.type === 'success' ? <ArrowDownToLine size={22} aria-hidden="true" /> : <CircleAlert size={22} aria-hidden="true" />}<span>{toast.message}</span></div>}
   </div>
 }
 

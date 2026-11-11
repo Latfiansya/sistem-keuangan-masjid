@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { mockAdminDashboard } from '../src/mocks/adminDashboard.js'
 import { mockAdminFinanceHistory, mockAdminFinanceOctober } from '../src/mocks/adminFinanceReport.js'
@@ -13,7 +13,7 @@ const apiUrl = process.env.ADMIN_BROWSER_API_QA_URL
 const cdpUrl = process.env.REPORT_BROWSER_CDP_URL
 const phase = process.env.ADMIN_DASHBOARD_QA_PHASE === 'production' ? 'production' : 'development'
 
-test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan PNG ringkasan pada Chrome QA', {
+test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan pengaturan unduhan pada Chrome QA', {
   skip: !baseUrl || !apiUrl || !cdpUrl ? 'Jalankan server mock/API dan Chrome QA sesuai README.' : false,
   timeout: 60000,
 }, async (t) => {
@@ -59,10 +59,6 @@ test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan PNG ringkasan
     const size = await evaluate('({width:innerWidth,height:document.documentElement.scrollHeight})')
     const png = await send('Page.captureScreenshot', { format: 'png', captureBeyondViewport: full, ...(full ? { clip: { x: 0, y: 0, ...size, scale: 1 } } : {}) })
     await writeFile(`${output}${name}.png`, Buffer.from(png.data, 'base64'))
-  }
-  const readDownload = async (index) => {
-    for (let attempt = 0; attempt < 300; attempt++) { const file = downloads[index]; if (file?.state === 'completed') return { ...file, bytes: await readFile(`${output}downloads/${file.guid}`) }; assert.notEqual(file?.state, 'canceled'); await new Promise((resolve) => setTimeout(resolve, 20)) }
-    assert.fail('Unduhan ringkasan PNG tidak selesai.')
   }
   const summary = () => evaluate('document.querySelector(".admin-report > .admin-balance .admin-balance-table").textContent')
   const noOverflow = async () => {
@@ -236,39 +232,13 @@ test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan PNG ringkasan
         assert.equal(await evaluate('document.querySelector(".admin-report-tabs [aria-selected=true]").id'),'admin-report-tab-income')
       }
     })
-    await t.test('PNG snapshot nyata mencakup seluruh kategori, toast sukses setelah trigger, error dan auto-dismiss', async () => {
-      for (const [width,height] of [[1728,1080],[390,844]]) {
-        await send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false})
-        await open(); await click('#admin-report-tab-expense'); await search('kosong')
-        const index=downloads.length
-        await evaluate(`window.originalToBlob=HTMLCanvasElement.prototype.toBlob;HTMLCanvasElement.prototype.toBlob=function(callback,...args){originalToBlob.call(this,blob=>{window.resumeReport=()=>callback(blob)},...args)};window.originalAnchorClick=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){window.reportDownloadUrl=this.href;return originalAnchorClick.call(this)}`)
-        await click('.admin-report-download button'); await waitFor('typeof window.resumeReport==="function"')
-        assert.equal(await evaluate('!!document.querySelector(".admin-report-toast")'),false); assert.equal(downloads.length,index)
-        assert.equal(await evaluate('document.querySelector(".admin-report-download button").disabled'),true)
-        await evaluate('window.resumeReport();delete window.resumeReport;HTMLCanvasElement.prototype.toBlob=originalToBlob')
-        await waitFor('!!document.querySelector(".admin-report-toast--success")'); const started=Date.now()
-        await evaluate('HTMLAnchorElement.prototype.click=originalAnchorClick')
-        assert.equal(await evaluate('document.querySelector(".admin-report-toast").textContent'),'Laporan berhasil diunduh')
-        assert.equal(await evaluate('document.querySelector(".admin-report-toast").getAttribute("role")'),'status')
-        const file=await readDownload(index)
-        assert.equal(file.suggestedFilename,'ringkasan-keuangan-admin-contoh-2026-10-20.png')
-        assert.equal(file.bytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a'); assert.equal(file.bytes.readUInt32BE(16),2240)
-        await writeFile(`${output}ringkasan-${width}.png`,file.bytes)
-        assert.equal(await evaluate('(async()=>{const image=await createImageBitmap(await(await fetch(reportDownloadUrl)).blob());const ok=image.width===2240&&image.height>900;image.close();return ok})()'),true)
-        assert.equal(await evaluate('document.querySelectorAll(".admin-report-export-sheet tbody tr").length'),3)
-        assert.match(await evaluate('document.querySelector(".admin-report-export-sheet").textContent'),/Data contoh.*17\.228\.200/s)
-        await noOverflow(); await screenshot(`laporan-${width}-toast`)
-        await waitFor('!document.querySelector(".admin-report-toast")'); assert.ok(Date.now()-started>=2700&&Date.now()-started<4500)
-      }
-      for (const mode of ['render','download']) {
-        const index=downloads.length
-        await evaluate(mode==='render'?'window.originalToBlob=HTMLCanvasElement.prototype.toBlob;HTMLCanvasElement.prototype.toBlob=function(callback){callback(null)}':'window.originalAnchorClick=HTMLAnchorElement.prototype.click;HTMLAnchorElement.prototype.click=function(){throw new Error("Unduhan diblokir untuk QA")}')
-        await click('.admin-report-download button'); await waitFor('!!document.querySelector(".admin-report-toast--error")')
-        assert.match(await evaluate('document.querySelector(".admin-report-toast").textContent'),/Laporan gagal diunduh/)
-        assert.equal(downloads.length,index); assert.equal(await evaluate('!!document.querySelector(".admin-report-toast--success")'),false)
-        await evaluate('HTMLCanvasElement.prototype.toBlob=originalToBlob;HTMLAnchorElement.prototype.click=originalAnchorClick')
-        await screenshot(`laporan-error-${mode}`); await waitFor('!document.querySelector(".admin-report-toast")')
-      }
+    await t.test('banner menuju halaman pengaturan unduhan, Batal kembali tanpa mengubah konteks laporan', async () => {
+      await open()
+      assert.equal(await evaluate('document.querySelector(".admin-report-download h2").textContent'),'Unduh Laporan Keuangan')
+      await click('.admin-report-download button');await waitFor('location.pathname==="/admin/laporan/unduh"&&!!document.querySelector(".admin-download-settings")')
+      assert.equal(await evaluate('document.querySelector(".admin-download-month-range input").value'),'2026-10')
+      assert.equal(await evaluate('document.querySelector("dialog")'),null)
+      await click('.admin-download-settings > footer a');await waitFor('location.pathname==="/admin/laporan"&&!!document.querySelector(".admin-report-tabs")')
     })
     await t.test('refresh/trailing slash, navigasi admin lama dan mode API tanpa endpoint/fallback karangan', async () => {
       assert.deepEqual(await evaluate('({local:localStorage.length,session:sessionStorage.length,cookie:document.cookie})'),{local:0,session:0,cookie:''})

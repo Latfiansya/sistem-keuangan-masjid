@@ -64,7 +64,7 @@ export default function AdminTransactionForm({ type, categories, onSave, onClose
     <header><button type="button" onClick={onClose} aria-label={`Tutup tambah ${label.toLowerCase()}`}><ChevronLeft size={22} aria-hidden="true" /></button><div><h2 id="admin-transaction-title">Tambah {label}</h2><p>Catat {label.toLowerCase()} dana masjid</p></div></header>
     <form noValidate onSubmit={submit}>
       <AdminTransactionFields values={values} errors={errors} categories={categories} type={type} change={change} />
-      <p id="admin-transaction-note" className="admin-transaction-note">{income ? 'Transaksi dan pilihan nama publik hanya simulasi sesi admin, belum tersimpan ke server.' : 'Transaksi hanya simulasi sesi admin, belum tersimpan ke server.'} Daftar dan laporan simulasi diperbarui; saldo serta PNG snapshot tetap.</p>
+      <p id="admin-transaction-note" className="admin-transaction-note">{income ? 'Transaksi dan pilihan nama publik hanya simulasi sesi admin, belum tersimpan ke server.' : 'Transaksi hanya simulasi sesi admin, belum tersimpan ke server.'} Daftar, laporan dan ekspor simulasi memakai data aktif; snapshot saldo Dashboard tetap.</p>
       {errors.form && <p className="admin-transaction-error" role="alert">{errors.form}</p>}
       <footer><button type="button" onClick={onClose}>Batal</button><button type="submit" className="admin-transaction-save"><Check size={16} aria-hidden="true" />Simpan {label}</button></footer>
     </form>

@@ -21,6 +21,7 @@ import AdminReceiptPage from './pages/AdminReceiptPage.jsx'
 import AdminFinanceReportPage from './pages/AdminFinanceReportPage.jsx'
 import AdminTransactionPage from './pages/AdminTransactionPage.jsx'
 import AdminDonationPage from './pages/AdminDonationPage.jsx'
+import AdminReportDownloadPage from './pages/AdminReportDownloadPage.jsx'
 
 export default function App() {
   return (
@@ -47,6 +48,8 @@ export default function App() {
         <Route path="activity-log" element={<AdminActivityLogPage />} />
         <Route path="kwitansi" element={<AdminReceiptPage />} />
         <Route path="laporan" element={<AdminFinanceReportPage />} />
+        <Route path="laporan/unduh" element={<AdminReportDownloadPage />} />
+        <Route path="laporan/unduh/pratinjau" element={<AdminReportDownloadPage preview />} />
         <Route path="laporan/transaksi/:id" element={<AdminTransactionPage />} />
         <Route path="laporan/transaksi/:id/edit" element={<AdminTransactionPage edit />} />
       </Route>
