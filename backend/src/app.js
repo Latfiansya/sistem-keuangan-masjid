@@ -1,9 +1,13 @@
 import express from 'express'
 import { loadEnv, normalizeBasePath } from './config/env.js'
+import { createAdminFinanceController } from './controllers/adminFinanceController.js'
 import { createReportController } from './controllers/reportController.js'
 import { createRateLimiter } from './middlewares/rateLimiter.js'
+import { createAdminFinanceRepository } from './repositories/adminFinanceRepository.js'
+import { createAdminRoutes } from './routes/adminRoutes.js'
 import healthRoutes from './routes/healthRoutes.js'
 import { createPublicRoutes } from './routes/publicRoutes.js'
+import { createAdminFinanceService } from './services/adminFinanceService.js'
 
 export function createApp(overrides = {}) {
   const config = loadEnv()
@@ -23,12 +27,16 @@ export function createApp(overrides = {}) {
     windowMs: rateLimitWindowMs,
     maxAttempts: rateLimitMax,
   })
+  const adminFinanceRepository = createAdminFinanceRepository()
+  const adminFinanceService = createAdminFinanceService(adminFinanceRepository)
+  const adminFinanceController = createAdminFinanceController(adminFinanceService)
 
   app.disable('x-powered-by')
   app.use(express.json({ limit: jsonLimit }))
 
   app.use(apiBasePath || '/', healthRoutes)
   app.use(`${apiBasePath}/public`, createPublicRoutes({ reportController, passwordRateLimiter }))
+  app.use(`${apiBasePath}/admin`, createAdminRoutes({ adminFinanceController }))
 
   app.use((_req, res) => {
     res.status(404).json({
