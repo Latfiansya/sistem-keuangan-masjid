@@ -83,12 +83,12 @@ test('mode API menampilkan error integrasi tanpa request atau fallback mock', as
   } finally { globalThis.fetch = originalFetch; await api.close() }
 })
 
-test('dashboard menangani loading/error dan menampilkan tabel serta aksi nonaktif dari satu data', async () => {
+test('dashboard menangani loading/error dan menampilkan tabel dan enam tombol navigasi aktif dari satu data', async () => {
   assert.match(renderPage({ dashboard: null, error: '' }), /role="status".*Memuat dashboard/)
   assert.match(renderPage({ dashboard: null, error: 'Gagal memuat.' }), /role="alert".*Gagal memuat/)
   const html = renderPage({ dashboard: await getAdminDashboard(), error: '' })
   assert.equal((html.match(/<table\b/g) || []).length, 2)
-  assert.equal((html.match(/<button\b/g) || []).length, (html.match(/disabled=""/g) || []).length)
+  assert.equal((html.match(/<button\b/g) || []).length - (html.match(/disabled=""/g) || []).length, 6)
   assert.match(html, /Data contoh/)
   assert.match(html, /Saldo Awal \(Rp\)/)
   assert.match(html, /17\.228\.200/)

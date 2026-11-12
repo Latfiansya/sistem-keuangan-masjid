@@ -208,7 +208,7 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
       await waitFor('!!document.querySelector(".financial-report")')
       assert.equal(await evaluate('document.querySelectorAll("input[type=password]").length'), 0)
       assert.equal(await evaluate('document.activeElement.tagName'), 'H1')
-      assert.equal(await evaluate('document.querySelector(".financial-results").getAttribute("aria-busy")'), 'true')
+      await waitFor('document.querySelector(".financial-results").getAttribute("aria-busy") === "false"')
     })
     await t.test('laporan menampilkan 50 transaksi, total konsisten dan pilihan format tersedia', async () => {
       await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 50')
@@ -285,10 +285,13 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
       await evaluate('document.querySelectorAll(".report-preview-format button")[1].click()')
       assert.equal(await evaluate('[...document.querySelectorAll(".report-sheet")].map(e=>e.outerHTML).join("") === window.__qaSheetContent'), true)
       assert.match(await evaluate('document.querySelector(".report-preview-page-label h3").textContent'), /Gambar 1 dari 2/)
+      assert.equal(await evaluate('document.querySelectorAll(".report-preview-toolbar-actions button").length'), 1)
+      assert.equal(await evaluate('document.querySelector(".report-preview-toolbar-actions button").textContent'), 'Unduh ZIP · 2 PNG')
       assert.equal(await evaluate('document.querySelectorAll("[download], canvas, iframe").length'), 0)
     })
     await t.test('ekspor PDF nyata berisi dua halaman A4 dan submit ganda hanya mengunduh satu berkas', async () => {
       await evaluate('document.querySelector(".report-preview-format button").click()')
+      assert.equal(await evaluate('document.querySelector(".report-preview-toolbar-actions button").textContent'), 'Unduh PDF · 2 halaman')
       const index = downloads.length
       await evaluate('document.querySelectorAll(".report-preview-toolbar-actions .export-button--primary, .report-export-actions .export-button--primary").forEach(button => { for (let i = 0; i < 5; i++) button.click() })')
       assert.equal(await evaluate('document.querySelector(".report-preview-toolbar-actions").getAttribute("aria-busy")'), 'true')
@@ -333,7 +336,7 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
       } finally { await evaluate('HTMLAnchorElement.prototype.click = window.__qaAnchorClick') }
     })
     await t.test('kembali ke pilihan format mempertahankan PNG lalu kembali ke laporan', async () => {
-      await evaluate('document.querySelector(".report-export-actions > button").click()')
+      await evaluate('document.querySelector(".report-export-header .export-button--back").click()')
       await waitFor('!!document.querySelector("input[value=png]")')
       assert.equal(await evaluate('document.querySelector("input[value=png]").checked'), true)
       await evaluate('document.querySelector(".report-export-actions > button").click()')

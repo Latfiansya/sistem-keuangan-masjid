@@ -23,9 +23,9 @@ export function validateExportSheets(report, pages, sheets) {
   })) throw new Error('Lembar pratinjau belum siap. Buka kembali pratinjau dan coba lagi.')
 }
 
-function canvasToPng(canvas) {
+function canvasToPng(canvas, layout) {
   const context = canvas.getContext('2d')
-  if (!context || canvas.width < REPORT_SHEET_LAYOUT.width * 2 - 1 || canvas.height < REPORT_SHEET_LAYOUT.height * 2 - 1) throw new Error('Resolusi gambar laporan tidak mencukupi.')
+  if (!context || canvas.width < layout.width * 2 - 1 || canvas.height < layout.height * 2 - 1) throw new Error('Resolusi gambar laporan tidak mencukupi.')
   const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data
   let ink = 0
   for (let i = 0; i < pixels.length; i += 64) {
@@ -38,6 +38,12 @@ function canvasToPng(canvas) {
 export async function createReportExport({ report, pages, sheets, format, signal, onProgress = () => {} }) {
   validateExportSheets(report, pages, sheets)
   const filename = getReportExportName(report.range, format, pages.length)
+  return createReportSheetsExport({ sheets, filename, format, signal, onProgress, layout: REPORT_SHEET_LAYOUT, orientation: 'landscape' })
+}
+
+// Renderer bersama; template, validasi data dan pagination tetap milik masing-masing laporan.
+export async function createReportSheetsExport({ sheets, filename, format, signal, onProgress = () => {}, layout, orientation }) {
+  if (!sheets?.length || !['pdf', 'png'].includes(format) || !['portrait', 'landscape'].includes(orientation) || !(layout?.width > 0 && layout?.height > 0)) throw new Error('Pengaturan ekspor laporan tidak valid.')
   signal?.throwIfAborted()
   onProgress('Menyiapkan font dan aset laporan…')
   const { toCanvas, getFontEmbedCSS } = await import('html-to-image')
@@ -48,27 +54,27 @@ export async function createReportExport({ report, pages, sheets, format, signal
   const fontEmbedCSS = await getFontEmbedCSS(sheets[0])
   if (!fontEmbedCSS.includes('data:')) throw new Error('Font laporan gagal disematkan ke gambar.')
   signal?.throwIfAborted()
-  const pdf = format === 'pdf' ? new (await import('jspdf')).jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', compress: true }) : null
-  const zip = format === 'png' && pages.length > 1 ? new (await import('jszip')).default() : null
+  const pdf = format === 'pdf' ? new (await import('jspdf')).jsPDF({ orientation, unit: 'mm', format: 'a4', compress: true }) : null
+  const zip = format === 'png' && sheets.length > 1 ? new (await import('jszip')).default() : null
   let singlePng
   for (const [index, sheet] of sheets.entries()) {
     signal?.throwIfAborted()
-    onProgress(`Merender lembar ${index + 1} dari ${pages.length}…`)
+    onProgress(`Merender lembar ${index + 1} dari ${sheets.length}…`)
     // Hanya lembar yang dirender. Transform pratinjau dan kontainer scroll tidak ikut.
     let canvas
     try {
       canvas = await toCanvas(sheet, {
-        width: REPORT_SHEET_LAYOUT.width, height: REPORT_SHEET_LAYOUT.height,
+        width: layout.width, height: layout.height,
         pixelRatio: 2, backgroundColor: '#ffffff', fontEmbedCSS,
         style: { transform: 'none', transformOrigin: 'top left', margin: '0', boxShadow: 'none' },
       })
     } catch (cause) { throw new Error('Lembar laporan gagal dirender. Pastikan font dan aset tersedia.', { cause }) }
     try {
       signal?.throwIfAborted()
-      const png = await canvasToPng(canvas)
+      const png = await canvasToPng(canvas, layout)
       const bytes = new Uint8Array(await png.arrayBuffer())
       if (pdf) {
-        if (index > 0) pdf.addPage('a4', 'landscape')
+        if (index > 0) pdf.addPage('a4', orientation)
         const pageWidth = pdf.internal.pageSize.getWidth()
         const pageHeight = pdf.internal.pageSize.getHeight()
         const scale = Math.min(pageWidth / canvas.width, pageHeight / canvas.height)
@@ -86,7 +92,7 @@ export async function createReportExport({ report, pages, sheets, format, signal
   const blob = pdf ? pdf.output('blob') : zip ? await zip.generateAsync({ type: 'blob', compression: 'STORE' }) : singlePng
   signal?.throwIfAborted()
   if (!blob?.size) throw new Error('Berkas laporan gagal dibuat.')
-  return { blob, filename, pageCount: pages.length }
+  return { blob, filename, pageCount: sheets.length }
 }
 
 export function downloadReportFile({ blob, filename }) {

@@ -7,14 +7,14 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router'
 import { buildAdminFinanceReport, buildAdminMonthlyRecap, filterAdminFinanceTransactions, getAdminFinancePreset, summarizeAdminFinanceTransactions, validateAdminFinanceRange } from '../src/services/adminFinanceReportService.js'
 
-let server, App, Page, DashboardPage, getAdminDashboard, createAdminFinanceSummaryPng
+let server, App, Page, DashboardPage, DownloadPage, getAdminDashboard
 before(async () => {
   server = await createServer({ root: fileURLToPath(new URL('../', import.meta.url)), server: { middlewareMode: true, ws: false, hmr: false }, appType: 'custom', define: { 'import.meta.env.VITE_DATA_SOURCE': '"mock"' } })
   ;({ default: App } = await server.ssrLoadModule('/src/App.jsx'))
   ;({ default: Page } = await server.ssrLoadModule('/src/pages/AdminFinanceReportPage.jsx'))
+  ;({ default: DownloadPage } = await server.ssrLoadModule('/src/pages/AdminReportDownloadPage.jsx'))
   ;({ default: DashboardPage } = await server.ssrLoadModule('/src/pages/AdminDashboardPage.jsx'))
   ;({ getAdminDashboard } = await server.ssrLoadModule('/src/services/adminDashboardService.js'))
-  ;({ createAdminFinanceSummaryPng } = await server.ssrLoadModule('/src/services/adminFinanceExportService.js'))
 })
 after(async () => { await server?.close() })
 const renderPage = (Component, context) => {
@@ -140,14 +140,6 @@ test('tabel resume laporan identik dengan Dashboard dan ID heading tidak ganda',
   assert.equal(ids.length, new Set(ids).size)
 })
 
-test('ekspor menolak lembar/tanggal belum siap dan signal abort tanpa membuat berkas', async () => {
-  await assert.rejects(createAdminFinanceSummaryPng({ sheet: null, updatedDate: '2026-10-20' }), /belum siap/)
-  await assert.rejects(createAdminFinanceSummaryPng({ sheet: null, updatedDate: '2026-02-31' }), /tanggal yang valid/)
-  const controller = new AbortController(); controller.abort()
-  await assert.rejects(createAdminFinanceSummaryPng({ sheet: { matches: () => true }, updatedDate: '2026-10-20', signal: controller.signal }), { name: 'AbortError' })
-})
-
-
 test('Kas Masuk dan Kas Keluar mencakup semua kategori tanpa kehilangan atau menduplikasi transaksi', async () => {
   const report = buildAdminFinanceReport(await getAdminDashboard())
   const before = structuredClone(report)
@@ -196,4 +188,22 @@ test('rekap bulanan dihitung dari seluruh transaksi, membawa saldo dan mendukung
   assert.deepEqual(months.at(-1).totals, { ...report.totals, count: 13 })
   assert.throws(() => buildAdminMonthlyRecap(report, { startDate: '', endDate: report.updatedDate }))
   assert.deepEqual(report, before)
+})
+
+
+test('dua route unduhan menggunakan AdminLayout dan pengaturan memiliki tiga jenis/PDF awal tanpa modal', async () => {
+  for(const [route,title]of [['/admin/laporan/unduh','Pengaturan Unduhan'],['/admin/laporan/unduh/pratinjau','Pratinjau &amp; Unduh Laporan']]){
+    const html=renderToStaticMarkup(h(MemoryRouter,{initialEntries:[route]},h(App)))
+    assert.ok(html.includes(`<h1>${title}</h1>`))
+    assert.match(html,/aria-current="page"[^>]*href="\/admin\/laporan"/)
+    assert.doesNotMatch(html,/public-layout|<dialog/)
+  }
+  const context={dashboard:await getAdminDashboard(),error:'',reportDownload:null,setReportDownload:()=>{}}
+  const html=renderPage(DownloadPage,context)
+  assert.equal((html.match(/type="checkbox"/g)||[]).length,3)
+  assert.match(html,/name="downloadFormat"[^>]*checked=""[^>]*value="pdf"/)
+  assert.match(html,/Rentang Tanggal/)
+  assert.doesNotMatch(html,/Laporan Bulanan|<dialog|admin-download-page-count/)
+  const invalid=renderPage(DownloadPage,{...context,reportDownload:{range:{startDate:'2026-10-01',endDate:'2026-10-31'},periodMode:'months',preset:'week',types:[],format:'pdf'}})
+  assert.match(invalid,/role="alert"[^>]*>Pilih minimal satu/)
 })
