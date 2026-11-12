@@ -44,6 +44,22 @@ export function loadEnv(source = process.env) {
     reportPasswordHash = hashPassword(rawDevPassword)
   }
 
+  const dbPort = parsePositiveInteger(source.DB_PORT, 5432, 'DB_PORT')
+  if (dbPort > 65535) {
+    throw new Error('DB_PORT harus berupa bilangan bulat antara 1 dan 65535.')
+  }
+
+  const db = Object.freeze({
+    connection: source.DB_CONNECTION?.trim() || 'pgsql',
+    host: source.DB_HOST?.trim() || '127.0.0.1',
+    port: dbPort,
+    database: source.DB_DATABASE?.trim() || 'keuangan_masjid',
+    username: source.DB_USERNAME?.trim() || 'postgres',
+    password: source.DB_PASSWORD ?? '',
+    schema: source.DB_SCHEMA?.trim() || 'keu_masjid',
+    sslmode: source.DB_SSLMODE?.trim() || 'prefer',
+  })
+
   return Object.freeze({
     port,
     host,
@@ -53,5 +69,6 @@ export function loadEnv(source = process.env) {
     rateLimitWindowMs,
     rateLimitMax,
     reportPasswordHash,
+    db,
   })
 }
