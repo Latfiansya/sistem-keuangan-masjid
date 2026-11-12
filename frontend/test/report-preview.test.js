@@ -72,6 +72,10 @@ test('PDF dan PNG memakai lembar identik dengan semua nominal dan total dari ser
     assert.equal((markup.match(/id="report-sheet-summary-heading"/g) || []).length, 1)
     for (const value of ['18.590.700', '10.665.500', '8.771.500', '20.484.700', 'Data contoh pengembangan']) assert.ok(markup.includes(value))
     assert.match(markup, /aria-describedby="report-export-status"/)
+    assert.doesNotMatch(markup, /Ubah format/)
+    assert.match(markup, /Kembali ke pilihan format/)
+    const toolbar = markup.match(/class="report-preview-toolbar-actions"[\s\S]*?<\/div>/)?.[0]
+    assert.equal((toolbar.match(/<button\b/g) || []).length, 1)
     assert.doesNotMatch(markup, /disabled=""/)
     assert.doesNotMatch(markup, /<canvas|<iframe|download=|blob:|berhasil diunduh/)
   }

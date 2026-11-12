@@ -475,3 +475,17 @@ Pratinjau memakai seluruh lebar area konten, ringkasan dokumen mendatar yang rin
 Template `AdminDownloadSheet`, identitas masjid, kategori, warna, perhitungan dan pagination berbasis tinggi DOM tetap. Setiap bagian dimulai pada halaman baru, baris tidak dibelah dan header tabel diulang. Rekap Bulanan tetap memuat saldo awal, pemasukan, pengeluaran, saldo akhir dan total tiap bulan/kategori; kartu saldo periode tetap terdapat di dokumen, sehingga penghapusan opsi Laporan Bulanan tidak menghilangkan informasi saldo. PDF A4 portrait dan PNG 1588×2246 px menggunakan lembar pratinjau yang sama. Toast sukses/error tetap mengikuti gaya Laporan.
 
 Pilihan hanya disimpan selama AdminLayout aktif, tanpa localStorage. Ubah Pengaturan dan Back/Forward mempertahankan pilihan; pratinjau langsung/refresh tanpa konfigurasi diarahkan ke pengaturan. Data admin Oktober tetap menjadi default, bukan April pada contoh raster. Template publik A4 landscape tidak berubah. Bukti visual dan contoh berkas refinement di `tmp/admin117-refinement-qa/`, tidak di-stage.
+
+## Refinement proporsi laporan publik
+
+Baseline desain laporan publik dipertahankan pada tiga tampilan: laporan, pemilihan format dan pratinjau. Ukuran judul utama tidak berubah. Kontrol Beranda/Unduh/Kembali, filter, kartu PDF/PNG, stepper, teks sekunder, panel periode/instruksi dan toolbar dibuat lebih ringkas melalui font/padding/gap lokal, tanpa zoom atau scale global. Warna, font family, radius/border/shadow tetap mengikuti bahasa desain yang tersedia.
+
+Rentang Kustom memakai date picker dan Terapkan setinggi 52 px dengan center vertikal sejajar pada desktop. Mobile menggunakan susunan yang menyesuaikan ruang dan target klik minimum 44 px untuk tombol navigasi/filter. Toolbar preview tidak lagi memuat Ubah format; PDF/PNG tetap dipilih langsung di toolbar, Kembali menuju pilihan format, dan label unduh mengikuti pilihan. Tidak ada konten deskripsi yang dihapus.
+
+Desain tabel, kategori, lebar area dokumen, A4 landscape, isi dan pagination tetap. Seluruh PNG ekspor cocok byte dengan baseline; perubahan hanya pada UI di luar dokumen. Perbandingan empat viewport dan ketiga tampilan tersedia di `tmp/public-report-proportions-qa/`, tidak di-stage. Tidak membuat frame/URL Figma baru atau mengubah desain Admin.
+
+### Lanjutan — Konsistensi tombol dan kepadatan panel
+
+Tombol navigasi dan preset di laporan utama mengikuti radius tombol Kembali ke Laporan/Lanjut ke Pratinjau (16 px pada desktop besar, 12 px pada layar ≤1399 px), dengan border 1 px, surface terang dan teks/ikon hijau. Pilih Tanggal aktif tetap hijau solid; tinggi dan ukuran luar tombol sebelumnya dipertahankan. Kontrol unduhan di pemilihan format/pratinjau tidak ikut berubah.
+
+Panel Pemasukan/Pengeluaran memakai kepadatan Detail Periode Admin sebagai acuan: header desktop 72 px, ikon 40 px, judul 20 px, subtotal 24 px, baris minimum 56 px, uraian 14 px dan badge 11 px. Mobile menggunakan header 64 px dan teks membungkus sesuai kebutuhan. Dua kolom desktop, teal/rose, identitas kategori, Resume Saldo dan template ekspor dipertahankan. CSS dibatasi pada laporan utama; hasil PNG tetap identik dengan baseline. Bukti empat viewport tersedia di `tmp/public-report-density-qa/`, tidak di-stage.

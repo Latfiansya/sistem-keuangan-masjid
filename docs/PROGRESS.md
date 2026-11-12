@@ -1226,3 +1226,25 @@ Usulan pesan commit: `feat: aktifkan navigasi dashboard dan dropdown header admi
 Batasan: dokumen masih simulasi sesi, belum tersimpan ke server dan bukan laporan resmi. Refresh menghapus pilihan dan perubahan mock sesi. PDF berbasis gambar, teks belum dapat diseleksi. QA Chrome/emulasi belum mewakili seluruh perangkat fisik/Safari/Firefox; cakupan mock tidak menjamin kelengkapan transaksi di luar data yang tersedia.
 
 Usulan pesan commit: `feat: tambahkan pengaturan dan pratinjau unduhan laporan admin`.
+
+### Refinement Publik — Proporsi UI Laporan Keuangan
+
+- Branch `feature/admin-dashboard-header`; kondisi awal bersih kecuali referensi desain yang belum dilacak. Refinement hanya pada kontrol/spacing laporan publik, pilihan format dan pratinjau. Judul utama, desain/isi tabel, warna kategori, Admin, backend/API, gate, sumber data, perhitungan, template A4 landscape serta utilitas ekspor dipertahankan.
+- Tombol Beranda/Unduh dan aksi ekspor menjadi 44 px dengan ikon/teks/padding lebih ringkas. Filter periode, judul sekunder, informasi periode, stepper, kartu PDF/PNG, instruksi serta toolbar pratinjau dirapikan melalui CSS, tanpa zoom/scale global. Date picker dan Terapkan sama-sama 52 px; satu baris dan sejajar pada desktop, bertumpuk pada mobile.
+- Tombol Ubah format di toolbar dihapus. Format tetap dapat diganti langsung melalui PDF/PNG pada pratinjau, label unduh menyesuaikan, dan Kembali di header menuju pilihan format tanpa kehilangan pilihan. Seluruh deskripsi tetap.
+- Contoh 1728×1080: tombol Beranda 60→44 px, kartu PDF 264→200 px, toolbar sekitar 123→104 px. Mobile 390×844: kartu sekitar 214→191 px, toolbar 319→250 px. Ukuran judul utama dan hash style tabel/lembar sama dengan baseline.
+- Lint PASS dengan satu warning lama `no-unused-vars` untuk `key` pada test browser Admin; file Admin tidak diubah sesuai batasan. **124 frontend unit/SSR dan 18 backend PASS**. Browser publik **35 skenario/36 hasil termasuk induk PASS**, mencakup gate, filter/tanggal, navigasi Kembali, format/label, ekspor satu/dua halaman, kegagalan render/unduhan, keyboard dan responsivitas. Asersi test loading menunggu hasil selesai agar tidak bergantung pada kecepatan mock; alur gate tidak diubah.
+- Screenshot sebelum/sesudah tiga tampilan pada 1728×1080, 1366×768, 768×1024 dan 390×844; zoom 100%, tanpa overflow. Development dan preview production lulus perbandingan: HTML/style dokumen tetap, PNG tunggal dan PNG per halaman ZIP identik byte dengan baseline. PDF tetap A4 landscape; April 50 transaksi/dua halaman dan rentang 3–5 April sembilan transaksi/satu halaman tetap. Build PASS dengan peringatan bundle utama di atas 500 kB yang sudah ada.
+- Bukti visual/angka di `tmp/public-report-proportions-qa/PERBANDINGAN.md`, beserta log dan berkas unduhan, tidak di-stage. Aset referensi tidak disertakan. Tidak menambah dependency atau melakukan commit, push, merge.
+
+Usulan pesan commit: `style: rapikan proporsi laporan keuangan publik dan kontrol unduhan`.
+
+### Refinement Lanjutan Publik — Tombol dan Kepadatan Transaksi
+
+- Mempertahankan perubahan dan staging refinement proporsi sebelumnya pada `feature/admin-dashboard-header`. Patch tambahan hanya berupa CSS lokal `.financial-report`: tombol Beranda/Unduh dan empat preset mengikuti radius tombol aksi pemilihan format (16 px, 12 px pada layar ≤1399 px), border 1 px, surface terang, teks/ikon hijau dan shadow halus. Pilih Tanggal aktif tetap hijau solid/teks putih; ukuran luar tombol, hover dan focus keyboard dipertahankan.
+- Panel Pemasukan/Pengeluaran desktop menjadi lebih ringkas: header 98/86→72 px, ikon 56/44→40 px, judul 20 px, subtotal 24 px, jumlah transaksi 12 px, baris minimum 56 px (sebelumnya 70,5/64 px), uraian 14 px, nominal 16 px dan badge 11 px. Mobile memakai header 64 px, ikon 32 px, judul 18 px dan nominal 14 px; baris bertambah tinggi jika teks membungkus agar tidak terpotong.
+- Screenshot sebelum/sesudah 1728×1080 dan 1366×768 serta smoke 768×1024 dan 390×844 pada zoom 100% lulus tanpa overflow/nominal terpotong. Baris pemasukan yang terlihat penuh pada viewport desktop awal bertambah 9→11 dan 5→6. Dua kolom desktop, susunan tablet/mobile, isi/urutan 50 transaksi, Resume Saldo dan dimensi tombol tetap; CSS dokumen serta kontrol pemilihan format/pratinjau cocok dengan baseline.
+- Keempat preset, rentang kustom/Terapkan, Beranda, Unduh, navigasi Kembali dan keyboard Tab/Enter diuji. Regresi ekspor lulus: PDF dua halaman A4 landscape; PNG per halaman ZIP dan PNG tunggal rentang 3–5 April identik byte dengan baseline. Bukti visual dan berkas uji di `tmp/public-report-density-qa/`, tidak di-stage.
+- Lint lulus dengan warning lama variabel `key` pada test browser Admin; 17 test laporan/preview/ekspor lulus; build lulus dengan warning bundle utama >500 kB yang sudah ada. Tidak mengubah Admin, data, logika filter/ekspor atau dependency. Staging sebelumnya dipertahankan; aset referensi dan hasil QA tidak disertakan. Tidak melakukan commit, push atau merge.
+
+Usulan pesan commit: `style: selaraskan tombol dan padatkan panel laporan publik`.
