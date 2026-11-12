@@ -1,8 +1,10 @@
 import { Router } from 'express'
 import { createAdminFinanceController } from '../controllers/adminFinanceController.js'
+import { createAdminSettingsController } from '../controllers/adminSettingsController.js'
 
 export function createAdminRoutes({
   adminFinanceController = createAdminFinanceController(),
+  adminSettingsController = createAdminSettingsController(),
 } = {}) {
   const router = Router()
 
@@ -19,6 +21,17 @@ export function createAdminRoutes({
   router.post('/transactions', adminFinanceController.createTransaction)
   router.put('/transactions/:id', adminFinanceController.updateTransaction)
   router.delete('/transactions/:id', adminFinanceController.deleteTransaction)
+
+  router.get('/profile', adminSettingsController.getProfile)
+  router.put('/profile', adminSettingsController.updateProfile)
+
+  router.get('/agenda', adminSettingsController.getAgenda)
+
+  router.get('/donation-settings', adminSettingsController.getDonationSettings)
+  router.put('/donation-settings', adminSettingsController.updateDonationSettings)
+
+  router.get('/website-settings', adminSettingsController.getWebsiteSettings)
+  router.put('/website-settings', adminSettingsController.updateWebsiteSettings)
 
   return router
 }
