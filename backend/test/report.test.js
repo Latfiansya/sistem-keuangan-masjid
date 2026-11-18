@@ -2,11 +2,14 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { createApp } from '../src/app.js'
 import { loadEnv } from '../src/config/env.js'
-import { getFinanceReport } from '../src/services/reportService.js'
+import { createReportService } from '../src/services/reportService.js'
 import { hashPassword } from '../src/utils/passwordHash.js'
+import { createTestRepositories } from './helpers/testRepositories.js'
 
 const TEST_PASSWORD = 'sandi-uji-laporan'
 const TEST_PASSWORD_HASH = hashPassword(TEST_PASSWORD)
+const repositories = createTestRepositories()
+const reportService = createReportService(repositories.financeReportRepository)
 
 let server
 let baseUrl
@@ -16,6 +19,7 @@ before(async () => {
     reportPasswordHash: TEST_PASSWORD_HASH,
     rateLimitWindowMs: 60_000,
     rateLimitMax: 20,
+    repositories,
   })
   await new Promise((resolve) => {
     server = testApp.listen(0, '127.0.0.1', resolve)
@@ -62,7 +66,7 @@ test('POST /api/public/report/check-password menolak input kosong, bukan teks, a
 })
 
 test('POST /api/public/report/check-password mengembalikan 503 bila sandi belum dikonfigurasi dan 429 saat brute force', async () => {
-  const unconfiguredApp = createApp({ reportPasswordHash: '' })
+  const unconfiguredApp = createApp({ reportPasswordHash: '', repositories })
   const unconfiguredServer = await new Promise((resolve) => {
     const s = unconfiguredApp.listen(0, '127.0.0.1', () => resolve(s))
   })
@@ -80,7 +84,12 @@ test('POST /api/public/report/check-password mengembalikan 503 bila sandi belum 
     await new Promise((resolve) => unconfiguredServer.close(resolve))
   }
 
-  const limitedApp = createApp({ reportPasswordHash: TEST_PASSWORD_HASH, rateLimitWindowMs: 60_000, rateLimitMax: 3 })
+  const limitedApp = createApp({
+    reportPasswordHash: TEST_PASSWORD_HASH,
+    rateLimitWindowMs: 60_000,
+    rateLimitMax: 3,
+    repositories,
+  })
   const limitedServer = await new Promise((resolve) => {
     const s = limitedApp.listen(0, '127.0.0.1', () => resolve(s))
   })
@@ -152,27 +161,27 @@ test('GET /api/public/finance/report menghitung rentang inklusif, hari akhir, da
   assert.equal(customRes.status, 200)
   const custom = (await customRes.json()).data
   assert.equal(custom.status, 'ready')
-  assert.equal(custom.transactions.length, 9)
+  assert.equal(custom.transactions.length, 2)
   assert.ok(custom.transactions.every((item) => item.date >= '2026-04-03' && item.date <= '2026-04-05'))
   assert.deepEqual(custom.summary.totals, {
-    openingBalance: 15445700,
-    income: 2023500,
-    expense: 866500,
-    closingBalance: 16602700,
+    openingBalance: 18590700,
+    income: 600000,
+    expense: 190000,
+    closingBalance: 19000700,
   })
 
   const finalDayRes = await fetch(`${baseUrl}/api/public/finance/report?startDate=2026-04-30&endDate=2026-04-30`)
   const finalDay = (await finalDayRes.json()).data
   assert.equal(finalDay.transactions.length, 1)
-  assert.equal(finalDay.summary.totals.openingBalance, 20368700)
+  assert.equal(finalDay.summary.totals.openingBalance, 20161700)
   assert.equal(finalDay.summary.totals.closingBalance, 20484700)
 
   const emptyDayRes = await fetch(`${baseUrl}/api/public/finance/report?startDate=2026-04-04&endDate=2026-04-04`)
   const emptyDay = (await emptyDayRes.json()).data
   assert.equal(emptyDay.status, 'ready')
   assert.equal(emptyDay.transactions.length, 0)
-  assert.equal(emptyDay.summary.totals.openingBalance, 16815700)
-  assert.equal(emptyDay.summary.totals.closingBalance, 16815700)
+  assert.equal(emptyDay.summary.totals.openingBalance, 19000700)
+  assert.equal(emptyDay.summary.totals.closingBalance, 19000700)
 })
 
 test('GET /api/public/finance/report mengembalikan HTTP 200 status unavailable di luar cakupan', async () => {
@@ -210,13 +219,13 @@ test('GET /api/public/finance/report menolak query tanggal tidak valid dengan HT
   }
 })
 
-test('isolasi hasil laporan dan validasi konfigurasi sandi environment', () => {
-  const report = getFinanceReport({ startDate: '2026-04-24', endDate: '2026-04-30' })
+test('isolasi hasil laporan dan validasi konfigurasi sandi environment', async () => {
+  const report = await reportService.getFinanceReport({ startDate: '2026-04-24', endDate: '2026-04-30' })
   report.transactions[0].amount = 1
   report.summary.rows[0].openingBalance = 0
   report.months.pop()
 
-  const fresh = getFinanceReport()
+  const fresh = await reportService.getFinanceReport()
   assert.equal(fresh.summary.totals.income, 10665500)
   assert.equal(fresh.months.length, 5)
 

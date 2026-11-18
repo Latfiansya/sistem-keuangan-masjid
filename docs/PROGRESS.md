@@ -1248,3 +1248,64 @@ Usulan pesan commit: `style: rapikan proporsi laporan keuangan publik dan kontro
 - Lint lulus dengan warning lama variabel `key` pada test browser Admin; 17 test laporan/preview/ekspor lulus; build lulus dengan warning bundle utama >500 kB yang sudah ada. Tidak mengubah Admin, data, logika filter/ekspor atau dependency. Staging sebelumnya dipertahankan; aset referensi dan hasil QA tidak disertakan. Tidak melakukan commit, push atau merge.
 
 Usulan pesan commit: `style: selaraskan tombol dan padatkan panel laporan publik`.
+
+## Backend Admin Tahap 1–3 — Arsitektur 3-Layer Tanpa Database & Konfigurasi Env PostgreSQL (12 November 2026)
+
+Status: implementasi selesai dan tervalidasi di workspace `backend`; siap di-commit manual oleh pengguna. Seluruh file di `frontend/` tidak diubah.
+
+### Implementasi
+
+- **Tahap 1 — Keuangan, Kategori Dana & Transaksi (`/api/admin`)**:
+  - Menambahkan `adminFinance.js`, `adminFinanceRepository.js`, `adminFinanceService.js`, dan `adminFinanceController.js`.
+  - Menerapkan `GET /api/admin/dashboard`, CRUD `/api/admin/categories` (validasi NFKC, cegah duplikat nama tanpa membedakan huruf besar/kecil, allowlist 9 warna, dan proteksi hapus kategori yang memiliki saldo atau dipakai transaksi), `GET /api/admin/finance/report` (249 transaksi Jan–Okt 2026, rekap bulanan 10 bulan yang terekonsiliasi ke Rp17.228.200, filter tanggal/jenis/kategori/pencarian, dan pagination 20/30/50/all), serta CRUD `/api/admin/transactions`.
+- **Tahap 2 — Konten, Profil Masjid, Agenda, Donasi & Pengaturan Website (`/api/admin`)**:
+  - Menambahkan `adminSettings.js`, `adminSettingsRepository.js`, `adminSettingsService.js`, dan `adminSettingsController.js`.
+  - Menerapkan `GET` & `PUT /api/admin/profile`, `GET /api/admin/agenda` (dengan perhitungan `counts` 5/2/5 total 12), `GET` & `PUT /api/admin/donation-settings` (validasi rekening digit termasuk nol di awal, nomor internasional WhatsApp, dan normalisasi otomatis kesiapan metode), serta `GET` & `PUT /api/admin/website-settings` (validasi email, WhatsApp, dan URL HTTPS Google Maps).
+- **Tahap 3 — Autentikasi Stub, Kelola Akun, Kode Akses Laporan & Activity Log (`/api/admin`)**:
+  - Menambahkan `adminManagement.js`, `adminManagementRepository.js`, `adminManagementService.js`, dan `adminManagementController.js`.
+  - Menerapkan `POST /api/admin/auth/login` (dilindungi rate limiter dan validasi input, mengembalikan HTTP `503 SERVICE_UNAVAILABLE` sampai kredensial database siap), `POST /api/admin/auth/logout`, `GET /api/admin/accounts` (beserta filter pencarian nama/email), `GET /api/admin/report-access` (metadata aman tanpa membocorkan kode/hash), serta `GET /api/admin/activity-logs` (9 aktivitas contoh, pengelompokan 7 tanggal, 5 notifikasi header, dan filter gabungan).
+- **Konfigurasi Environment Database (`backend/.env.example` & `backend/src/config/env.js`)**:
+  - Menambahkan dukungan variabel konfigurasi PostgreSQL (`DB_CONNECTION`, `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`, `DB_SCHEMA`, `DB_SSLMODE`) pada `loadEnv().db` untuk diteruskan oleh pemegang role Database tanpa menyertakan kredensial `.env` ke Git.
+
+### Verifikasi
+
+- `npm run lint --workspace backend`: PASS (39 file backend diperiksa dengan `node --check`, 0 error).
+- `npm test --workspace backend`: PASS — **31/31 test HTTP backend lulus** (18 test publik + 5 test keuangan/kategori/transaksi admin + 4 test profil/agenda/donasi/pengaturan admin + 4 test auth/akun/kode akses/activity log admin).
+- `npm run build`: PASS.
+
+### Batasan
+
+- Seluruh repository masih berjalan in-memory tanpa koneksi aktif ke PostgreSQL (`pgAdmin`); penyambungan pool PostgreSQL dan migrasi tabel schema `keu_masjid` dilanjutkan oleh anggota tim pemegang role Database.
+- Autentikasi login dan otorisasi token/session masih berupa stub sampai tabel pengguna dan mekanisme sesi/token disepakati bersama.
+
+Usulan pesan commit: `feat: implementasikan endpoint backend admin 3-layer dan konfigurasi env database`.
+
+## Integrasi Database PostgreSQL & Penghapusan Data Dummy Backend (18 November 2026)
+
+Status: selesai dan tervalidasi pada branch `fitur/backend-admin`; siap di-commit manual oleh pengguna. Seluruh file di `frontend/` tidak diubah.
+
+### Implementasi
+
+- **Konfigurasi & Pool PostgreSQL (`backend/src/config/env.js` & `backend/src/config/database.js`)**:
+  - Menambahkan parsing `DATABASE_URL` pada `loadEnv().db` (beserta dukungan parameter `DB_*` dan placeholder aman di `backend/.env.example`, tanpa menyertakan kredensial `.env` ke Git).
+  - Menambahkan library `pg` pada workspace `backend` dan membuat `createDatabasePool`, `checkDatabaseConnection`, serta `withDatabaseTransaction` dengan `search_path=keu_masjid,public`.
+  - Menambahkan endpoint `GET /api/health/db` untuk mengecek kesehatan koneksi database PostgreSQL serta skrip baca-saja `npm run db:check --workspace backend` (`src/scripts/checkDatabase.js`).
+- **Migrasi Seluruh `repositories/` ke PostgreSQL & Penghapusan `backend/src/data/`**:
+  - Menghapus seluruh file data dummy aplikasi di `backend/src/data/` (`agenda.js`, `publicContent.js`, `financeReport.js`, `adminFinance.js`, `adminSettings.js`, `adminManagement.js`).
+  - Memperbarui `publicContentRepository.js`, `agendaRepository.js`, `financeReportRepository.js`, `adminFinanceRepository.js`, `adminSettingsRepository.js`, dan `adminManagementRepository.js` untuk membaca/menulis ke tabel dan view pada schema `keu_masjid` (`m_kategori_dana`, `t_transaksi`, `t_transfer_dana`, `v_saldo_kategori_dana`, `v_rekap_bulanan_per_dana`, `v_transaksi_lengkap`, `m_profil_masjid`, `m_pengaturan_website`, `m_agenda`, `m_pengguna`, `t_activity_log`) menggunakan parameterized query (`$1, $2, ...`) dengan daftar kolom eksplisit.
+  - Menambahkan `backend/src/utils/financeMapping.js` untuk pemetaan ID/warna kategori, konversi `NUMERIC` ke integer Rupiah aman, dan penanganan error constraint PostgreSQL secara aman.
+  - Menyesuaikan `services/`, `controllers/`, `publicRoutes.js`, `app.js`, dan `server.js` menjadi `async/await` dengan injeksi repository untuk pengujian otomatis terisolasi (`backend/test/helpers/testRepositories.js`).
+
+### Verifikasi
+
+- `npm run db:check --workspace backend`: **PASS** — terhubung ke database `db_keuangan_masjid_dev` (`current_schema: keu_masjid`), membaca 3 kategori dana (`Rp17.378.200`), 374 transaksi historis (50 baris April 2026), 10 bulan rekap, dan 2 akun pengurus tanpa error.
+- `npm run lint --workspace backend`: **PASS** (38 file diperiksa dengan `node --check`, 0 error).
+- `npm test --workspace backend`: **PASS** — **35/35 test lulus** (menggunakan repository uji terisolasi di `backend/test/` agar tidak mengubah isi database server).
+- `npm run build`: **PASS**.
+
+### Batasan & Catatan Database
+
+- Beberapa tabel di database dev masih kosong (`m_agenda`, `m_profil_masjid`, `m_pengaturan_website`, `t_activity_log`) dan tabel pengaturan donasi (QRIS/rekening) belum tersedia di skema database saat ini (`GET /api/admin/donation-settings` mengembalikan nilai kosong dan `PUT` mengembalikan `503`).
+- Pada dump SQL database, fungsi trigger `keu_masjid.fn_log_activity()` masih mengisi nilai `jenis_aktivitas` (`TAMBAH`/`UBAH`/`HAPUS`) dan `modul` (`Transaksi`/`Kategori Dana`/dll) yang berbeda dari constraint `t_activity_log` (`Tambah`/`Edit`/`Hapus` dan `Keuangan`/`Akun`/`Konten`); tim database perlu menyamakan trigger tersebut agar operasi tulis (`POST`/`PUT`/`DELETE`) yang memicu activity log tidak ditolak constraint PostgreSQL.
+
+Usulan pesan commit: `feat: hubungkan seluruh endpoint backend ke PostgreSQL dan hapus data dummy`.

@@ -1,12 +1,19 @@
 import { Router } from 'express'
 import { createAdminFinanceController } from '../controllers/adminFinanceController.js'
+import { createAdminManagementController } from '../controllers/adminManagementController.js'
 import { createAdminSettingsController } from '../controllers/adminSettingsController.js'
+import { createRateLimiter } from '../middlewares/rateLimiter.js'
 
 export function createAdminRoutes({
   adminFinanceController = createAdminFinanceController(),
   adminSettingsController = createAdminSettingsController(),
+  adminManagementController = createAdminManagementController(),
+  loginRateLimiter = createRateLimiter(),
 } = {}) {
   const router = Router()
+
+  router.post('/auth/login', loginRateLimiter, adminManagementController.login)
+  router.post('/auth/logout', adminManagementController.logout)
 
   router.get('/dashboard', adminFinanceController.getDashboard)
 
@@ -32,6 +39,10 @@ export function createAdminRoutes({
 
   router.get('/website-settings', adminSettingsController.getWebsiteSettings)
   router.put('/website-settings', adminSettingsController.updateWebsiteSettings)
+
+  router.get('/accounts', adminManagementController.listAccounts)
+  router.get('/report-access', adminManagementController.getReportAccess)
+  router.get('/activity-logs', adminManagementController.listActivityLogs)
 
   return router
 }

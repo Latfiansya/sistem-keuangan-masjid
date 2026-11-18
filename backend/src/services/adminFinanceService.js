@@ -68,34 +68,6 @@ function hasControlChars(value, allowMultiline = false) {
   })
 }
 
-function summarizeTransactions(transactions) {
-  return transactions.reduce(
-    (sum, transaction) => ({
-      count: sum.count + 1,
-      income: sum.income + (transaction.type === 'income' ? transaction.amount : 0),
-      expense: sum.expense + (transaction.type === 'expense' ? transaction.amount : 0),
-    }),
-    { count: 0, income: 0, expense: 0 }
-  )
-}
-
-function enrichCategoriesWithBalances(categories) {
-  const enriched = categories.map((category) => ({
-    ...category,
-    closingBalance: category.openingBalance + category.income - category.expense,
-  }))
-  const totals = enriched.reduce(
-    (sum, category) => ({
-      openingBalance: sum.openingBalance + category.openingBalance,
-      income: sum.income + category.income,
-      expense: sum.expense + category.expense,
-      closingBalance: sum.closingBalance + category.closingBalance,
-    }),
-    { openingBalance: 0, income: 0, expense: 0, closingBalance: 0 }
-  )
-  return { categories: enriched, totals }
-}
-
 function parseTransactionAmount(rawAmount) {
   if (typeof rawAmount === 'number') {
     if (!Number.isSafeInteger(rawAmount) || rawAmount <= 0 || rawAmount > MAX_AMOUNT) {
@@ -126,12 +98,15 @@ function validateTransactionPayload(payload, categories, fixedType) {
     throw createHttpError(400, 'BAD_REQUEST', 'Pilih tanggal transaksi yang valid.')
   }
 
-  if (typeof payload.categoryId !== 'string' || !categories.some((category) => category.id === payload.categoryId)) {
+  if (
+    typeof payload.categoryId !== 'string' ||
+    !categories.some((category) => category.id === payload.categoryId)
+  ) {
     throw createHttpError(400, 'BAD_REQUEST', 'Pilih kategori dana yang tersedia.')
   }
 
   const textFields = [
-    ['description', 'Uraian', 500, true, false],
+    ['description', 'Uraian', 255, true, false],
     ['personName', 'Nama', 100, false, false],
     ['notes', 'Keterangan', 500, false, true],
   ]
@@ -171,144 +146,35 @@ function validateTransactionPayload(payload, categories, fixedType) {
   }
 }
 
-function buildMonthlyRecap(categories, transactions, historyOpeningBalances, coverage, range) {
-  validateCalendarRange(range)
-  if (range.startDate > coverage.endDate || range.endDate < coverage.startDate) {
-    return []
-  }
-
-  const months = []
-  let month = [range.startDate, coverage.startDate].sort().at(-1).slice(0, 7)
-  const lastMonth = [range.endDate, coverage.endDate].sort()[0].slice(0, 7)
-
-  while (month <= lastMonth) {
-    const startDate = [range.startDate, coverage.startDate, `${month}-01`].sort().at(-1)
-    const monthCategories = categories.map((category) => {
-      const rows = transactions.filter((transaction) => transaction.categoryId === category.id)
-      const prior = summarizeTransactions(rows.filter((transaction) => transaction.date < startDate))
-      const current = summarizeTransactions(
-        rows.filter(
-          (transaction) =>
-            transaction.date >= startDate &&
-            transaction.date <= range.endDate &&
-            transaction.date.startsWith(month)
-        )
-      )
-      const openingBalance = (historyOpeningBalances[category.id] ?? 0) + prior.income - prior.expense
-      return {
-        ...category,
-        openingBalance,
-        income: current.income,
-        expense: current.expense,
-        closingBalance: openingBalance + current.income - current.expense,
-        count: current.count,
-      }
-    })
-
-    const totals = monthCategories.reduce(
-      (sum, category) => ({
-        openingBalance: sum.openingBalance + category.openingBalance,
-        income: sum.income + category.income,
-        expense: sum.expense + category.expense,
-        closingBalance: sum.closingBalance + category.closingBalance,
-        count: sum.count + category.count,
-      }),
-      { openingBalance: 0, income: 0, expense: 0, closingBalance: 0, count: 0 }
-    )
-
-    months.push({ month, categories: monthCategories, totals })
-    const [year, number] = month.split('-').map(Number)
-    month = number === 12 ? `${year + 1}-01` : `${year}-${String(number + 1).padStart(2, '0')}`
-  }
-
-  return months
+function summarizeCategoryTotals(categories) {
+  return categories.reduce(
+    (sum, category) => ({
+      openingBalance: sum.openingBalance + category.openingBalance,
+      income: sum.income + category.income,
+      expense: sum.expense + category.expense,
+      closingBalance: sum.closingBalance + category.closingBalance,
+    }),
+    { openingBalance: 0, income: 0, expense: 0, closingBalance: 0 }
+  )
 }
 
 // Business logic layer untuk pengelolaan keuangan, kategori, dan transaksi pengurus.
 export function createAdminFinanceService(repository = defaultAdminFinanceRepository) {
-  function buildBaseReportState() {
-    const snapshot = repository.getStateSnapshot()
-    const { categories, totals } = enrichCategoriesWithBalances(snapshot.categories)
-    const month = snapshot.updatedDate.slice(0, 7)
-    const range = { startDate: `${month}-01`, endDate: snapshot.updatedDate }
-    const historical = snapshot.historicalTransactions
-    const transactions = snapshot.activeTransactions
-
-    const historyOpeningBalances = Object.fromEntries(
-      categories.map((category) => {
-        const prior = summarizeTransactions(
-          historical.filter(
-            (transaction) =>
-              transaction.categoryId === category.id && transaction.date < range.startDate
-          )
-        )
-        return [category.id, category.openingBalance - prior.income + prior.expense]
-      })
-    )
-
-    const dates = transactions.map((transaction) => transaction.date)
-    const coverage = {
-      startDate: ['2026-01-01', ...dates].sort()[0],
-      endDate: [snapshot.updatedDate, ...dates].sort().at(-1),
-    }
-
-    const sessionChangeCount =
-      snapshot.sessionTransactions.length +
-      Object.keys(snapshot.transactionChanges).length +
-      snapshot.deletedTransactionIds.length
-
-    return {
-      updatedDate: snapshot.updatedDate,
-      account: snapshot.account,
-      month,
-      range,
-      coverage,
-      categories,
-      totals,
-      historyOpeningBalances,
-      historicalTransactionCount: historical.length,
-      sessionChangeCount,
-      transactions,
-      recentBaseline: snapshot.recentTransactions,
-      sessionTransactions: snapshot.sessionTransactions,
-    }
-  }
-
   return {
-    getDashboardSummary() {
-      const state = buildBaseReportState()
-      const recentIds = new Set(state.recentBaseline.map((transaction) => transaction.id))
-      const sessionOrder = new Map(
-        state.sessionTransactions.map((transaction, index) => [transaction.id, index])
-      )
-
-      const recentTransactions = state.transactions
-        .filter((transaction) => recentIds.has(transaction.id) || transaction.source === 'session')
-        .sort(
-          (a, b) =>
-            b.date.localeCompare(a.date) ||
-            (sessionOrder.get(a.id) ?? Infinity) - (sessionOrder.get(b.id) ?? Infinity)
-        )
-
-      return {
-        updatedDate: state.updatedDate,
-        account: state.account,
-        categories: state.categories,
-        totals: state.totals,
-        recentTransactions,
-      }
+    async getDashboardSummary() {
+      return repository.getDashboardData()
     },
 
-    listCategories() {
-      const state = buildBaseReportState()
+    async listCategories() {
+      const categories = await repository.findCategories()
       return {
-        categories: state.categories,
-        totals: state.totals,
+        categories: categories.map(({ dbId: _dbId, ...rest }) => rest),
+        totals: summarizeCategoryTotals(categories),
         allowedColors: repository.getAllowedColors(),
       }
     },
 
-    createCategory(payload) {
+    async createCategory(payload) {
       if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Payload kategori tidak valid.')
       }
@@ -330,30 +196,28 @@ export function createAdminFinanceService(repository = defaultAdminFinanceReposi
         )
       }
 
-      const categories = repository.findCategories()
+      const categories = await repository.findCategories()
       if (categories.some((item) => cleanCategoryName(item.label).toLowerCase() === label.toLowerCase())) {
         throw createHttpError(400, 'BAD_REQUEST', 'Nama kategori sudah digunakan.')
       }
 
       const allowedColors = repository.getAllowedColors()
-      if (typeof payload.color !== 'string' || !allowedColors.includes(payload.color)) {
+      if (payload.color !== undefined && (typeof payload.color !== 'string' || !allowedColors.includes(payload.color))) {
         throw createHttpError(400, 'BAD_REQUEST', 'Pilih salah satu warna kategori.')
       }
 
-      const created = repository.insertCategory({ label, color: payload.color })
-      return {
-        ...created,
-        closingBalance: created.openingBalance + created.income - created.expense,
-      }
+      const created = await repository.insertCategory({ label, color: payload.color })
+      const { dbId: _dbId, ...rest } = created
+      return rest
     },
 
-    updateCategory(id, payload) {
+    async updateCategory(id, payload) {
       if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Payload kategori tidak valid.')
       }
 
-      const categories = repository.findCategories()
-      if (!categories.some((item) => item.id === id)) {
+      const existing = await repository.findCategoryById(id)
+      if (!existing) {
         throw createHttpError(404, 'NOT_FOUND', 'Kategori tidak ditemukan.')
       }
 
@@ -374,30 +238,32 @@ export function createAdminFinanceService(repository = defaultAdminFinanceReposi
         )
       }
 
+      const categories = await repository.findCategories()
       if (
         categories.some(
           (item) =>
-            item.id !== id && cleanCategoryName(item.label).toLowerCase() === label.toLowerCase()
+            item.id !== existing.id &&
+            cleanCategoryName(item.label).toLowerCase() === label.toLowerCase()
         )
       ) {
         throw createHttpError(400, 'BAD_REQUEST', 'Nama kategori sudah digunakan.')
       }
 
       const allowedColors = repository.getAllowedColors()
-      if (typeof payload.color !== 'string' || !allowedColors.includes(payload.color)) {
+      if (payload.color !== undefined && (typeof payload.color !== 'string' || !allowedColors.includes(payload.color))) {
         throw createHttpError(400, 'BAD_REQUEST', 'Pilih salah satu warna kategori.')
       }
 
-      const updated = repository.updateCategoryById(id, { label, color: payload.color })
-      return {
-        ...updated,
-        closingBalance: updated.openingBalance + updated.income - updated.expense,
+      const updated = await repository.updateCategoryById(id, { label, color: payload.color })
+      if (!updated) {
+        throw createHttpError(404, 'NOT_FOUND', 'Kategori tidak ditemukan.')
       }
+      const { dbId: _dbId, ...rest } = updated
+      return rest
     },
 
-    deleteCategory(id) {
-      const state = buildBaseReportState()
-      const category = state.categories.find((item) => item.id === id)
+    async deleteCategory(id) {
+      const category = await repository.findCategoryById(id)
       if (!category) {
         throw createHttpError(404, 'NOT_FOUND', 'Kategori tidak ditemukan.')
       }
@@ -405,11 +271,9 @@ export function createAdminFinanceService(repository = defaultAdminFinanceReposi
       const hasBalance = ['openingBalance', 'income', 'expense', 'closingBalance'].some(
         (key) => category[key] !== 0
       )
-      const hasTransactions = state.transactions.some(
-        (transaction) => transaction.categoryId === id
-      )
+      const isUsed = await repository.hasCategoryUsage(id)
 
-      if (hasBalance || hasTransactions) {
+      if (hasBalance || isUsed) {
         throw createHttpError(
           400,
           'BAD_REQUEST',
@@ -417,12 +281,12 @@ export function createAdminFinanceService(repository = defaultAdminFinanceReposi
         )
       }
 
-      repository.deleteCategoryById(id)
-      return { deletedId: id }
+      await repository.deleteCategoryById(id)
+      return { deletedId: category.id }
     },
 
-    getFinanceReport(queryParams = {}) {
-      const state = buildBaseReportState()
+    async getFinanceReport(queryParams = {}) {
+      const metadata = await repository.getReportMetadata()
       const hasStart = queryParams.startDate !== undefined && queryParams.startDate !== ''
       const hasEnd = queryParams.endDate !== undefined && queryParams.endDate !== ''
 
@@ -436,12 +300,12 @@ export function createAdminFinanceService(repository = defaultAdminFinanceReposi
 
       const filterRange = hasStart && hasEnd
         ? { startDate: String(queryParams.startDate), endDate: String(queryParams.endDate) }
-        : state.coverage
+        : metadata.coverage
 
       validateCalendarRange(filterRange)
 
       const categoryId = typeof queryParams.categoryId === 'string' ? queryParams.categoryId.trim() : ''
-      if (categoryId && !state.categories.some((item) => item.id === categoryId)) {
+      if (categoryId && !metadata.categories.some((item) => item.id === categoryId)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Kategori filter tidak ditemukan.')
       }
 
@@ -450,34 +314,15 @@ export function createAdminFinanceService(repository = defaultAdminFinanceReposi
         throw createHttpError(400, 'BAD_REQUEST', 'Jenis transaksi filter harus income atau expense.')
       }
 
-      const searchTerm = typeof queryParams.query === 'string' ? queryParams.query.trim().toLowerCase() : ''
+      const searchTerm = typeof queryParams.query === 'string' ? queryParams.query.trim() : ''
 
-      const filteredTransactions = state.transactions.filter(
-        (transaction) =>
-          transaction.date >= filterRange.startDate &&
-          transaction.date <= filterRange.endDate &&
-          (!categoryId || transaction.categoryId === categoryId) &&
-          (!type || transaction.type === type) &&
-          (!searchTerm || transaction.description.toLowerCase().includes(searchTerm))
-      )
-
-      const summary = summarizeTransactions(filteredTransactions)
-      const monthlyRecap = buildMonthlyRecap(
-        state.categories,
-        state.transactions,
-        state.historyOpeningBalances,
-        state.coverage,
-        filterRange
-      )
-
-      let paginatedTransactions = filteredTransactions
-      let pagination = null
-
+      let page
+      let pageSize
       if (queryParams.page !== undefined || queryParams.pageSize !== undefined) {
         const rawPageSize = queryParams.pageSize ?? '20'
         const isAll = String(rawPageSize).toLowerCase() === 'all'
-        const pageSize = isAll ? Math.max(filteredTransactions.length, 1) : Number(rawPageSize)
-        if (!isAll && (!Number.isInteger(pageSize) || ![20, 30, 50].includes(pageSize))) {
+        const parsedSize = isAll ? 'all' : Number(rawPageSize)
+        if (!isAll && (!Number.isInteger(parsedSize) || ![20, 30, 50].includes(parsedSize))) {
           throw createHttpError(400, 'BAD_REQUEST', 'Ukuran halaman harus 20, 30, 50, atau all.')
         }
 
@@ -485,76 +330,76 @@ export function createAdminFinanceService(repository = defaultAdminFinanceReposi
         if (!Number.isInteger(requestedPage) || requestedPage < 1) {
           throw createHttpError(400, 'BAD_REQUEST', 'Nomor halaman harus bilangan bulat positif.')
         }
-
-        const totalItems = filteredTransactions.length
-        const totalPages = isAll ? 1 : Math.max(1, Math.ceil(totalItems / pageSize))
-        const currentPage = Math.min(requestedPage, totalPages)
-        const startIndex = isAll ? 0 : (currentPage - 1) * pageSize
-        paginatedTransactions = isAll
-          ? filteredTransactions
-          : filteredTransactions.slice(startIndex, startIndex + pageSize)
-
-        pagination = {
-          page: currentPage,
-          pageSize: isAll ? 'all' : pageSize,
-          totalItems,
-          totalPages,
-        }
+        page = requestedPage
+        pageSize = parsedSize
       }
 
+      const reportResult = await repository.queryFinanceReport({
+        startDate: filterRange.startDate,
+        endDate: filterRange.endDate,
+        categoryApiId: categoryId,
+        type,
+        query: searchTerm,
+        page,
+        pageSize,
+      })
+
+      const categories = reportResult.categories.map(({ dbId: _dbId, ...rest }) => rest)
+      const month = reportResult.updatedDate.slice(0, 7)
+
       return {
-        updatedDate: state.updatedDate,
-        account: state.account,
-        month: state.month,
+        updatedDate: reportResult.updatedDate,
+        account: reportResult.account,
+        month,
         range: filterRange,
-        defaultMonthRange: state.range,
-        coverage: state.coverage,
-        categories: state.categories,
-        totals: state.totals,
-        historyOpeningBalances: state.historyOpeningBalances,
-        historicalTransactionCount: state.historicalTransactionCount,
-        sessionChangeCount: state.sessionChangeCount,
-        transactions: paginatedTransactions,
-        summary,
-        monthlyRecap,
-        ...(pagination ? { pagination } : {}),
+        coverage: reportResult.coverage,
+        categories,
+        totals: summarizeCategoryTotals(categories),
+        historicalTransactionCount: reportResult.historicalTransactionCount,
+        transactions: reportResult.transactions,
+        summary: reportResult.summary,
+        monthlyRecap: reportResult.monthlyRecap,
+        ...(reportResult.pagination ? { pagination: reportResult.pagination } : {}),
       }
     },
 
-    getTransactionById(id) {
-      const transaction = repository.findTransactionById(id)
+    async getTransactionById(id) {
+      const transaction = await repository.findTransactionById(id)
       if (!transaction) {
         throw createHttpError(404, 'NOT_FOUND', 'Transaksi tidak ditemukan.')
       }
       return transaction
     },
 
-    createTransaction(payload) {
-      const categories = repository.findCategories()
+    async createTransaction(payload) {
+      const categories = await repository.findCategories()
       const validated = validateTransactionPayload(payload, categories)
       return repository.insertTransaction(validated)
     },
 
-    updateTransaction(id, payload) {
-      const existing = repository.findTransactionById(id)
+    async updateTransaction(id, payload) {
+      const existing = await repository.findTransactionById(id)
       if (!existing) {
         throw createHttpError(404, 'NOT_FOUND', 'Transaksi tidak ditemukan.')
       }
 
-      const categories = repository.findCategories()
+      const categories = await repository.findCategories()
       const validated = validateTransactionPayload(payload, categories, existing.type)
-      return repository.updateTransactionById(id, validated)
+      const updated = await repository.updateTransactionById(id, validated)
+      if (!updated) {
+        throw createHttpError(404, 'NOT_FOUND', 'Transaksi tidak ditemukan.')
+      }
+      return updated
     },
 
-    deleteTransaction(id) {
-      const deleted = repository.deleteTransactionById(id)
+    async deleteTransaction(id) {
+      const deleted = await repository.deleteTransactionById(id)
       if (!deleted) {
         throw createHttpError(404, 'NOT_FOUND', 'Transaksi tidak ditemukan.')
       }
-      return { deletedId: id }
+      return { deletedId: String(id) }
     },
   }
 }
 
 export const defaultAdminFinanceService = createAdminFinanceService()
-

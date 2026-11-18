@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { createApp } from '../src/app.js'
+import { createTestRepositories } from './helpers/testRepositories.js'
 
 describe('Endpoint keuangan, kategori, dan transaksi pengurus (/api/admin)', () => {
   let server
   let baseUrl
 
   before(async () => {
-    const app = createApp()
+    const app = createApp({ repositories: createTestRepositories() })
     server = app.listen(0, '127.0.0.1')
     await new Promise((resolve) => server.once('listening', resolve))
     const address = server.address()
@@ -38,25 +39,20 @@ describe('Endpoint keuangan, kategori, dan transaksi pengurus (/api/admin)', () 
     assert.equal(body.data.recentTransactions.length, 5)
   })
 
-  it('GET /api/admin/finance/report mengembalikan 249 transaksi historis dan rekap 10 bulan yang terekonsiliasi', async () => {
+  it('GET /api/admin/finance/report mengembalikan transaksi dan rekap bulanan dari repository', async () => {
     const response = await fetch(`${baseUrl}/finance/report`)
     assert.equal(response.status, 200)
 
     const body = await response.json()
     assert.equal(body.success, true)
-    assert.equal(body.data.historicalTransactionCount, 249)
-    assert.equal(body.data.transactions.length, 249)
-    assert.deepEqual(body.data.historyOpeningBalances, {
-      mosque: 1497500,
-      friday: 2088000,
-      maintenance: 3484000,
-    })
+    assert.equal(body.data.historicalTransactionCount, 5)
+    assert.equal(body.data.transactions.length, 5)
     assert.deepEqual(body.data.summary, {
-      count: 249,
-      income: 74941200,
-      expense: 64782500,
+      count: 5,
+      income: 520000,
+      expense: 328500,
     })
-    assert.equal(body.data.monthlyRecap.length, 10)
+    assert.equal(body.data.monthlyRecap.length, 1)
     const octoberRecap = body.data.monthlyRecap.at(-1)
     assert.equal(octoberRecap.month, '2026-10')
     assert.equal(octoberRecap.totals.closingBalance, 17228200)
@@ -68,8 +64,8 @@ describe('Endpoint keuangan, kategori, dan transaksi pengurus (/api/admin)', () 
     )
     assert.equal(octResponse.status, 200)
     const octBody = await octResponse.json()
-    assert.equal(octBody.data.transactions.length, 6)
-    assert.equal(octBody.data.summary.income, 1791500)
+    assert.equal(octBody.data.transactions.length, 2)
+    assert.equal(octBody.data.summary.income, 520000)
     assert.equal(octBody.data.summary.expense, 0)
 
     const pagedResponse = await fetch(
@@ -77,12 +73,12 @@ describe('Endpoint keuangan, kategori, dan transaksi pengurus (/api/admin)', () 
     )
     assert.equal(pagedResponse.status, 200)
     const pagedBody = await pagedResponse.json()
-    assert.equal(pagedBody.data.transactions.length, 20)
+    assert.equal(pagedBody.data.transactions.length, 2)
     assert.deepEqual(pagedBody.data.pagination, {
       page: 1,
       pageSize: 20,
-      totalItems: 141,
-      totalPages: 8,
+      totalItems: 2,
+      totalPages: 1,
     })
 
     const badRangeResponse = await fetch(
@@ -227,7 +223,7 @@ describe('Endpoint keuangan, kategori, dan transaksi pengurus (/api/admin)', () 
     assert.equal(editRes.status, 200)
     const editedTrx = (await editRes.json()).data
     assert.equal(editedTrx.amount, 300000)
-    assert.equal(editedTrx.sessionEdited, true)
+    assert.equal(editedTrx.description, 'Infaq Buka Bersama (Koreksi)')
 
     // Hapus transaksi
     const deleteTrxRes = await fetch(`${baseUrl}/transactions/${createdTrx.id}`, {

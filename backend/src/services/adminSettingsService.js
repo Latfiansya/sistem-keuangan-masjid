@@ -80,11 +80,11 @@ function computeDonationReadiness(values) {
 // Business logic layer untuk profil masjid, agenda, donasi, dan pengaturan website pengurus.
 export function createAdminSettingsService(repository = defaultAdminSettingsRepository) {
   return {
-    getProfile() {
+    async getProfile() {
       return repository.getProfile()
     },
 
-    updateProfile(payload) {
+    async updateProfile(payload) {
       if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Payload profil masjid tidak valid.')
       }
@@ -92,11 +92,11 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
       if (typeof payload.name !== 'string' || !payload.name.trim()) {
         throw createHttpError(400, 'BAD_REQUEST', 'Nama masjid wajib diisi.')
       }
-      if (payload.name.length > 160 || hasControlChars(payload.name, false)) {
+      if (payload.name.length > 150 || hasControlChars(payload.name, false)) {
         throw createHttpError(
           400,
           'BAD_REQUEST',
-          'Nama masjid tidak boleh mengandung karakter kontrol atau melebihi 160 karakter.'
+          'Nama masjid tidak boleh mengandung karakter kontrol atau melebihi 150 karakter.'
         )
       }
 
@@ -106,13 +106,13 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
       }
 
       const address = payload.address ?? ''
-      if (typeof address !== 'string' || address.length > 500 || hasControlChars(address, true)) {
-        throw createHttpError(400, 'BAD_REQUEST', 'Alamat tidak valid atau melebihi 500 karakter.')
+      if (typeof address !== 'string' || address.length > 255 || hasControlChars(address, true)) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Alamat tidak valid atau melebihi 255 karakter.')
       }
 
       const contact = payload.contact ?? ''
-      if (typeof contact !== 'string' || contact.length > 30 || hasControlChars(contact, false)) {
-        throw createHttpError(400, 'BAD_REQUEST', 'Kontak tidak valid atau melebihi 30 karakter.')
+      if (typeof contact !== 'string' || contact.length > 20 || hasControlChars(contact, false)) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Kontak tidak valid atau melebihi 20 karakter.')
       }
       const trimmedContact = contact.trim()
       if (trimmedContact && !isValidPhoneFormat(trimmedContact)) {
@@ -131,8 +131,8 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
       })
     },
 
-    getAgenda() {
-      const agenda = repository.getAgenda()
+    async getAgenda() {
+      const agenda = await repository.getAgenda()
       const groups = Array.isArray(agenda.groups) ? agenda.groups : []
       const countById = Object.fromEntries(
         groups.map((group) => [group.id, Array.isArray(group.items) ? group.items.length : 0])
@@ -151,8 +151,8 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
       }
     },
 
-    getDonationSettings() {
-      const settings = repository.getDonationSettings()
+    async getDonationSettings() {
+      const settings = await repository.getDonationSettings()
       const readiness = computeDonationReadiness(settings)
       return {
         ...settings,
@@ -160,12 +160,12 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
       }
     },
 
-    updateDonationSettings(payload) {
+    async updateDonationSettings(payload) {
       if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Payload pengaturan donasi tidak valid.')
       }
 
-      const current = repository.getDonationSettings()
+      const current = await repository.getDonationSettings()
       const textFields = [
         ['bankName', 'Nama bank', 100, false],
         ['accountName', 'Atas nama', 160, false],
@@ -239,23 +239,23 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
         whatsappEnabled: readiness.whatsapp.enabled,
       }
 
-      const saved = repository.saveDonationSettings(normalized)
+      const saved = await repository.saveDonationSettings(normalized)
       return {
         ...saved,
         readiness: computeDonationReadiness(saved),
       }
     },
 
-    getWebsiteSettings() {
+    async getWebsiteSettings() {
       return repository.getWebsiteSettings()
     },
 
-    updateWebsiteSettings(payload) {
+    async updateWebsiteSettings(payload) {
       if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Payload pengaturan website tidak valid.')
       }
 
-      const current = repository.getWebsiteSettings()
+      const current = await repository.getWebsiteSettings()
       const whatsapp = payload.whatsapp !== undefined ? payload.whatsapp : current.whatsapp
       const email = payload.email !== undefined ? payload.email : current.email
       const address = payload.address !== undefined ? payload.address : current.address
@@ -265,7 +265,7 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
           ? payload.publicReportEnabled
           : current.publicReportEnabled
 
-      if (typeof whatsapp !== 'string' || whatsapp.length > 30 || hasControlChars(whatsapp, false)) {
+      if (typeof whatsapp !== 'string' || whatsapp.length > 20 || hasControlChars(whatsapp, false)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Nomor WhatsApp tidak valid.')
       }
       const trimmedWhatsapp = whatsapp.trim()
@@ -277,7 +277,7 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
         )
       }
 
-      if (typeof email !== 'string' || email.length > 254 || hasControlChars(email, false)) {
+      if (typeof email !== 'string' || email.length > 150 || hasControlChars(email, false)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Masukkan alamat email yang valid.')
       }
       const trimmedEmail = email.trim()
@@ -285,8 +285,8 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
         throw createHttpError(400, 'BAD_REQUEST', 'Masukkan alamat email yang valid.')
       }
 
-      if (typeof address !== 'string' || address.length > 500 || hasControlChars(address, true)) {
-        throw createHttpError(400, 'BAD_REQUEST', 'Alamat tidak valid atau melebihi 500 karakter.')
+      if (typeof address !== 'string' || address.length > 255 || hasControlChars(address, true)) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Alamat tidak valid atau melebihi 255 karakter.')
       }
 
       if (typeof mapsUrl !== 'string' || mapsUrl.length > 2048 || hasControlChars(mapsUrl, false)) {
@@ -321,4 +321,3 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
 }
 
 export const defaultAdminSettingsService = createAdminSettingsService()
-
