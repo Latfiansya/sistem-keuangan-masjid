@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import app, { createApp } from '../src/app.js'
 import { loadEnv } from '../src/config/env.js'
+import { createTestRepositories } from './helpers/testRepositories.js'
 
 let server
 let baseUrl
@@ -61,7 +62,7 @@ test('payload JSON melebihi batas 10 KB ditolak dengan HTTP 413', async () => {
 })
 
 test('API_BASE_PATH dapat dikonfigurasi untuk subdirectory tanpa hardcode root', async () => {
-  const subApp = createApp({ apiBasePath: '/masjid/api/' })
+  const subApp = createApp({ apiBasePath: '/masjid/api/', repositories: createTestRepositories() })
   const subServer = await new Promise((resolve) => {
     const s = subApp.listen(0, '127.0.0.1', () => resolve(s))
   })

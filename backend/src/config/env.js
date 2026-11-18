@@ -1,6 +1,7 @@
 import { hashPassword } from '../utils/passwordHash.js'
 
 const HASH_PATTERN = /^scrypt\$[0-9a-f]+\$[0-9a-f]+$/i
+const VALID_SCHEMA_PATTERN = /^[a-z_][a-z0-9_]*$/i
 
 export function normalizeBasePath(value) {
   const raw = (value ?? '/api').trim()
@@ -15,6 +16,49 @@ function parsePositiveInteger(rawValue, defaultValue, label) {
     throw new Error(`${label} harus berupa bilangan bulat positif.`)
   }
   return value
+}
+
+function parseDatabaseConfig(source) {
+  const rawUrl = source.DATABASE_URL?.trim() || ''
+  let parsedUrl = null
+
+  if (rawUrl) {
+    try {
+      parsedUrl = new URL(rawUrl)
+    } catch {
+      throw new Error('DATABASE_URL harus berupa URL koneksi PostgreSQL yang valid.')
+    }
+    if (!['postgresql:', 'postgres:'].includes(parsedUrl.protocol)) {
+      throw new Error('DATABASE_URL harus menggunakan skema postgresql:// atau postgres://.')
+    }
+  }
+
+  const rawPort = source.DB_PORT ?? (parsedUrl?.port || undefined)
+  const dbPort = parsePositiveInteger(rawPort, 5432, 'DB_PORT')
+  if (dbPort > 65535) {
+    throw new Error('DB_PORT harus berupa bilangan bulat antara 1 dan 65535.')
+  }
+
+  const urlDatabase = parsedUrl ? parsedUrl.pathname.replace(/^\/+/, '') : ''
+  const urlSchema = parsedUrl?.searchParams.get('schema')?.trim() || ''
+  const schema = source.DB_SCHEMA?.trim() || (urlSchema && urlSchema !== 'public' ? urlSchema : 'keu_masjid')
+  if (!VALID_SCHEMA_PATTERN.test(schema)) {
+    throw new Error('DB_SCHEMA hanya boleh berisi huruf, angka, dan garis bawah.')
+  }
+
+  const sslmode = source.DB_SSLMODE?.trim() || parsedUrl?.searchParams.get('sslmode')?.trim() || 'prefer'
+
+  return Object.freeze({
+    url: rawUrl,
+    connection: source.DB_CONNECTION?.trim() || 'pgsql',
+    host: source.DB_HOST?.trim() || parsedUrl?.hostname || '127.0.0.1',
+    port: dbPort,
+    database: source.DB_DATABASE?.trim() || urlDatabase || 'db_keuangan_masjid_dev',
+    username: source.DB_USERNAME?.trim() || (parsedUrl ? decodeURIComponent(parsedUrl.username) : 'postgres'),
+    password: source.DB_PASSWORD ?? (parsedUrl ? decodeURIComponent(parsedUrl.password) : ''),
+    schema,
+    sslmode,
+  })
 }
 
 // Membaca konfigurasi runtime backend dari environment agar tidak hardcoded di route/app.
@@ -44,21 +88,7 @@ export function loadEnv(source = process.env) {
     reportPasswordHash = hashPassword(rawDevPassword)
   }
 
-  const dbPort = parsePositiveInteger(source.DB_PORT, 5432, 'DB_PORT')
-  if (dbPort > 65535) {
-    throw new Error('DB_PORT harus berupa bilangan bulat antara 1 dan 65535.')
-  }
-
-  const db = Object.freeze({
-    connection: source.DB_CONNECTION?.trim() || 'pgsql',
-    host: source.DB_HOST?.trim() || '127.0.0.1',
-    port: dbPort,
-    database: source.DB_DATABASE?.trim() || 'keuangan_masjid',
-    username: source.DB_USERNAME?.trim() || 'postgres',
-    password: source.DB_PASSWORD ?? '',
-    schema: source.DB_SCHEMA?.trim() || 'keu_masjid',
-    sslmode: source.DB_SSLMODE?.trim() || 'prefer',
-  })
+  const db = parseDatabaseConfig(source)
 
   return Object.freeze({
     port,

@@ -1,13 +1,14 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { createApp } from '../src/app.js'
+import { createTestRepositories } from './helpers/testRepositories.js'
 
 describe('Endpoint konten, profil, agenda, donasi, dan pengaturan website pengurus (/api/admin)', () => {
   let server
   let baseUrl
 
   before(async () => {
-    const app = createApp()
+    const app = createApp({ repositories: createTestRepositories() })
     server = app.listen(0, '127.0.0.1')
     await new Promise((resolve) => server.once('listening', resolve))
     const address = server.address()

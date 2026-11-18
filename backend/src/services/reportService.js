@@ -1,4 +1,4 @@
-import { findFinanceReportSource } from '../repositories/financeReportRepository.js'
+import { defaultFinanceReportRepository } from '../repositories/financeReportRepository.js'
 import { createHttpError } from '../utils/httpError.js'
 import { verifyScryptPassword } from '../utils/passwordHash.js'
 
@@ -15,33 +15,6 @@ function getInclusiveDaySpan(startDate, endDate) {
   const startMs = Date.parse(`${startDate}T00:00:00Z`)
   const endMs = Date.parse(`${endDate}T00:00:00Z`)
   return Math.floor((endMs - startMs) / 86_400_000) + 1
-}
-
-export function validateAndResolveReportRange(query = {}) {
-  const { startDate, endDate } = query
-
-  if (startDate === undefined && endDate === undefined) {
-    const source = findFinanceReportSource()
-    return { ...source.coverage }
-  }
-
-  if (typeof startDate !== 'string' || typeof endDate !== 'string') {
-    throw createHttpError(400, 'BAD_REQUEST', 'Tanggal awal dan akhir harus diisi dengan tanggal yang valid.')
-  }
-
-  if (!isValidIsoDate(startDate) || !isValidIsoDate(endDate)) {
-    throw createHttpError(400, 'BAD_REQUEST', 'Tanggal awal dan akhir harus diisi dengan tanggal yang valid.')
-  }
-
-  if (startDate > endDate) {
-    throw createHttpError(400, 'BAD_REQUEST', 'Tanggal awal tidak boleh melebihi tanggal akhir.')
-  }
-
-  if (getInclusiveDaySpan(startDate, endDate) > MAX_RANGE_DAYS) {
-    throw createHttpError(400, 'BAD_REQUEST', `Rentang tanggal laporan maksimal ${MAX_RANGE_DAYS} hari.`)
-  }
-
-  return { startDate, endDate }
 }
 
 // untuk pengecekan sandi gate laporan keuangan.
@@ -66,93 +39,134 @@ export function verifyReportPassword(body, expectedPasswordHash) {
   return { valid: verifyScryptPassword(password, expectedPasswordHash) }
 }
 
-// untuk perhitungan laporan keuangan publik.
-export function getFinanceReport(query) {
-  const range = validateAndResolveReportRange(query)
-  const data = findFinanceReportSource()
+// Business logic layer untuk laporan keuangan publik berbasis data PostgreSQL.
+export function createReportService(repository = defaultFinanceReportRepository) {
+  async function validateAndResolveReportRange(query = {}, metadata) {
+    const { startDate, endDate } = query
 
-  const metadata = {
-    name: data.name,
-    coverage: { ...data.coverage },
-    months: [...data.months],
-    range,
+    if (startDate === undefined && endDate === undefined) {
+      return metadata.defaultRange ? { ...metadata.defaultRange } : null
+    }
+
+    if (typeof startDate !== 'string' || typeof endDate !== 'string') {
+      throw createHttpError(400, 'BAD_REQUEST', 'Tanggal awal dan akhir harus diisi dengan tanggal yang valid.')
+    }
+
+    if (!isValidIsoDate(startDate) || !isValidIsoDate(endDate)) {
+      throw createHttpError(400, 'BAD_REQUEST', 'Tanggal awal dan akhir harus diisi dengan tanggal yang valid.')
+    }
+
+    if (startDate > endDate) {
+      throw createHttpError(400, 'BAD_REQUEST', 'Tanggal awal tidak boleh melebihi tanggal akhir.')
+    }
+
+    if (getInclusiveDaySpan(startDate, endDate) > MAX_RANGE_DAYS) {
+      throw createHttpError(400, 'BAD_REQUEST', `Rentang tanggal laporan maksimal ${MAX_RANGE_DAYS} hari.`)
+    }
+
+    return { startDate, endDate }
   }
-
-  if (range.startDate < data.coverage.startDate || range.endDate > data.coverage.endDate) {
-    return {
-      ...metadata,
-      status: 'unavailable',
-      transactions: [],
-      summary: null,
-      message: 'Data belum tersedia atau belum lengkap untuk rentang ini. Data contoh hanya mencakup 1–30 April 2026.',
-    }
-  }
-
-  const categoryIds = new Set(data.categories.map((category) => category.id))
-  for (const item of data.transactions) {
-    if (typeof item.id !== 'string' || !item.id) {
-      throw new Error('ID transaksi laporan harus berupa string.')
-    }
-    if (!Number.isSafeInteger(item.amount)) {
-      throw new Error('Nominal transaksi harus berupa integer Rupiah.')
-    }
-    if (!['income', 'expense'].includes(item.type)) {
-      throw new Error('Jenis transaksi laporan tidak valid.')
-    }
-    if (!categoryIds.has(item.categoryId)) {
-      throw new Error('Kategori transaksi laporan belum tersedia.')
-    }
-  }
-
-  const transactions = data.transactions
-    .filter((item) => item.date >= range.startDate && item.date <= range.endDate)
-    .map((item) => ({ ...item }))
-
-  const rows = data.categories.map((category) => {
-    if (!Number.isSafeInteger(category.openingBalance)) {
-      throw new Error('Saldo awal laporan harus berupa integer Rupiah.')
-    }
-
-    let openingBalance = category.openingBalance
-    let income = 0
-    let expense = 0
-
-    for (const item of data.transactions) {
-      if (item.categoryId !== category.id) continue
-      if (item.date < range.startDate) {
-        openingBalance += item.type === 'income' ? item.amount : -item.amount
-      } else if (item.date <= range.endDate) {
-        if (item.type === 'income') income += item.amount
-        else expense += item.amount
-      }
-    }
-
-    return {
-      id: category.id,
-      label: category.label,
-      color: category.color,
-      openingBalance,
-      income,
-      expense,
-      closingBalance: openingBalance + income - expense,
-    }
-  })
-
-  const totals = rows.reduce(
-    (sum, row) => ({
-      openingBalance: sum.openingBalance + row.openingBalance,
-      income: sum.income + row.income,
-      expense: sum.expense + row.expense,
-      closingBalance: sum.closingBalance + row.closingBalance,
-    }),
-    { openingBalance: 0, income: 0, expense: 0, closingBalance: 0 },
-  )
 
   return {
-    ...metadata,
-    status: 'ready',
-    transactions,
-    summary: { rows, totals },
+    verifyReportPassword,
+
+    async getFinanceReport(query = {}) {
+      const metadata = await repository.findFinanceReportMetadata()
+      const range = await validateAndResolveReportRange(query, metadata)
+
+      const baseInfo = {
+        name: metadata.name,
+        coverage: metadata.coverage ? { ...metadata.coverage } : null,
+        months: [...metadata.months],
+        range,
+      }
+
+      if (
+        !metadata.coverage ||
+        !range ||
+        range.startDate < metadata.coverage.startDate ||
+        range.endDate > metadata.coverage.endDate
+      ) {
+        return {
+          ...baseInfo,
+          status: 'unavailable',
+          transactions: [],
+          summary: null,
+          message: metadata.coverage
+            ? `Data belum tersedia atau belum lengkap untuk rentang ini. Cakupan database saat ini ${metadata.coverage.startDate} sampai ${metadata.coverage.endDate}.`
+            : 'Belum ada data transaksi tercatat pada database.',
+        }
+      }
+
+      const data = await repository.findFinanceReportForRange(range)
+      const categoryIds = new Set(data.categories.map((category) => category.id))
+
+      for (const item of data.transactions) {
+        if (typeof item.id !== 'string' || !item.id) {
+          throw new Error('ID transaksi laporan harus berupa string.')
+        }
+        if (!Number.isSafeInteger(item.amount)) {
+          throw new Error('Nominal transaksi harus berupa integer Rupiah.')
+        }
+        if (!['income', 'expense'].includes(item.type)) {
+          throw new Error('Jenis transaksi laporan tidak valid.')
+        }
+        if (!categoryIds.has(item.categoryId)) {
+          throw new Error('Kategori transaksi laporan belum tersedia.')
+        }
+      }
+
+      const transactions = data.transactions.map((item) => ({ ...item }))
+
+      const rows = data.categories.map((category) => {
+        if (!Number.isSafeInteger(category.openingBalance)) {
+          throw new Error('Saldo awal laporan harus berupa integer Rupiah.')
+        }
+
+        const priorMutation = data.priorMutationsByCategory?.get(category.dbId)?.net ?? 0
+        const openingBalance = category.openingBalance + priorMutation
+        let income = 0
+        let expense = 0
+
+        for (const item of transactions) {
+          if (item.categoryId !== category.id) continue
+          if (item.type === 'income') income += item.amount
+          else expense += item.amount
+        }
+
+        return {
+          id: category.id,
+          label: category.label,
+          color: category.color,
+          openingBalance,
+          income,
+          expense,
+          closingBalance: openingBalance + income - expense,
+        }
+      })
+
+      const totals = rows.reduce(
+        (sum, row) => ({
+          openingBalance: sum.openingBalance + row.openingBalance,
+          income: sum.income + row.income,
+          expense: sum.expense + row.expense,
+          closingBalance: sum.closingBalance + row.closingBalance,
+        }),
+        { openingBalance: 0, income: 0, expense: 0, closingBalance: 0 },
+      )
+
+      return {
+        ...baseInfo,
+        status: 'ready',
+        transactions,
+        summary: { rows, totals },
+      }
+    },
   }
 }
 
+export const defaultReportService = createReportService()
+
+export function getFinanceReport(query) {
+  return defaultReportService.getFinanceReport(query)
+}

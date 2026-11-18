@@ -1,16 +1,28 @@
 import express from 'express'
+import { getDefaultDatabasePool } from './config/database.js'
 import { loadEnv, normalizeBasePath } from './config/env.js'
 import { createAdminFinanceController } from './controllers/adminFinanceController.js'
+import { createAdminManagementController } from './controllers/adminManagementController.js'
 import { createAdminSettingsController } from './controllers/adminSettingsController.js'
+import { createHealthController } from './controllers/healthController.js'
+import { createPublicController } from './controllers/publicController.js'
 import { createReportController } from './controllers/reportController.js'
 import { createRateLimiter } from './middlewares/rateLimiter.js'
 import { createAdminFinanceRepository } from './repositories/adminFinanceRepository.js'
+import { createAdminManagementRepository } from './repositories/adminManagementRepository.js'
 import { createAdminSettingsRepository } from './repositories/adminSettingsRepository.js'
+import { createAgendaRepository } from './repositories/agendaRepository.js'
+import { createFinanceReportRepository } from './repositories/financeReportRepository.js'
+import { createPublicContentRepository } from './repositories/publicContentRepository.js'
 import { createAdminRoutes } from './routes/adminRoutes.js'
-import healthRoutes from './routes/healthRoutes.js'
+import { createHealthRoutes } from './routes/healthRoutes.js'
 import { createPublicRoutes } from './routes/publicRoutes.js'
 import { createAdminFinanceService } from './services/adminFinanceService.js'
+import { createAdminManagementService } from './services/adminManagementService.js'
 import { createAdminSettingsService } from './services/adminSettingsService.js'
+import { createAgendaService } from './services/agendaService.js'
+import { createPublicContentService } from './services/publicContentService.js'
+import { createReportService } from './services/reportService.js'
 
 export function createApp(overrides = {}) {
   const config = loadEnv()
@@ -24,27 +36,58 @@ export function createApp(overrides = {}) {
   const rateLimitWindowMs = overrides.rateLimitWindowMs ?? config.rateLimitWindowMs
   const rateLimitMax = overrides.rateLimitMax ?? config.rateLimitMax
 
+  const dbPool = overrides.dbPool ?? getDefaultDatabasePool()
+  const repos = overrides.repositories ?? {}
+
+  const publicContentRepository = repos.publicContentRepository ?? createPublicContentRepository(dbPool)
+  const agendaRepository = repos.agendaRepository ?? createAgendaRepository(dbPool)
+  const financeReportRepository = repos.financeReportRepository ?? createFinanceReportRepository(dbPool)
+  const adminFinanceRepository = repos.adminFinanceRepository ?? createAdminFinanceRepository(dbPool)
+  const adminSettingsRepository = repos.adminSettingsRepository ?? createAdminSettingsRepository(dbPool)
+  const adminManagementRepository = repos.adminManagementRepository ?? createAdminManagementRepository(dbPool)
+
   const app = express()
-  const reportController = createReportController({ reportPasswordHash })
+
+  const healthController = createHealthController(dbPool)
+  const publicContentService = createPublicContentService(publicContentRepository)
+  const agendaService = createAgendaService(agendaRepository)
+  const publicController = createPublicController({ publicContentService, agendaService })
+
+  const reportService = createReportService(financeReportRepository)
+  const reportController = createReportController({ reportPasswordHash, reportService })
+
   const passwordRateLimiter = createRateLimiter({
     windowMs: rateLimitWindowMs,
     maxAttempts: rateLimitMax,
   })
-  const adminFinanceRepository = createAdminFinanceRepository()
+  const loginRateLimiter = createRateLimiter({
+    windowMs: rateLimitWindowMs,
+    maxAttempts: rateLimitMax,
+  })
+
   const adminFinanceService = createAdminFinanceService(adminFinanceRepository)
   const adminFinanceController = createAdminFinanceController(adminFinanceService)
-  const adminSettingsRepository = createAdminSettingsRepository()
   const adminSettingsService = createAdminSettingsService(adminSettingsRepository)
   const adminSettingsController = createAdminSettingsController(adminSettingsService)
+  const adminManagementService = createAdminManagementService(adminManagementRepository)
+  const adminManagementController = createAdminManagementController(adminManagementService)
 
   app.disable('x-powered-by')
   app.use(express.json({ limit: jsonLimit }))
 
-  app.use(apiBasePath || '/', healthRoutes)
-  app.use(`${apiBasePath}/public`, createPublicRoutes({ reportController, passwordRateLimiter }))
+  app.use(apiBasePath || '/', createHealthRoutes(healthController))
+  app.use(
+    `${apiBasePath}/public`,
+    createPublicRoutes({ publicController, reportController, passwordRateLimiter })
+  )
   app.use(
     `${apiBasePath}/admin`,
-    createAdminRoutes({ adminFinanceController, adminSettingsController })
+    createAdminRoutes({
+      adminFinanceController,
+      adminSettingsController,
+      adminManagementController,
+      loginRateLimiter,
+    })
   )
 
   app.use((_req, res) => {

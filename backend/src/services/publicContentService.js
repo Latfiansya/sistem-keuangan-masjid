@@ -1,4 +1,4 @@
-import { findPublicContent } from '../repositories/publicContentRepository.js'
+import { defaultPublicContentRepository } from '../repositories/publicContentRepository.js'
 
 // Memastikan data kontak dan donasi yang belum terverifikasi tidak mengirim nilai aktif.
 function sanitizePublicContact(contact) {
@@ -46,12 +46,21 @@ function sanitizePublicContact(contact) {
   }
 }
 
-// untuk konten publik bersama tanpa menyertakan agenda.
-export function getPublicContent() {
-  const content = findPublicContent()
+// Business logic layer untuk konten publik bersama tanpa menyertakan agenda.
+export function createPublicContentService(repository = defaultPublicContentRepository) {
   return {
-    ...content,
-    contact: sanitizePublicContact(content.contact),
+    async getPublicContent() {
+      const content = await repository.findPublicContent()
+      return {
+        ...content,
+        contact: sanitizePublicContact(content.contact),
+      }
+    },
   }
 }
 
+export const defaultPublicContentService = createPublicContentService()
+
+export function getPublicContent() {
+  return defaultPublicContentService.getPublicContent()
+}

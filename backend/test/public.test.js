@@ -1,15 +1,21 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
-import app from '../src/app.js'
-import { getPublicAgenda } from '../src/services/agendaService.js'
-import { getPublicContent } from '../src/services/publicContentService.js'
+import { createApp } from '../src/app.js'
+import { createAgendaService } from '../src/services/agendaService.js'
+import { createPublicContentService } from '../src/services/publicContentService.js'
+import { createTestRepositories } from './helpers/testRepositories.js'
+
+const repositories = createTestRepositories()
+const agendaService = createAgendaService(repositories.agendaRepository)
+const publicContentService = createPublicContentService(repositories.publicContentRepository)
 
 let server
 let baseUrl
 
 before(async () => {
+  const testApp = createApp({ repositories })
   await new Promise((resolve) => {
-    server = app.listen(0, '127.0.0.1', resolve)
+    server = testApp.listen(0, '127.0.0.1', resolve)
   })
   baseUrl = `http://127.0.0.1:${server.address().port}`
 })
@@ -111,10 +117,10 @@ test('metode selain GET pada endpoint publik mengembalikan JSON 404', async () =
 })
 
 test('salinan data sumber terisolasi dari mutasi pemanggil', async () => {
-  const agendaCopy = getPublicAgenda()
+  const agendaCopy = await agendaService.getPublicAgenda()
   agendaCopy.groups[0].items.pop()
 
-  const contentCopy = getPublicContent()
+  const contentCopy = await publicContentService.getPublicContent()
   contentCopy.profile.members.pop()
 
   const [agendaResponse, contentResponse] = await Promise.all([

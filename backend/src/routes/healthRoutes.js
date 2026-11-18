@@ -1,9 +1,13 @@
 import { Router } from 'express'
-import { getHealth } from '../controllers/healthController.js'
+import { createHealthController } from '../controllers/healthController.js'
 
-const healthRoutes = Router()
+export function createHealthRoutes(healthController = createHealthController()) {
+  const healthRoutes = Router()
 
-healthRoutes.get('/health', getHealth)
+  healthRoutes.get('/health', healthController.getHealth)
+  healthRoutes.get('/health/db', healthController.getDatabaseHealth)
 
-export default healthRoutes
+  return healthRoutes
+}
 
+export default createHealthRoutes()
