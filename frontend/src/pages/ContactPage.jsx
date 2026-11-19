@@ -11,6 +11,7 @@ export default function ContactPage() {
   if (!content) return <p role="status" className="contact-status page-container">Memuat informasi kontak dan donasi…</p>
   const { contact } = content
   if (!contact) return <p role="status" className="contact-status page-container">Informasi kontak dan donasi belum tersedia.</p>
+  const hasLocation = contact.location?.verified === true && Boolean(contact.location.url)
 
   return (
     <>
@@ -39,11 +40,17 @@ export default function ContactPage() {
             })}
           </div> : <p className="contact-empty">Informasi kontak belum tersedia.</p>}
 
-          <div className="contact-map" aria-label="Lokasi masjid belum dikonfirmasi">
+          <div className="contact-map" aria-label={hasLocation ? 'Lokasi masjid terkonfirmasi' : 'Lokasi masjid belum dikonfirmasi'}>
             <span className="contact-map-label"><Navigation aria-hidden="true" />Lokasi masjid</span>
-            <div className="contact-map-placeholder"><MapPin aria-hidden="true" /><p>Data belum dikonfirmasi</p><small>Pratinjau lokasi belum tersedia.</small></div>
-            <Button disabled aria-describedby="map-status">Buka Google Maps <Navigation aria-hidden="true" /></Button>
-            <span id="map-status" className="sr-only">Tautan peta belum diaktifkan karena lokasi belum dikonfirmasi.</span>
+            <div className="contact-map-placeholder"><MapPin aria-hidden="true" /><p>{hasLocation ? (contact.location.label || 'Lokasi Masjid Al-Hidayah Sorolaten') : 'Data belum dikonfirmasi'}</p><small>{hasLocation ? 'Klik tombol di bawah untuk membuka Google Maps.' : 'Pratinjau lokasi belum tersedia.'}</small></div>
+            {hasLocation ? (
+              <a className="button" href={contact.location.url} target="_blank" rel="noopener noreferrer">Buka Google Maps <Navigation aria-hidden="true" /></a>
+            ) : (
+              <>
+                <Button disabled aria-describedby="map-status">Buka Google Maps <Navigation aria-hidden="true" /></Button>
+                <span id="map-status" className="sr-only">Tautan peta belum diaktifkan karena lokasi belum dikonfirmasi.</span>
+              </>
+            )}
           </div>
         </div>
       </section>

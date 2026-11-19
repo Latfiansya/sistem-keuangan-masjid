@@ -1,9 +1,43 @@
+import { apiRequest } from '../utils/apiClient.js'
+import { dataSource } from '../utils/env.js'
 import { validateReportRange } from '../utils/reportCalculations.js'
 import { getActiveAdminTransactions, getAdminHistoricalTransactions } from './adminTransactionData.js'
+
+export async function getAdminFinanceReport({ signal } = {}) {
+  signal?.throwIfAborted()
+  if (dataSource === 'mock') throw new Error('Laporan admin API hanya tersedia pada mode API.')
+  const data = await apiRequest('/admin/finance/report', { signal })
+  if (!data || !Array.isArray(data.transactions) || !Array.isArray(data.categories)) {
+    throw new Error('Format data laporan keuangan admin API tidak sesuai kontrak.')
+  }
+  return data
+}
 
 export function buildAdminFinanceReport(dashboard) {
   const month = dashboard.updatedDate.slice(0, 7)
   const range = { startDate: `${month}-01`, endDate: dashboard.updatedDate }
+  if (Array.isArray(dashboard?.apiTransactions)) {
+    const transactions = dashboard.apiTransactions
+    const dates = transactions.map((transaction) => transaction.date)
+    const coverage = dashboard.apiCoverage || {
+      startDate: [dashboard.updatedDate, ...dates].sort()[0],
+      endDate: [dashboard.updatedDate, ...dates].sort().at(-1),
+    }
+    const historyOpeningBalances = Object.fromEntries(
+      dashboard.categories.map((category) => [category.id, category.openingBalance])
+    )
+    return {
+      ...dashboard,
+      month,
+      range,
+      coverage,
+      transactions,
+      historyOpeningBalances,
+      historicalTransactionCount: dashboard.historicalTransactionCount ?? transactions.length,
+      sessionChangeCount: 0,
+    }
+  }
+
   const historical = getAdminHistoricalTransactions(dashboard)
   const transactions = getActiveAdminTransactions(dashboard)
   const historyOpeningBalances = Object.fromEntries(dashboard.categories.map((category) => {

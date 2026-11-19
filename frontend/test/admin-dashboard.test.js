@@ -71,15 +71,24 @@ test('mock admin terisolasi dari mutasi dan mendukung pembatalan', async () => {
   await assert.rejects(getAdminDashboard({ signal: controller.signal }), { name: 'AbortError' })
 })
 
-test('mode API menampilkan error integrasi tanpa request atau fallback mock', async () => {
+test('mode API mengambil ringkasan dashboard dari /api/admin/dashboard tanpa fallback mock', async () => {
   const api = await createTestServer('api')
   const originalFetch = globalThis.fetch
-  let calls = 0
-  globalThis.fetch = async () => { calls++; throw new Error('HTTP tidak diharapkan.') }
+  const calls = []
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init })
+    return new Response(JSON.stringify({
+      success: true,
+      data: { updatedDate: '2026-10-31', account: { name: 'Admin DB', email: 'a@b.id', initials: 'AD' }, categories: [], totals: { openingBalance: 0, income: 0, expense: 0, closingBalance: 0 }, recentTransactions: [] },
+    }), { status: 200 })
+  }
   try {
     const service = await api.ssrLoadModule('/src/services/adminDashboardService.js')
-    await assert.rejects(service.getAdminDashboard(), /Dashboard admin melalui API belum tersedia/)
-    assert.equal(calls, 0)
+    const data = await service.getAdminDashboard()
+    assert.equal(calls.length, 1)
+    assert.equal(calls[0].url, '/api/admin/dashboard')
+    assert.equal(calls[0].init.credentials, 'include')
+    assert.equal(data.account.name, 'Admin DB')
   } finally { globalThis.fetch = originalFetch; await api.close() }
 })
 

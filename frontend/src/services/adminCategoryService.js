@@ -1,4 +1,5 @@
 import { adminCategoryColors } from '../utils/adminCategoryColors.js'
+import { apiRequest } from '../utils/apiClient.js'
 import { dataSource } from '../utils/env.js'
 import { buildAdminFinanceReport } from './adminFinanceReportService.js'
 
@@ -40,4 +41,17 @@ export function deleteMockAdminCategory(dashboard, id) {
   if (!dashboard.categories.some((category) => category.id === id)) throw new Error('Kategori tidak ditemukan.')
   if (isAdminCategoryUsed(dashboard, id)) throw new Error('Kategori yang digunakan transaksi atau memiliki saldo tidak dapat dihapus.')
   return { ...dashboard, categories: dashboard.categories.filter((category) => category.id !== id) }
+}
+
+export async function saveApiAdminCategory(values, id, { signal } = {}) {
+  if (dataSource === 'mock') throw new Error('Operasi API kategori hanya tersedia pada mode API.')
+  const body = { name: cleanName(values.name), color: values.color }
+  return id
+    ? apiRequest(`/admin/categories/${encodeURIComponent(id)}`, { method: 'PUT', body, signal })
+    : apiRequest('/admin/categories', { method: 'POST', body, signal })
+}
+
+export async function deleteApiAdminCategory(id, { signal } = {}) {
+  if (dataSource === 'mock') throw new Error('Operasi API kategori hanya tersedia pada mode API.')
+  return apiRequest(`/admin/categories/${encodeURIComponent(id)}`, { method: 'DELETE', signal })
 }

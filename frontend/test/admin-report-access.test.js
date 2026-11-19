@@ -35,15 +35,21 @@ test('status hanya metadata contoh tanpa kode/hash/kredensial dan salinannya ter
   await assert.rejects(getAdminReportAccessStatus({ signal: controller.signal }), { name: 'AbortError' })
 })
 
-test('mode API menolak integrasi status tanpa HTTP atau fallback mock', async () => {
+test('mode API membaca dan memperbarui kode akses lewat /api/admin/report-access tanpa fallback mock', async () => {
   const api = await createTestServer('api')
   const originalFetch = globalThis.fetch
-  let calls = 0
-  globalThis.fetch = async () => { calls++; throw new Error('HTTP tidak diharapkan.') }
+  const calls = []
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init })
+    return new Response(JSON.stringify({ success: true, data: { active: init.method === 'PUT', publicReportEnabled: true, changedDate: '2026-11-19', changedTime: '18:00', changedBy: 'Super Admin' } }), { status: 200 })
+  }
   try {
     const service = await api.ssrLoadModule('/src/services/adminReportAccessService.js')
-    await assert.rejects(service.getAdminReportAccessStatus(), /Status kode akses admin melalui API belum tersedia/)
-    assert.equal(calls, 0)
+    const status = await service.getAdminReportAccessStatus()
+    assert.equal(status.active, false)
+    const updated = await service.updateAdminReportAccess({ code: 'sandibaru123', publicReportEnabled: true })
+    assert.equal(updated.active, true)
+    assert.deepEqual(calls.map((c) => [c.init.method, c.url]), [['GET', '/api/admin/report-access'], ['PUT', '/api/admin/report-access']])
   } finally { globalThis.fetch = originalFetch; await api.close() }
 })
 

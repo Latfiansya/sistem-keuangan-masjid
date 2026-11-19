@@ -171,6 +171,17 @@ export function createFinanceReportRepository(db = getDefaultDatabasePool()) {
         transactions,
       }
     },
+
+    async findReportAccessPasswordHash() {
+      const { rows } = await db.query(
+        `SELECT kode_akses_laporan
+         FROM keu_masjid.m_pengaturan_website
+         WHERE id = 1
+         LIMIT 1`
+      )
+      const stored = rows[0]?.kode_akses_laporan?.trim() || ''
+      return /^(scrypt\$|\$2[aby]\$\d{2}\$)/.test(stored) ? stored : ''
+    },
   }
 }
 

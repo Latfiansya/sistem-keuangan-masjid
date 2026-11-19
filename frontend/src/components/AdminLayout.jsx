@@ -1,11 +1,21 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { ArrowRightLeft, Building2, CalendarDays, ClipboardList, Contact, FileText, Folder, HandHeart, KeyRound, LayoutDashboard, LogOut, Menu, Receipt, Users, X } from 'lucide-react'
-import { addMockAdminTransaction, deleteMockAdminTransaction, editMockAdminTransaction } from '../services/adminTransactionService.js'
+import { getAdminSession, logoutAdmin } from '../services/adminAuthService.js'
+import { deleteApiAdminCategory, deleteMockAdminCategory, saveApiAdminCategory, saveMockAdminCategory } from '../services/adminCategoryService.js'
 import { getAdminDashboard } from '../services/adminDashboardService.js'
-import { deleteMockAdminCategory, saveMockAdminCategory } from '../services/adminCategoryService.js'
+import { getAdminFinanceReport } from '../services/adminFinanceReportService.js'
+import { addMockAdminTransaction, createApiAdminTransaction, deleteApiAdminTransaction, deleteMockAdminTransaction, editMockAdminTransaction, updateApiAdminTransaction } from '../services/adminTransactionService.js'
+import { dataSource } from '../utils/env.js'
 import AdminHeaderActions from './AdminHeaderActions.jsx'
 import './AdminLayout.css'
+
+const buildInitials = (name = '') => {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean)
+  if (!parts.length) return 'PG'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+}
 
 const navigation = [
   { label: 'Keuangan', items: [
@@ -44,13 +54,41 @@ export default function AdminLayout() {
   const menuButton = useRef(null)
   const navigationPanel = useRef(null)
 
+  const loadWorkspace = useCallback(async ({ signal } = {}) => {
+    if (dataSource === 'mock') {
+      return getAdminDashboard({ signal })
+    }
+    const [summary, report, sessionUser] = await Promise.all([
+      getAdminDashboard({ signal }),
+      getAdminFinanceReport({ signal }),
+      getAdminSession({ signal }),
+    ])
+    const account = sessionUser
+      ? { name: sessionUser.name, email: sessionUser.email, role: sessionUser.role, initials: buildInitials(sessionUser.name) }
+      : summary.account
+    return {
+      ...summary,
+      account,
+      apiTransactions: report.transactions,
+      apiCoverage: report.coverage,
+      historicalTransactionCount: report.historicalTransactionCount,
+    }
+  }, [])
+
   useEffect(() => {
     const controller = new AbortController()
-    getAdminDashboard({ signal: controller.signal })
+    loadWorkspace({ signal: controller.signal })
       .then((data) => { if (!controller.signal.aborted) setDashboard(data) })
-      .catch((cause) => { if (!controller.signal.aborted) setError(cause.message) })
+      .catch((cause) => {
+        if (controller.signal.aborted) return
+        if (cause?.status === 401) {
+          navigate('/admin/login', { replace: true, state: { message: cause.message } })
+          return
+        }
+        setError(cause.message)
+      })
     return () => controller.abort()
-  }, [])
+  }, [loadWorkspace, navigate])
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -74,20 +112,57 @@ export default function AdminLayout() {
     }
   }, [menuOpen])
 
-  function saveCategory(values, id) {
-    setDashboard(saveMockAdminCategory(dashboard, values, id))
+  async function saveCategory(values, id) {
+    if (dataSource === 'mock') {
+      setDashboard(saveMockAdminCategory(dashboard, values, id))
+      return
+    }
+    await saveApiAdminCategory(values, id)
+    setDashboard(await loadWorkspace())
   }
 
-  function deleteCategory(id) {
-    setDashboard(deleteMockAdminCategory(dashboard, id))
+  async function deleteCategory(id) {
+    if (dataSource === 'mock') {
+      setDashboard(deleteMockAdminCategory(dashboard, id))
+      return
+    }
+    await deleteApiAdminCategory(id)
+    setDashboard(await loadWorkspace())
   }
 
-  function addTransaction(values, type) {
-    setDashboard(addMockAdminTransaction(dashboard, values, type))
+  async function addTransaction(values, type) {
+    if (dataSource === 'mock') {
+      setDashboard(addMockAdminTransaction(dashboard, values, type))
+      return
+    }
+    await createApiAdminTransaction(values, type)
+    setDashboard(await loadWorkspace())
   }
 
-  function editTransaction(id, values) { setDashboard(editMockAdminTransaction(dashboard, id, values)) }
-  function deleteTransaction(id) { setDashboard(deleteMockAdminTransaction(dashboard, id)) }
+  async function editTransaction(id, values, type) {
+    if (dataSource === 'mock') {
+      setDashboard(editMockAdminTransaction(dashboard, id, values))
+      return
+    }
+    await updateApiAdminTransaction(id, values, type)
+    setDashboard(await loadWorkspace())
+  }
+
+  async function deleteTransaction(id) {
+    if (dataSource === 'mock') {
+      setDashboard(deleteMockAdminTransaction(dashboard, id))
+      return
+    }
+    await deleteApiAdminTransaction(id)
+    setDashboard(await loadWorkspace())
+  }
+
+  async function handleLogout() {
+    if (dataSource !== 'mock') {
+      try { await logoutAdmin() } catch { /* tetap arahkan ke login */ }
+    }
+    navigate('/admin/login')
+  }
 
   const account = dashboard?.account
   return (
@@ -106,8 +181,8 @@ export default function AdminLayout() {
         </nav>
         <div className="admin-account">
           <span className="admin-avatar" aria-hidden="true">{account?.initials || '—'}</span>
-          <div><strong>{account?.name || 'Pengurus'}</strong><span>{account?.email || 'Akun contoh'}</span></div>
-          <button type="button" aria-label="Logout — kembali ke Login" title="Kembali ke Login · Autentikasi masih stub, belum ada sesi nyata" onClick={() => navigate('/admin/login')}><LogOut size={18} aria-hidden="true" /></button>
+          <div><strong>{account?.name || 'Pengurus'}</strong><span>{account?.email || (dataSource === 'mock' ? 'Akun contoh' : 'Mode API')}</span></div>
+          <button type="button" aria-label="Logout — kembali ke Login" title={dataSource === 'mock' ? 'Kembali ke Login · Autentikasi masih stub, belum ada sesi nyata' : 'Keluar dan kembali ke halaman Login'} onClick={handleLogout}><LogOut size={18} aria-hidden="true" /></button>
         </div>
       </aside>
       <div className="admin-workspace">

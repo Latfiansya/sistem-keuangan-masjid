@@ -1,4 +1,5 @@
 import { defaultFinanceReportRepository } from '../repositories/financeReportRepository.js'
+import { verifyAccountPassword } from '../utils/adminAuth.js'
 import { createHttpError } from '../utils/httpError.js'
 import { verifyScryptPassword } from '../utils/passwordHash.js'
 
@@ -17,8 +18,7 @@ function getInclusiveDaySpan(startDate, endDate) {
   return Math.floor((endMs - startMs) / 86_400_000) + 1
 }
 
-// untuk pengecekan sandi gate laporan keuangan.
-export function verifyReportPassword(body, expectedPasswordHash) {
+function extractValidPasswordInput(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw createHttpError(400, 'BAD_REQUEST', 'Permintaan tidak valid.')
   }
@@ -31,6 +31,13 @@ export function verifyReportPassword(body, expectedPasswordHash) {
   if (password.length > MAX_PASSWORD_LENGTH || /[\u0000-\u001F\u007F]/.test(password)) {
     throw createHttpError(400, 'BAD_REQUEST', 'Format sandi tidak valid.')
   }
+
+  return password
+}
+
+// untuk pengecekan sandi gate laporan keuangan.
+export function verifyReportPassword(body, expectedPasswordHash) {
+  const password = extractValidPasswordInput(body)
 
   if (!expectedPasswordHash) {
     throw createHttpError(503, 'SERVICE_UNAVAILABLE', 'Pemeriksaan sandi laporan belum dikonfigurasi.')
@@ -69,6 +76,22 @@ export function createReportService(repository = defaultFinanceReportRepository)
 
   return {
     verifyReportPassword,
+
+    async checkPassword(body, fallbackPasswordHash) {
+      const password = extractValidPasswordInput(body)
+      const dbHash =
+        typeof repository.findReportAccessPasswordHash === 'function'
+          ? await repository.findReportAccessPasswordHash()
+          : ''
+      const expectedHash = dbHash || fallbackPasswordHash
+
+      if (!expectedHash) {
+        throw createHttpError(503, 'SERVICE_UNAVAILABLE', 'Pemeriksaan sandi laporan belum dikonfigurasi.')
+      }
+
+      const valid = await verifyAccountPassword(password, expectedHash)
+      return { valid }
+    },
 
     async getFinanceReport(query = {}) {
       const metadata = await repository.findFinanceReportMetadata()

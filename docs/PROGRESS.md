@@ -1309,3 +1309,67 @@ Status: selesai dan tervalidasi pada branch `fitur/backend-admin`; siap di-commi
 - Pada dump SQL database, fungsi trigger `keu_masjid.fn_log_activity()` masih mengisi nilai `jenis_aktivitas` (`TAMBAH`/`UBAH`/`HAPUS`) dan `modul` (`Transaksi`/`Kategori Dana`/dll) yang berbeda dari constraint `t_activity_log` (`Tambah`/`Edit`/`Hapus` dan `Keuangan`/`Akun`/`Konten`); tim database perlu menyamakan trigger tersebut agar operasi tulis (`POST`/`PUT`/`DELETE`) yang memicu activity log tidak ditolak constraint PostgreSQL.
 
 Usulan pesan commit: `feat: hubungkan seluruh endpoint backend ke PostgreSQL dan hapus data dummy`.
+
+## Sinkronisasi Skema Database Lengkap, Header Keamanan/CORS & Autentikasi Admin (19 November 2026)
+
+Status: implementasi selesai dan tervalidasi pada branch `fitur/backend-admin`; siap ditinjau serta di-commit manual oleh pengguna. Seluruh file di `frontend/` tidak diubah.
+
+### Implementasi
+
+- **Sinkronisasi Repository Konten Publik & Donasi dengan Skema DB Terbaru**:
+  - Memperbarui `backend/src/repositories/publicContentRepository.js` agar membaca seluruh tabel yang baru dilengkapi tim database: `m_profil_masjid`, `m_pengaturan_website` (beserta kolom `qris_path`, `bank_nama`, `bank_no_rekening`, `bank_atas_nama`, `nomor_whatsapp`, `koordinat_lat`, `koordinat_lng`), `m_misi_masjid` (4 baris), `m_program_masjid` (3 baris), `m_sejarah_masjid` (2 peristiwa linimasa), dan `m_pengurus` (7 pengurus).
+  - Memperbarui `backend/src/repositories/adminSettingsRepository.js` agar `GET`/`PUT /api/admin/donation-settings` membaca dan menyimpan kolom donasi pada `m_pengaturan_website` (tidak lagi mengembalikan placeholder `503`).
+- **Header Keamanan HTTP & CORS (`securityHeaders.js`)**:
+  - Menambahkan `backend/src/middlewares/securityHeaders.js` (`X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Cross-Origin-Resource-Policy: same-site`, serta CORS terkonfigurasi melalui `CORS_ORIGIN` termasuk preflight `OPTIONS` `204`).
+- **Autentikasi Sesi Admin & Audit Trail Actor (`adminAuth.js`, `requireAdminAuth.js`)**:
+  - Menambahkan `bcryptjs` di `backend/package.json` dan `backend/src/utils/adminAuth.js` untuk verifikasi hash password bcrypt/scrypt serta pembuatan/verifikasi token HMAC-SHA256 HS256 (`timingSafeEqual`) via header `Authorization: Bearer` maupun cookie `HttpOnly; SameSite=Lax` (`masjid_admin_session`).
+  - Mengimplementasikan `findUserForLoginByEmail()` pada `adminManagementRepository.js` dan login nyata pada `adminManagementService.js` + `adminManagementController.js` (`401` kredensial salah, `403` akun `Nonaktif`, `503` jika `AUTH_SECRET` belum dikonfigurasi, `200` + cookie saat valid), serta `GET /api/admin/auth/me`.
+  - Menambahkan `backend/src/middlewares/requireAdminAuth.js` (`ADMIN_AUTH_REQUIRED`, otomatis `true` di `production`, dapat diaktifkan di development lewat `.env`) dan meneruskan `req.adminUser?.id ?? null` dari controller admin sebagai `auditUserId` ke transaksi tulis (`set_config('app.user_id', ...)`) agar `t_activity_log` mencatat pengurus yang masuk.
+
+- **CRUD Agenda (`m_agenda`), Akun Pengurus (`m_pengguna`), & Kode Akses Laporan (`m_pengaturan_website`)**:
+  - Memperluas [agendaRepository.js](backend/src/repositories/agendaRepository.js), `adminSettingsRepository.js`, `adminSettingsService.js`, dan `adminSettingsController.js` untuk mendukung `POST /api/admin/agenda`, `PUT /api/admin/agenda/:id`, dan `DELETE /api/admin/agenda/:id` (termasuk validasi duplikasi `nama_kegiatan + frekuensi`).
+  - Memperluas `adminManagementRepository.js`, `adminManagementService.js`, dan `adminManagementController.js` untuk mendukung `POST /api/admin/accounts`, `PUT /api/admin/accounts/:id`, `PATCH /api/admin/accounts/:id/status`, `DELETE /api/admin/accounts/:id` (dengan hashing `bcryptjs` cost 12, proteksi akun aktif diri sendiri, penanganan FK `23503`, serta guard role `Super Admin`), dan `PUT /api/admin/report-access`.
+  - Menyinkronkan `POST /api/public/report/check-password` (`financeReportRepository.js`, `reportService.js`, `reportController.js`) agar membaca hash dari `keu_masjid.m_pengaturan_website.kode_akses_laporan` terlebih dahulu lalu fallback ke `REPORT_SHARED_PASSWORD_HASH` di `.env` jika belum diisi.
+
+### Verifikasi
+
+- `npm run db:check --workspace backend`: **PASS** — terhubung ke `db_keuangan_masjid_dev` (`keu_masjid`), membaca profil masjid, 4 misi, 3 program, 2 linimasa, 7 pengurus, 12 agenda, 3 kategori (`Rp17.378.200`), 374 transaksi, 10 bulan rekap, 2 akun, dan 31 activity log.
+- Uji smoke HTTP langsung ke PostgreSQL: **PASS** (`GET /api/health/db`, `GET /api/public/content`, `GET /api/admin/donation-settings`, `POST /api/admin/auth/login` mengembalikan `401` pada password salah).
+- `npm run lint`: **PASS** (0 error pada frontend dan 42 file `.js` backend; 1 warning lama `no-unused-vars` pada test browser frontend tidak disentuh).
+- `npm test --workspace backend`: **PASS** — **43/43 test HTTP & konfigurasi backend lulus** (mencakup CRUD Agenda, CRUD Akun Pengurus, guard `Super Admin` `403`, update Kode Akses Laporan + sinkronisasi cek sandi publik, keamanan/CORS, login, cookie `HttpOnly`, `/auth/me`, dan `auditUserId`).
+- `npm run build`: **PASS**.
+
+### Batasan & Tindak Lanjut Tim
+
+- **Integrasi Frontend -> API (`frontend/src/services/*.js`)**: seluruh endpoint API backend sudah tersedia; tahap berikutnya adalah menyambungkan service frontend (saat `VITE_DATA_SOURCE=api`) serta mengaktifkan tombol/form CRUD Agenda, Akun, dan Kode Akses yang saat ini masih `disabled` di UI.
+- `ADMIN_AUTH_REQUIRED` disetel `false` sebagai default di development lokal agar pengujian tanpa token tetap mudah sebelum frontend mengirim token/cookie; ubah menjadi `true` di `.env` setelah frontend terhubung penuh (`production` otomatis memaksa `true` dan mewajibkan `AUTH_SECRET` >= 32 karakter).
+- Mekanisme upload file gambar baru (seperti upload QRIS atau foto profil baru ke storage/static folder) belum ditambahkan jika kelak admin ingin mengganti path gambar secara langsung dari browser.
+
+Usulan pesan commit: `feat: sinkronkan db terbaru, cors, autentikasi admin, dan crud agenda/akun/kode akses`.
+
+## Integrasi Frontend Services ke Backend API & Aktivasi CRUD Admin (19 November 2026)
+
+Status: implementasi selesai dan tervalidasi pada branch `fitur/backend-admin`; siap ditinjau serta di-commit manual oleh pengguna. Database tidak diubah.
+
+### Implementasi
+
+- **Helper HTTP & Environment (`frontend/src/utils/apiClient.js`, `frontend/src/utils/env.js`)**:
+  - Menambahkan `apiRequest()` untuk permintaan JSON dengan `credentials: 'include'` (cookie `HttpOnly`), pembacaan envelope proyek, penerusan status HTTP (`401`/`403`), dan dukungan `AbortSignal`.
+  - Menjaga pembacaan `import.meta.env?.VITE_DATA_SOURCE` aman baik di Vite maupun di runtime Node.js murni.
+  - Menambahkan `PATCH` pada header `Access-Control-Allow-Methods` di `backend/src/middlewares/securityHeaders.js`.
+- **Menyambungkan Service Publik & Admin (`frontend/src/services/*.js`)**:
+  - `publicContentService.js`, `agendaService.js`, dan `reportService.js` kini memanggil `/api/public/content`, `/api/public/agenda`, `/api/public/report/check-password`, dan `/api/public/finance/report` saat `VITE_DATA_SOURCE=api` (dengan normalisasi `timeline[].name` dan `months`).
+  - `adminAuthService.js`, `adminDashboardService.js`, `adminCategoryService.js`, `adminTransactionData.js`, `adminTransactionService.js`, `adminFinanceReportService.js`, `adminProfileService.js`, `adminDonationService.js`, `adminWebsiteSettingsService.js`, `adminAccountsService.js`, `adminReportAccessService.js`, dan `adminActivityLogService.js` kini mendukung cabang `api` ke `/api/admin/*` sekaligus mempertahankan cabang `mock` sepenuhnya tanpa backend.
+- **Integrasi Halaman & Aktivasi CRUD Admin (`frontend/src/pages/` & `AdminLayout.jsx`)**:
+  - `AdminLoginPage.jsx` mengarahkan ke `/admin/dashboard` setelah login API berhasil; `AdminLayout.jsx` memuat ringkasan dashboard, daftar transaksi API (`/api/admin/finance/report`), sesi login (`/api/admin/auth/me`), logout (`/api/admin/auth/logout`), dan me-refresh data setelah mutasi kategori/transaksi.
+  - Mengaktifkan CRUD nyata (saat `VITE_DATA_SOURCE=api`) pada `AdminAgendaPage.jsx`, `AdminAccountsPage.jsx`, dan `AdminReportAccessPage.jsx` beserta dialog modal (`AdminModalDialog.css`), serta penyimpanan server pada `AdminProfilePage.jsx`, `AdminDonationPage.jsx` (aman untuk path string QRIS), dan `AdminWebsiteSettingsPage.jsx`.
+  - Mengaktifkan tautan `Buka Google Maps` di `ContactPage.jsx` apabila `location.verified === true` dari database.
+
+### Verifikasi & Batasan
+
+- `npm run lint`: **PASS** (0 error pada frontend dan 42 file backend).
+- `npm test --workspace frontend`: **PASS** — **125 test unit/SSR lulus** (11 suite browser opsional dilewati karena membutuhkan instance Chrome QA terpisah).
+- `npm run build`: **PASS**.
+- **Catatan Database yang masih perlu dilengkapi tim DB**: beberapa kolom/data bisnis masih kosong (`bank_no_rekening`, `nomor_whatsapp`, `kode_akses_laporan`, `laporan_publik_aktif=false`), role akun `id=2` (`Super Admin`) masih bertipe `Admin`, file `/images/qris-donasi.png` belum ada di aset publik frontend, serta beberapa kolom UI belum tersedia di tabel PostgreSQL (`warna` kategori, `personName`/`notes`/`showDonorNamePublic` transaksi, `messageTemplate`/`donationNote` + toggle terpisah donasi, endpoint `t_kwitansi`, dan endpoint upload file gambar).
+
+Usulan pesan commit: `feat: hubungkan service frontend dan crud admin ke backend api`.

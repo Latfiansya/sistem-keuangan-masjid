@@ -76,13 +76,38 @@ test('Profil menangani loading, error, data kosong dan bagian belum tersedia', a
   for (const text of ['Informasi pengurus belum tersedia', 'Informasi sejarah belum tersedia', 'Informasi fasilitas belum tersedia', 'Visi dan misi belum tersedia']) assert.ok(html.includes(text))
 })
 
-test('mode API belum tersedia dan pembatalan konten publik tetap didukung', async () => {
+test('mode API mengambil konten publik dan menormalisasi linimasa serta mendukung pembatalan', async () => {
   const controller = new AbortController()
   controller.abort()
   await assert.rejects(getPublicContent({ signal: controller.signal }), { name: 'AbortError' })
   const apiServer = await createTestServer('api')
+  const originalFetch = globalThis.fetch
+  const calls = []
+  globalThis.fetch = async (url) => {
+    calls.push(url)
+    if (url === '/api/public/agenda') {
+      return new Response(JSON.stringify({ success: true, data: { description: 'Agenda', groups: [] } }), { status: 200 })
+    }
+    return new Response(JSON.stringify({
+      success: true,
+      data: {
+        name: 'Masjid API',
+        profile: {
+          foundedYear: 1980,
+          location: 'Sorolaten',
+          introduction: 'Intro',
+          timeline: [{ year: 1980, era: 'Perintisan', mosqueName: 'Mushola Al Qodar', title: 'Awal', description: 'Desc' }],
+          managementPeriod: '2023-2025',
+          members: [],
+        },
+      },
+    }), { status: 200 })
+  }
   try {
     const service = await apiServer.ssrLoadModule('/src/services/publicContentService.js')
-    await assert.rejects(service.getPublicContent(), /Konten publik melalui API belum tersedia/)
-  } finally { await apiServer.close() }
+    const content = await service.getPublicContent()
+    assert.deepEqual(calls.sort(), ['/api/public/agenda', '/api/public/content'])
+    assert.equal(content.name, 'Masjid API')
+    assert.equal(content.profile.timeline[0].name, 'Mushola Al Qodar')
+  } finally { globalThis.fetch = originalFetch; await apiServer.close() }
 })

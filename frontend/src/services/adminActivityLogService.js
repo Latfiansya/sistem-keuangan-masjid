@@ -1,9 +1,16 @@
 import { mockAdminActivityLog } from '../mocks/adminActivityLog.js'
+import { apiRequest } from '../utils/apiClient.js'
 import { dataSource } from '../utils/env.js'
 
 export async function getAdminActivityLog({ signal } = {}) {
   signal?.throwIfAborted()
-  if (dataSource !== 'mock') throw new Error('Activity Log melalui API belum tersedia. Gunakan mode mock untuk meninjau aktivitas contoh.')
+  if (dataSource !== 'mock') {
+    const data = await apiRequest('/admin/activity-logs', { signal })
+    if (!data || !Array.isArray(data.activities)) {
+      throw new Error('Format data Activity Log API tidak sesuai kontrak.')
+    }
+    return data.activities
+  }
   return structuredClone(mockAdminActivityLog)
 }
 

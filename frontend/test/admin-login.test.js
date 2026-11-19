@@ -55,19 +55,36 @@ test('simulasi development dapat dibatalkan sebelum dan selama loading', async (
   await assert.rejects(result, { name: 'AbortError' })
 })
 
-test('mode API dan production menolak login tanpa HTTP atau fallback autentikasi mock', async () => {
+test('mode mock menolak login tanpa HTTP; mode API memanggil /api/admin/auth/login', async () => {
   const originalFetch = globalThis.fetch
-  let requests = 0
-  globalThis.fetch = async () => { requests++; throw new Error('HTTP tidak diharapkan.') }
+  const calls = []
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init })
+    return new Response(JSON.stringify({
+      success: true,
+      data: { token: 't', expiresAt: '2026-12-01', user: { id: '2', name: 'Super Admin', email: 'superadmin@masjid.id', role: 'Super Admin' } },
+    }), { status: 200 })
+  }
   try {
-    for (const [mode, development] of [['api', true], ['mock', false], ['api', false]]) {
-      const instance = await createTestServer(mode, development)
+    const mockProd = await createTestServer('mock', false)
+    try {
+      const auth = await mockProd.ssrLoadModule('/src/services/adminAuthService.js')
+      await assert.rejects(auth.loginAdmin({ email: 'nama@contoh.test', password: 'hanya-data-uji' }), /Login pengurus belum tersedia/)
+      assert.equal(calls.length, 0)
+    } finally { await mockProd.close() }
+
+    for (const development of [true, false]) {
+      const api = await createTestServer('api', development)
       try {
-        const auth = await instance.ssrLoadModule('/src/services/adminAuthService.js')
-        await assert.rejects(auth.loginAdmin({ email: 'nama@contoh.test', password: 'hanya-data-uji' }), /Login pengurus belum tersedia/)
-      } finally { await instance.close() }
+        const auth = await api.ssrLoadModule('/src/services/adminAuthService.js')
+        const res = await auth.loginAdmin({ email: 'superadmin@masjid.id', password: 'password-uji' })
+        assert.equal(res.user.role, 'Super Admin')
+      } finally { await api.close() }
     }
-    assert.equal(requests, 0)
+    assert.equal(calls.length, 2)
+    assert.equal(calls[0].url, '/api/admin/auth/login')
+    assert.equal(calls[0].init.method, 'POST')
+    assert.equal(calls[0].init.credentials, 'include')
   } finally { globalThis.fetch = originalFetch }
 })
 

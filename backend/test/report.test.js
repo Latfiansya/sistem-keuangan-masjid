@@ -234,7 +234,11 @@ test('isolasi hasil laporan dan validasi konfigurasi sandi environment', async (
     /REPORT_SHARED_PASSWORD_HASH/,
   )
   assert.equal(
-    loadEnv({ NODE_ENV: 'production', REPORT_SHARED_PASSWORD_HASH: TEST_PASSWORD_HASH }).reportPasswordHash,
+    loadEnv({
+      NODE_ENV: 'production',
+      REPORT_SHARED_PASSWORD_HASH: TEST_PASSWORD_HASH,
+      AUTH_SECRET: 'rahasia-produksi-minimal-32-karakter-aman',
+    }).reportPasswordHash,
     TEST_PASSWORD_HASH,
   )
 })

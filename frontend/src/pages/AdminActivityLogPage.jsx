@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { CalendarDays, Clock, Filter, KeyRound, Pencil, Plus, Receipt, Search, Shield, Trash2, UserRoundX } from 'lucide-react'
 import { filterAdminActivities, getAdminActivityLog, groupAdminActivities } from '../services/adminActivityLogService.js'
+import { dataSource } from '../utils/env.js'
 import { formatReportDate, formatRupiah } from '../utils/reportFormatters.js'
 import './AdminActivityLogPage.css'
 
@@ -41,7 +42,7 @@ export default function AdminActivityLogPage() {
       <header className="admin-activity-hero">
         <span className="admin-activity-hero-badge"><Shield size={14} aria-hidden="true" />APPEND-ONLY · TIDAK DAPAT DIHAPUS</span>
         <h2>Activity Log</h2>
-        <p>Data contoh aktivitas pengurus untuk meninjau konsep pencatatan<br className="admin-activity-desktop-break" /> perubahan yang tidak menyediakan fitur ubah/hapus riwayat.</p>
+        <p>{dataSource === 'mock' ? <>Data contoh aktivitas pengurus untuk meninjau konsep pencatatan<br className="admin-activity-desktop-break" /> perubahan yang tidak menyediakan fitur ubah/hapus riwayat.</> : <>Riwayat aktivitas perubahan data keuangan, konten, dan akun pengurus<br className="admin-activity-desktop-break" /> yang tercatat di database secara permanen (append-only).</>}</p>
       </header>
       <section className="admin-panel admin-activity-filters" aria-labelledby="admin-activity-filters-title">
         <h3 id="admin-activity-filters-title"><Filter size={16} aria-hidden="true" />Filter Aktivitas</h3>
@@ -53,26 +54,27 @@ export default function AdminActivityLogPage() {
         </div>
         <div className="admin-activity-search"><Search size={16} aria-hidden="true" /><label htmlFor="admin-activity-query" className="sr-only">Cari nama admin atau judul aktivitas</label><input id="admin-activity-query" name="query" type="search" maxLength={160} autoComplete="off" placeholder="Cari nama admin atau judul aktivitas..." value={filters.query} onChange={handleFilter} disabled={!activities || Boolean(error)} /></div>
       </section>
-      <aside className="admin-activity-system"><span><Shield size={22} aria-hidden="true" /></span><div><h3>Sistem Append-Only</h3><p>Konsep riwayat tanpa fitur ubah/hapus log. Saat ini hanya data contoh; integritas dan kelengkapan pencatatan belum ditegakkan.</p></div></aside>
+      <aside className="admin-activity-system"><span><Shield size={22} aria-hidden="true" /></span><div><h3>Sistem Append-Only</h3><p>{dataSource === 'mock' ? 'Konsep riwayat tanpa fitur ubah/hapus log. Saat ini hanya data contoh; integritas dan kelengkapan pencatatan belum ditegakkan.' : 'Riwayat aktivitas berasal dari PostgreSQL tanpa fitur ubah atau hapus log.'}</p></div></aside>
       {error ? <p className="admin-dashboard-state" role="alert">{error}</p> : !activities ? <p className="admin-dashboard-state" role="status">Memuat aktivitas contoh…</p> : groups.length ? (
         <div className="admin-activity-timeline" aria-label="Timeline aktivitas contoh">
           {groups.map((group) => <section key={group.date} className="admin-activity-date-group" aria-labelledby={`admin-activity-day-${group.date}`}>
             <div className="admin-activity-day-heading"><h3 id={`admin-activity-day-${group.date}`}><span><CalendarDays size={16} aria-hidden="true" /></span><time dateTime={group.date}>{formatReportDate(group.date)}</time></h3><i aria-hidden="true" /><span>{group.items.length} aktivitas</span></div>
             <ol className="admin-activity-events">{group.items.map((activity) => {
-              const { icon: Icon, color } = activityStyles[activity.type]
+              const { icon: Icon, color } = activityStyles[activity.type] || activityStyles.add
+              const adminName = activity.admin || 'Pengurus'
               return <li className={`admin-activity-event admin-activity-event--${color}`} key={activity.id}>
                 <span className="admin-activity-marker"><Icon size={18} aria-hidden="true" /></span>
                 <article className="admin-panel admin-activity-card">
-                  <header><div className="admin-activity-author"><span className="admin-activity-avatar" aria-hidden="true">{activity.admin.split(' ').map((part) => part[0]).join('')}</span><div><strong>{activity.admin}</strong><p><Clock size={12} aria-hidden="true" /><time dateTime={`${activity.date}T${activity.time}`}>{formatReportDate(activity.date)}, {activity.time}</time></p></div></div><div className="admin-activity-tags"><span className="admin-activity-type">{activity.typeLabel}</span><span className="admin-activity-module">{activity.module}</span></div></header>
-                  <h4><strong>{activity.admin}</strong> {activity.title}</h4>
-                  <dl className="admin-activity-details">{activity.details.map((detail) => <div className={`admin-activity-detail${detail.tone ? ` admin-activity-detail--${detail.tone}` : ''}`} key={detail.label}><dt>{detail.label}:</dt><dd>{detail.tone === 'old' ? <del>{formatRupiah(detail.value)}</del> : detail.format === 'money' ? formatRupiah(detail.value) : detail.value}</dd></div>)}</dl>
+                  <header><div className="admin-activity-author"><span className="admin-activity-avatar" aria-hidden="true">{adminName.split(' ').map((part) => part[0]).join('')}</span><div><strong>{adminName}</strong><p><Clock size={12} aria-hidden="true" /><time dateTime={`${activity.date}T${activity.time}`}>{formatReportDate(activity.date)}, {activity.time}</time></p></div></div><div className="admin-activity-tags"><span className="admin-activity-type">{activity.typeLabel}</span><span className="admin-activity-module">{activity.module}</span></div></header>
+                  <h4><strong>{adminName}</strong> {activity.title}</h4>
+                  <dl className="admin-activity-details">{(activity.details || []).map((detail) => <div className={`admin-activity-detail${detail.tone ? ` admin-activity-detail--${detail.tone}` : ''}`} key={detail.label}><dt>{detail.label}:</dt><dd>{detail.tone === 'old' ? <del>{formatRupiah(detail.value)}</del> : detail.format === 'money' ? formatRupiah(detail.value) : detail.value}</dd></div>)}</dl>
                 </article>
               </li>
             })}</ol>
           </section>)}
         </div>
       ) : <p className="admin-dashboard-state" role="status">Tidak ada aktivitas yang sesuai. Sesuaikan filter atau kata pencarian.</p>}
-      {activities && <p className="sr-only" role="status">{visible.length} aktivitas contoh dalam {groups.length} kelompok tanggal.</p>}
+      {activities && <p className="sr-only" role="status">{visible.length} aktivitas dalam {groups.length} kelompok tanggal.</p>}
     </div>
   )
 }

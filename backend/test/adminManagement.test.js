@@ -11,6 +11,7 @@ describe('Endpoint autentikasi, akun pengurus, kode akses laporan, dan activity 
     const app = createApp({
       rateLimitMax: 3,
       rateLimitWindowMs: 60_000,
+      authSecret: 'rahasia-pengujian-minimal-32-karakter-aman',
       repositories: createTestRepositories(),
     })
     server = app.listen(0, '127.0.0.1')
@@ -26,7 +27,7 @@ describe('Endpoint autentikasi, akun pengurus, kode akses laporan, dan activity 
     })
   })
 
-  it('POST /api/admin/auth/login memvalidasi input, mengembalikan 503 stub, dan membatasi brute force (429)', async () => {
+  it('POST /api/admin/auth/login memvalidasi input, mengembalikan 200 + token saat valid, dan membatasi brute force (429)', async () => {
     const badEmailRes = await fetch(`${baseUrl}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -41,13 +42,16 @@ describe('Endpoint autentikasi, akun pengurus, kode akses laporan, dan activity 
     })
     assert.equal(emptyPassRes.status, 400)
 
-    // Percobaan ke-3 dengan format valid mengembalikan 503 (stub sebelum kredensial DB siap)
-    const stubRes = await fetch(`${baseUrl}/auth/login`, {
+    // Percobaan ke-3 dengan kredensial valid mengembalikan 200 + token + cookie sesi
+    const okRes = await fetch(`${baseUrl}/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'superadmin@masjid.id', password: 'password123' }),
     })
-    assert.equal(stubRes.status, 503)
+    assert.equal(okRes.status, 200)
+    const okBody = await okRes.json()
+    assert.equal(typeof okBody.data.token, 'string')
+    assert.equal(okBody.data.user.email, 'superadmin@masjid.id')
 
     // Percobaan ke-4 melebihi batas rateLimitMax (3) -> 429 TOO_MANY_REQUESTS
     const rateLimitedRes = await fetch(`${baseUrl}/auth/login`, {
@@ -110,6 +114,102 @@ describe('Endpoint autentikasi, akun pengurus, kode akses laporan, dan activity 
 
     const badDateRes = await fetch(`${baseUrl}/activity-logs?date=14-06-2026`)
     assert.equal(badDateRes.status, 400)
+  })
+
+  it('CRUD /api/admin/accounts mengelola akun pengurus tanpa membocorkan password', async () => {
+    // Password kurang dari 8 karakter -> 400
+    const shortPassRes = await fetch(`${baseUrl}/accounts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Bendahara Baru', email: 'bendahara@masjid.id', password: '123' }),
+    })
+    assert.equal(shortPassRes.status, 400)
+
+    // Tambah akun baru -> 201
+    const createRes = await fetch(`${baseUrl}/accounts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Bendahara Takmir',
+        email: 'Bendahara@Masjid.id',
+        password: 'RahasiaBendahara123',
+        role: 'Admin',
+      }),
+    })
+    assert.equal(createRes.status, 201)
+    const created = (await createRes.json()).data
+    assert.equal(created.email, 'bendahara@masjid.id')
+    assert.equal(Object.hasOwn(created, 'password'), false)
+
+    // Email duplikat -> 400
+    const dupRes = await fetch(`${baseUrl}/accounts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Duplikat',
+        email: 'bendahara@masjid.id',
+        password: 'PasswordLain123',
+      }),
+    })
+    assert.equal(dupRes.status, 400)
+
+    // Update akun -> 200
+    const updateRes = await fetch(`${baseUrl}/accounts/${created.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Bendahara Utama', role: 'Admin' }),
+    })
+    assert.equal(updateRes.status, 200)
+    assert.equal((await updateRes.json()).data.name, 'Bendahara Utama')
+
+    // Nonaktifkan lalu hapus -> 200
+    const statusRes = await fetch(`${baseUrl}/accounts/${created.id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active: false }),
+    })
+    assert.equal(statusRes.status, 200)
+    assert.equal((await statusRes.json()).data.active, false)
+
+    const delRes = await fetch(`${baseUrl}/accounts/${created.id}`, { method: 'DELETE' })
+    assert.equal(delRes.status, 200)
+    assert.equal((await delRes.json()).data.deletedId, created.id)
+  })
+
+  it('PUT /api/admin/report-access memperbarui kode akses dan langsung berlaku di gate publik', async () => {
+    const shortRes = await fetch(`${baseUrl}/report-access`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: '123' }),
+    })
+    assert.equal(shortRes.status, 400)
+
+    const updateRes = await fetch(`${baseUrl}/report-access`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: 'masjid-2026-aman', publicReportEnabled: true }),
+    })
+    assert.equal(updateRes.status, 200)
+    const updated = (await updateRes.json()).data
+    assert.equal(updated.active, true)
+    assert.equal(Object.hasOwn(updated, 'code'), false)
+
+    const apiRoot = baseUrl.replace(/\/admin$/, '')
+    const checkOk = await fetch(`${apiRoot}/public/report/check-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'masjid-2026-aman' }),
+    })
+    assert.equal(checkOk.status, 200)
+    assert.deepEqual((await checkOk.json()).data, { valid: true })
+
+    const checkWrong = await fetch(`${apiRoot}/public/report/check-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'sandi-lama-salah' }),
+    })
+    assert.equal(checkWrong.status, 200)
+    assert.deepEqual((await checkWrong.json()).data, { valid: false })
   })
 })
 

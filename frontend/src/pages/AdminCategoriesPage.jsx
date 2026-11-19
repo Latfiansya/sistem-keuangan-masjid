@@ -4,6 +4,7 @@ import { useOutletContext } from 'react-router'
 import AdminCategoryDialog from '../components/AdminCategoryDialog.jsx'
 import AdminBalanceSummary from '../components/AdminBalanceSummary.jsx'
 import { adminCategoryColorStyle } from '../utils/adminCategoryColors.js'
+import { dataSource } from '../utils/env.js'
 import './AdminCategoriesPage.css'
 
 export default function AdminCategoriesPage() {
@@ -17,15 +18,19 @@ export default function AdminCategoriesPage() {
     setMessage('')
     setDialog({ mode, category })
   }
-  function save(values, id) {
-    saveCategory(values, id)
+  async function save(values, id) {
+    await saveCategory(values, id)
     setDialog(null)
-    setMessage(`Kategori ${id ? 'diperbarui' : 'ditambahkan'} pada sesi mock. Belum tersimpan ke server.`)
+    setMessage(dataSource === 'mock'
+      ? `Kategori ${id ? 'diperbarui' : 'ditambahkan'} pada sesi mock. Belum tersimpan ke server.`
+      : `Kategori berhasil ${id ? 'diperbarui' : 'ditambahkan'} di database.`)
   }
-  function remove(id) {
-    deleteCategory(id)
+  async function remove(id) {
+    await deleteCategory(id)
     setDialog(null)
-    setMessage('Kategori dihapus dari sesi mock. Belum tersimpan ke server.')
+    setMessage(dataSource === 'mock'
+      ? 'Kategori dihapus dari sesi mock. Belum tersimpan ke server.'
+      : 'Kategori berhasil dihapus dari database.')
   }
   if (error) return <p className="admin-dashboard-state" role="alert">{error}</p>
   if (!dashboard) return <p className="admin-dashboard-state" role="status">Memuat kategori dana…</p>
@@ -37,12 +42,12 @@ export default function AdminCategoriesPage() {
         <div><h2>Kategori Dana</h2><p>Kelola kategori dana masjid</p></div>
         <button className="admin-categories-add" type="button" ref={addButton} onClick={(event) => openDialog('add', null, event)}><Plus size={16} aria-hidden="true" />Tambah Kategori</button>
       </header>
-      <p className="admin-category-session-note" role="status">{message || 'Data mock · Perubahan hanya selama sesi admin dan hilang setelah muat ulang.'}</p>
+      <p className="admin-category-session-note" role="status">{message || (dataSource === 'mock' ? 'Data mock · Perubahan hanya selama sesi admin dan hilang setelah muat ulang.' : 'Terhubung ke database · Perubahan kategori tersimpan langsung ke PostgreSQL.')}</p>
       <section className="admin-panel admin-categories-list" aria-label="Daftar kategori dana">
         <p className="admin-table-hint">Geser tabel untuk melihat seluruh kolom.</p>
         <div className="admin-table-scroll" role="region" aria-label="Daftar kategori dana, dapat digeser pada layar kecil" tabIndex={0}>
           <table className="admin-categories-table">
-            <caption className="sr-only">Kategori dana dalam state mock sementara. Kategori yang digunakan transaksi dilindungi dari penghapusan.</caption>
+            <caption className="sr-only">Kategori dana dalam sistem. Kategori yang digunakan transaksi dilindungi dari penghapusan.</caption>
             <thead><tr><th scope="col">No</th><th scope="col">Kategori</th><th scope="col">Aksi</th></tr></thead>
             <tbody>{categories.map((category, index) => <tr key={category.id} data-category-id={category.id}>
               <td>{index + 1}</td>

@@ -1,4 +1,4 @@
-import { defaultReportService, verifyReportPassword } from '../services/reportService.js'
+import { defaultReportService } from '../services/reportService.js'
 
 // Presentation layer untuk endpoint gate sandi bersama dan laporan keuangan publik.
 export function createReportController({
@@ -6,9 +6,9 @@ export function createReportController({
   reportService = defaultReportService,
 }) {
   return {
-    postCheckPassword(req, res, next) {
+    async postCheckPassword(req, res, next) {
       try {
-        const result = verifyReportPassword(req.body, reportPasswordHash)
+        const result = await reportService.checkPassword(req.body, reportPasswordHash)
         res.json({ success: true, data: result })
       } catch (error) {
         next(error)

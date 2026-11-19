@@ -1,3 +1,4 @@
+import { apiRequest } from '../utils/apiClient.js'
 import { getActiveAdminTransactions } from './adminTransactionData.js'
 import { dataSource } from '../utils/env.js'
 import { getLocalReceiptDate, receiptDateFromIso, receiptDateToIso } from '../utils/adminReceipt.js'
@@ -64,4 +65,45 @@ export function deleteMockAdminTransaction(dashboard, id) {
   if (dataSource !== 'mock' || !dashboard) throw new Error('Penghapusan transaksi hanya tersedia dalam sesi mock.')
   if (!getActiveAdminTransactions(dashboard).some((transaction) => transaction.id === id)) throw new Error('Transaksi tidak ditemukan dalam sesi ini.')
   return { ...dashboard, deletedTransactionIds: [...(dashboard.deletedTransactionIds || []), id] }
+}
+
+export async function createApiAdminTransaction(values, type, { signal } = {}) {
+  if (dataSource === 'mock') throw new Error('Operasi API transaksi hanya tersedia pada mode API.')
+  return apiRequest('/admin/transactions', {
+    method: 'POST',
+    body: {
+      type,
+      date: values.date,
+      categoryId: values.categoryId,
+      description: values.description.trim(),
+      amount: Number(values.amount),
+      personName: (values.personName || '').trim(),
+      notes: (values.notes || '').trim(),
+      showDonorNamePublic: type === 'income' && values.showDonorNamePublic === true,
+    },
+    signal,
+  })
+}
+
+export async function updateApiAdminTransaction(id, values, type, { signal } = {}) {
+  if (dataSource === 'mock') throw new Error('Operasi API transaksi hanya tersedia pada mode API.')
+  return apiRequest(`/admin/transactions/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: {
+      type,
+      date: values.date,
+      categoryId: values.categoryId,
+      description: values.description.trim(),
+      amount: Number(values.amount),
+      personName: (values.personName || '').trim(),
+      notes: (values.notes || '').trim(),
+      showDonorNamePublic: type === 'income' && values.showDonorNamePublic === true,
+    },
+    signal,
+  })
+}
+
+export async function deleteApiAdminTransaction(id, { signal } = {}) {
+  if (dataSource === 'mock') throw new Error('Operasi API transaksi hanya tersedia pada mode API.')
+  return apiRequest(`/admin/transactions/${encodeURIComponent(id)}`, { method: 'DELETE', signal })
 }

@@ -67,7 +67,7 @@ test('gambar harus satu PNG/JPG sesuai MIME, tidak kosong dan maksimal dua MB; b
   assert.equal(service.validateAdminDonationQris([make('q.JPEG','image/jpeg')]),'')
 })
 
-test('mode API tidak memakai fallback mock atau membuat endpoint; route Donasi memakai AdminLayout', async () => {
+test('mode API memanggil /api/admin/donation-settings tanpa fallback mock; route Donasi memakai AdminLayout', async () => {
   for (const route of ['/admin/donasi', '/admin/donasi/']) {
     const html = renderToStaticMarkup(h(MemoryRouter, { initialEntries: [route] }, h(App)))
     assert.match(html, /<h1>Donasi<\/h1>/)
@@ -76,8 +76,17 @@ test('mode API tidak memakai fallback mock atau membuat endpoint; route Donasi m
     assert.doesNotMatch(html, /public-footer|public-layout/)
   }
   const api = await createServer({ root: fileURLToPath(new URL('../', import.meta.url)), server: { middlewareMode: true, ws: false, hmr: false }, appType: 'custom', define: { 'import.meta.env.VITE_DATA_SOURCE': '"api"' } })
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async (url, init) => {
+    if (url === '/api/admin/donation-settings' && init.method === 'GET') {
+      return new Response(JSON.stringify({ success: true, data: { qrisFile: '/images/qris-donasi.png', qrisEnabled: true, bankName: 'BSI', accountNumber: '123456', accountName: 'Masjid', bankEnabled: true, whatsappNumber: '', whatsappEnabled: false, messageTemplate: 'Halo', donationNote: 'Catatan' } }), { status: 200 })
+    }
+    return new Response(JSON.stringify({ success: false, error: { message: 'Unexpected' } }), { status: 404 })
+  }
   try {
     const adapter = await api.ssrLoadModule('/src/services/adminDonationService.js')
-    await assert.rejects(adapter.getAdminDonationSettings(), /API admin belum tersedia/)
-  } finally { await api.close() }
+    const settings = await adapter.getAdminDonationSettings()
+    assert.equal(settings.qrisFile, '/images/qris-donasi.png')
+    assert.equal(settings.bankName, 'BSI')
+  } finally { globalThis.fetch = originalFetch; await api.close() }
 })

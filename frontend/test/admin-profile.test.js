@@ -66,16 +66,24 @@ test('foto hanya menerima satu JPG/PNG/WebP dengan ekstensi dan MIME sesuai, tid
   }
 })
 
-test('mode API belum tersedia tanpa request atau fallback, bukan penyimpanan permanen', async () => {
+test('mode API mengambil dan menyimpan profil masjid ke /api/admin/profile', async () => {
   const api = await createTestServer('api')
   const originalFetch = globalThis.fetch
-  let calls = 0
-  globalThis.fetch = async () => { calls++; throw new Error('HTTP tidak diharapkan.') }
+  const calls = []
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init })
+    if (init.method === 'PUT') {
+      return new Response(JSON.stringify({ success: true, data: JSON.parse(init.body) }), { status: 200 })
+    }
+    return new Response(JSON.stringify({ success: true, data: { name: 'Masjid API', description: 'Desc', address: 'Jl.', contact: '0812345678' } }), { status: 200 })
+  }
   try {
     const service = await api.ssrLoadModule('/src/services/adminProfileService.js')
-    await assert.rejects(service.getAdminProfile(), /Profil admin melalui API belum tersedia/)
-    assert.equal(calls, 0)
-    assert.equal(Object.keys(service).some((key) => /save|update|delete/i.test(key)), false)
+    const loaded = await service.getAdminProfile()
+    assert.equal(loaded.name, 'Masjid API')
+    const saved = await service.saveAdminProfile({ ...loaded, name: 'Masjid Baru' })
+    assert.equal(saved.name, 'Masjid Baru')
+    assert.deepEqual(calls.map((c) => [c.init.method, c.url]), [['GET', '/api/admin/profile'], ['PUT', '/api/admin/profile']])
   } finally { globalThis.fetch = originalFetch; await api.close() }
 })
 

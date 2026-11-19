@@ -1,9 +1,16 @@
 import { mockPublicContent } from '../mocks/publicContent.js'
+import { apiRequest } from '../utils/apiClient.js'
 import { dataSource } from '../utils/env.js'
 
 export async function getAdminWebsiteSettings({ signal } = {}) {
   signal?.throwIfAborted()
-  if (dataSource !== 'mock') throw new Error('Kontak dan pengaturan admin melalui API belum tersedia. Gunakan mode mock untuk meninjau formulir.')
+  if (dataSource !== 'mock') {
+    const data = await apiRequest('/admin/website-settings', { signal })
+    if (!data || typeof data !== 'object') {
+      throw new Error('Format pengaturan website API tidak sesuai kontrak.')
+    }
+    return data
+  }
   return {
     whatsapp: '',
     email: '',
@@ -11,6 +18,21 @@ export async function getAdminWebsiteSettings({ signal } = {}) {
     mapsUrl: mockPublicContent.contact.location.verified ? mockPublicContent.contact.location.url || '' : '',
     publicReportEnabled: true,
   }
+}
+
+export async function saveAdminWebsiteSettings(values, { signal } = {}) {
+  if (dataSource === 'mock') return { ...values }
+  return apiRequest('/admin/website-settings', {
+    method: 'PUT',
+    body: {
+      whatsapp: values.whatsapp || '',
+      email: values.email || '',
+      address: values.address || '',
+      mapsUrl: values.mapsUrl || '',
+      publicReportEnabled: values.publicReportEnabled === true,
+    },
+    signal,
+  })
 }
 
 export function validateAdminWebsiteSettings({ whatsapp, email, mapsUrl }) {

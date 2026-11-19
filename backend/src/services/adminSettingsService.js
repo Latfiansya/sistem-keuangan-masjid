@@ -12,6 +12,93 @@ function hasControlChars(value, allowMultiline = false) {
   })
 }
 
+const AGENDA_FREQUENCY_MAP = new Map([
+  ['weekly', { groupId: 'weekly', dbValue: 'Mingguan' }],
+  ['mingguan', { groupId: 'weekly', dbValue: 'Mingguan' }],
+  ['monthly', { groupId: 'monthly', dbValue: 'Bulanan' }],
+  ['bulanan', { groupId: 'monthly', dbValue: 'Bulanan' }],
+  ['yearly', { groupId: 'yearly', dbValue: 'Tahunan' }],
+  ['tahunan', { groupId: 'yearly', dbValue: 'Tahunan' }],
+])
+
+function validateAgendaPayload(payload) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    throw createHttpError(400, 'BAD_REQUEST', 'Payload agenda tidak valid.')
+  }
+
+  if (typeof payload.name !== 'string' || !payload.name.trim()) {
+    throw createHttpError(400, 'BAD_REQUEST', 'Nama kegiatan agenda wajib diisi.')
+  }
+  const name = payload.name.trim()
+  if (name.length > 150 || hasControlChars(payload.name, false)) {
+    throw createHttpError(
+      400,
+      'BAD_REQUEST',
+      'Nama kegiatan tidak boleh mengandung karakter kontrol atau melebihi 150 karakter.'
+    )
+  }
+
+  const rawFreq = typeof (payload.frequency ?? payload.groupId) === 'string'
+    ? (payload.frequency ?? payload.groupId).trim().toLowerCase()
+    : ''
+  const mappedFreq = AGENDA_FREQUENCY_MAP.get(rawFreq)
+  if (!mappedFreq) {
+    throw createHttpError(
+      400,
+      'BAD_REQUEST',
+      'Frekuensi agenda harus weekly (Mingguan), monthly (Bulanan), atau yearly (Tahunan).'
+    )
+  }
+
+  if (typeof payload.schedule !== 'string' || !payload.schedule.trim()) {
+    throw createHttpError(400, 'BAD_REQUEST', 'Waktu pelaksanaan agenda wajib diisi.')
+  }
+  const schedule = payload.schedule.trim()
+  if (schedule.length > 150 || hasControlChars(payload.schedule, false)) {
+    throw createHttpError(
+      400,
+      'BAD_REQUEST',
+      'Waktu pelaksanaan tidak boleh mengandung karakter kontrol atau melebihi 150 karakter.'
+    )
+  }
+
+  const description = payload.description ?? ''
+  if (typeof description !== 'string' || description.length > 1000 || hasControlChars(description, true)) {
+    throw createHttpError(400, 'BAD_REQUEST', 'Keterangan agenda tidak valid atau melebihi 1000 karakter.')
+  }
+
+  const order = payload.order ?? 0
+  if (!Number.isInteger(order) || order < 0 || order > 32767) {
+    throw createHttpError(400, 'BAD_REQUEST', 'Urutan agenda harus berupa bilangan bulat 0–32767.')
+  }
+
+  const active = payload.active ?? true
+  if (typeof active !== 'boolean') {
+    throw createHttpError(400, 'BAD_REQUEST', 'Status aktif agenda harus berupa boolean.')
+  }
+
+  return {
+    name,
+    groupId: mappedFreq.groupId,
+    frekuensi: mappedFreq.dbValue,
+    schedule,
+    description: description.trim(),
+    order,
+    active,
+  }
+}
+
+function isDuplicateAgendaItem(agendaData, { name, groupId }, excludeId = null) {
+  const targetGroup = agendaData?.groups?.find((group) => group.id === groupId)
+  if (!targetGroup || !Array.isArray(targetGroup.items)) return false
+  const normalizedName = name.toLowerCase()
+  return targetGroup.items.some(
+    (item) =>
+      String(item.id) !== String(excludeId ?? '') &&
+      String(item.name || '').trim().toLowerCase() === normalizedName
+  )
+}
+
 function isValidPhoneFormat(phone) {
   return /^\+?[\d ().-]+$/.test(phone) && /^\d{8,15}$/.test(phone.replace(/\D/g, ''))
 }
@@ -84,7 +171,7 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
       return repository.getProfile()
     },
 
-    async updateProfile(payload) {
+    async updateProfile(payload, auditUserId = null) {
       if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Payload profil masjid tidak valid.')
       }
@@ -128,7 +215,7 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
         description,
         address,
         contact: trimmedContact,
-      })
+      }, auditUserId)
     },
 
     async getAgenda() {
@@ -151,6 +238,42 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
       }
     },
 
+    async createAgenda(payload, auditUserId = null) {
+      const validated = validateAgendaPayload(payload)
+      const currentAgenda = await repository.getAgenda()
+      if (isDuplicateAgendaItem(currentAgenda, validated)) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Agenda dengan nama dan frekuensi tersebut sudah terdaftar.')
+      }
+      return repository.insertAgenda(validated, auditUserId)
+    },
+
+    async updateAgenda(id, payload, auditUserId = null) {
+      const existing = await repository.findAgendaById(id)
+      if (!existing) {
+        throw createHttpError(404, 'NOT_FOUND', 'Agenda tidak ditemukan.')
+      }
+
+      const validated = validateAgendaPayload(payload)
+      const currentAgenda = await repository.getAgenda()
+      if (isDuplicateAgendaItem(currentAgenda, validated, existing.id)) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Agenda dengan nama dan frekuensi tersebut sudah terdaftar.')
+      }
+
+      const updated = await repository.updateAgendaById(id, validated, auditUserId)
+      if (!updated) {
+        throw createHttpError(404, 'NOT_FOUND', 'Agenda tidak ditemukan.')
+      }
+      return updated
+    },
+
+    async deleteAgenda(id, auditUserId = null) {
+      const deleted = await repository.deleteAgendaById(id, auditUserId)
+      if (!deleted) {
+        throw createHttpError(404, 'NOT_FOUND', 'Agenda tidak ditemukan.')
+      }
+      return { deletedId: String(id) }
+    },
+
     async getDonationSettings() {
       const settings = await repository.getDonationSettings()
       const readiness = computeDonationReadiness(settings)
@@ -160,7 +283,7 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
       }
     },
 
-    async updateDonationSettings(payload) {
+    async updateDonationSettings(payload, auditUserId = null) {
       if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Payload pengaturan donasi tidak valid.')
       }
@@ -239,7 +362,7 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
         whatsappEnabled: readiness.whatsapp.enabled,
       }
 
-      const saved = await repository.saveDonationSettings(normalized)
+      const saved = await repository.saveDonationSettings(normalized, auditUserId)
       return {
         ...saved,
         readiness: computeDonationReadiness(saved),
@@ -250,7 +373,7 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
       return repository.getWebsiteSettings()
     },
 
-    async updateWebsiteSettings(payload) {
+    async updateWebsiteSettings(payload, auditUserId = null) {
       if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Payload pengaturan website tidak valid.')
       }
@@ -315,7 +438,7 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
         address,
         mapsUrl: trimmedMapsUrl,
         publicReportEnabled,
-      })
+      }, auditUserId)
     },
   }
 }
