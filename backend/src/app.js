@@ -8,6 +8,8 @@ import { createHealthController } from './controllers/healthController.js'
 import { createPublicController } from './controllers/publicController.js'
 import { createReportController } from './controllers/reportController.js'
 import { createRateLimiter } from './middlewares/rateLimiter.js'
+import { createRequireAdminAuth } from './middlewares/requireAdminAuth.js'
+import { createSecurityMiddleware } from './middlewares/securityHeaders.js'
 import { createAdminFinanceRepository } from './repositories/adminFinanceRepository.js'
 import { createAdminManagementRepository } from './repositories/adminManagementRepository.js'
 import { createAdminSettingsRepository } from './repositories/adminSettingsRepository.js'
@@ -35,6 +37,11 @@ export function createApp(overrides = {}) {
     : config.reportPasswordHash
   const rateLimitWindowMs = overrides.rateLimitWindowMs ?? config.rateLimitWindowMs
   const rateLimitMax = overrides.rateLimitMax ?? config.rateLimitMax
+  const nodeEnv = overrides.nodeEnv ?? config.nodeEnv
+  const corsOrigins = overrides.corsOrigins ?? config.corsOrigins
+  const adminAuthRequired = overrides.adminAuthRequired ?? config.adminAuthRequired
+  const authSecret = overrides.authSecret !== undefined ? overrides.authSecret : config.authSecret
+  const authTokenTtlMs = overrides.authTokenTtlMs ?? config.authTokenTtlMs
 
   const dbPool = overrides.dbPool ?? getDefaultDatabasePool()
   const repos = overrides.repositories ?? {}
@@ -69,10 +76,18 @@ export function createApp(overrides = {}) {
   const adminFinanceController = createAdminFinanceController(adminFinanceService)
   const adminSettingsService = createAdminSettingsService(adminSettingsRepository)
   const adminSettingsController = createAdminSettingsController(adminSettingsService)
-  const adminManagementService = createAdminManagementService(adminManagementRepository)
-  const adminManagementController = createAdminManagementController(adminManagementService)
+  const adminManagementService = createAdminManagementService(adminManagementRepository, {
+    authSecret,
+    authTokenTtlMs,
+  })
+  const adminManagementController = createAdminManagementController(adminManagementService, {
+    nodeEnv,
+    authTokenTtlMs,
+  })
+  const requireAdminAuth = createRequireAdminAuth({ adminAuthRequired, authSecret })
 
   app.disable('x-powered-by')
+  app.use(createSecurityMiddleware({ corsOrigins }))
   app.use(express.json({ limit: jsonLimit }))
 
   app.use(apiBasePath || '/', createHealthRoutes(healthController))
@@ -87,6 +102,7 @@ export function createApp(overrides = {}) {
       adminSettingsController,
       adminManagementController,
       loginRateLimiter,
+      requireAdminAuth,
     })
   )
 

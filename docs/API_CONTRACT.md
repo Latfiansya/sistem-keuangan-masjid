@@ -1,6 +1,6 @@
 # Kerangka kontrak API
 
-Status: pada branch `fitur/backend-admin`, seluruh endpoint publik (`health`, `health/db`, `public/content`, `public/agenda`, `public/report/check-password`, `public/finance/report`) dan endpoint admin (`/api/admin/*`) sudah terhubung ke PostgreSQL schema `keu_masjid` melalui lapisan `repositories/` menggunakan parameterized query (`$1, $2, ...`), serta seluruh data dummy di `backend/src/data/` telah dihapus. Cabang API di service frontend belum dihubungkan.
+Status: pada branch `fitur/backend-admin`, seluruh endpoint publik (`health`, `health/db`, `public/content`, `public/agenda`, `public/report/check-password`, `public/finance/report`) dan endpoint admin (`/api/admin/*`) sudah terhubung ke PostgreSQL schema `keu_masjid` melalui lapisan `repositories/` menggunakan parameterized query (`$1, $2, ...`). Autentikasi login pengurus (`POST /api/admin/auth/login`, `GET /api/admin/auth/me`, `POST /api/admin/auth/logout`), header keamanan HTTP + CORS (`CORS_ORIGIN`), serta pencatatan ID aktor ke `t_activity_log` juga sudah diaktifkan. Cabang `VITE_DATA_SOURCE=api` di seluruh service frontend (`frontend/src/services/*.js`) sudah dihubungkan ke backend API dengan mode `mock` tetap dipertahankan.
 
 ## Respons dasar yang diterapkan
 
@@ -31,11 +31,13 @@ Kegagalan memakai status HTTP yang sesuai, bukan HTTP 200:
 | --- | --- | --- |
 | Health / permintaan publik berhasil | 200 | Tidak ada kode error |
 | JSON tidak valid / input validasi tidak sah | 400 | `BAD_REQUEST` |
+| Belum login / token atau cookie sesi tidak valid (saat `ADMIN_AUTH_REQUIRED=true` atau `/auth/me`) | 401 | `UNAUTHORIZED` |
+| Akun pengurus berstatus `Nonaktif` saat login, atau akun non-`Super Admin` mengakses pengelolaan akun/kode akses | 403 | `FORBIDDEN` |
 | Body terlalu besar (batas default 10 KB via `JSON_BODY_LIMIT`) | 413 | `BAD_REQUEST` |
 | Route tidak tersedia | 404 | `NOT_FOUND` |
 | Percobaan sandi melebihi batas rate limiter | 429 | `TOO_MANY_REQUESTS` |
 | Error internal | 500 | `INTERNAL_SERVER_ERROR` |
-| Sandi laporan belum dikonfigurasi di environment | 503 | `SERVICE_UNAVAILABLE` |
+| Konfigurasi sandi laporan / `AUTH_SECRET` belum siap di environment | 503 | `SERVICE_UNAVAILABLE` |
 
 ## Endpoint yang tersedia
 
@@ -47,10 +49,11 @@ Prefix default `/api` dapat dikonfigurasi melalui `API_BASE_PATH` di environment
 | GET | `/api/health/db` | Memeriksa koneksi pool PostgreSQL (`SELECT current_database(), current_schema()`) | `{ "status": "ok", "database", "schema" }` |
 | GET | `/api/public/content` | Konten publik bersama, profil, dan placeholder kontak/donasi (tanpa `agenda`) | Objek konten publik sesuai bagian di bawah |
 | GET | `/api/public/agenda` | Deskripsi dan daftar kelompok kegiatan (`weekly`, `monthly`, `yearly`) tanpa `counts` | `{ "description", "groups" }` |
-| POST | `/api/public/report/check-password` | Memeriksa sandi bersama terhadap `REPORT_SHARED_PASSWORD_HASH` (dilindungi rate limiter) | `{ "valid": boolean }` |
+| POST | `/api/public/report/check-password` | Memeriksa sandi bersama terhadap hash DB (`m_pengaturan_website.kode_akses_laporan`) atau fallback `.env` `REPORT_SHARED_PASSWORD_HASH` (dilindungi rate limiter) | `{ "valid": boolean }` |
 | GET | `/api/public/finance/report` | Laporan keuangan publik berdasarkan `startDate` & `endDate` (default cakupan April 2026 jika kosong) | Objek laporan (`status: "ready" \| "unavailable"`, `transactions`, `summary`) |
-| POST | `/api/admin/auth/login` | Validasi input login pengurus dan rate limiter (mengembalikan `503` stub sampai kredensial DB siap) | `{ ... }` / `503 SERVICE_UNAVAILABLE` |
-| POST | `/api/admin/auth/logout` | Stub logout pengurus | `{ "loggedOut": true }` |
+| POST | `/api/admin/auth/login` | Verifikasi email & password bcrypt (`m_pengguna`) + rate limiter; menerbitkan token HS256 & cookie `HttpOnly` `masjid_admin_session` | `{ "token", "expiresAt", "user": { "id", "name", "email", "role" } }` |
+| POST | `/api/admin/auth/logout` | Menghapus cookie sesi `masjid_admin_session` | `{ "loggedOut": true }` |
+| GET | `/api/admin/auth/me` | Memeriksa sesi aktif pengurus dari Bearer token / cookie sesi | `{ "user": { "id", "name", "email", "role" } }` |
 | GET | `/api/admin/dashboard` | Ringkasan saldo per kategori, total kas, dan transaksi terbaru pengurus | `{ "updatedDate", "account", "categories", "totals", "recentTransactions" }` |
 | GET | `/api/admin/categories` | Daftar kategori dana beserta total saldo dan warna yang diizinkan | `{ "categories", "totals", "allowedColors" }` |
 | POST | `/api/admin/categories` | Menambah kategori dana baru dengan validasi nama unik dan allowlist warna | Objek kategori baru (`201`) |
@@ -64,12 +67,20 @@ Prefix default `/api` dapat dikonfigurasi melalui `API_BASE_PATH` di environment
 | GET | `/api/admin/profile` | Membaca data profil masjid untuk formulir admin | `{ "name", "description", "address", "contact" }` |
 | PUT | `/api/admin/profile` | Memvalidasi dan menyimpan perubahan profil masjid | `{ "name", "description", "address", "contact" }` |
 | GET | `/api/admin/agenda` | Daftar kelompok kegiatan beserta ringkasan `counts` (`total`, `weekly`, `monthly`, `yearly`) | `{ "description", "groups", "counts" }` |
-| GET | `/api/admin/donation-settings` | Membaca konfigurasi donasi beserta status kesiapan (`readiness`) | Objek pengaturan donasi + `readiness` |
-| PUT | `/api/admin/donation-settings` | Memvalidasi dan menyimpan pengaturan rekening, WhatsApp, dan template donasi | Objek pengaturan donasi ternormalisasi + `readiness` |
+| POST | `/api/admin/agenda` | Menambah kegiatan agenda baru pada `m_agenda` dengan validasi frekuensi & nama unik per frekuensi | Objek agenda baru (`201`) |
+| PUT | `/api/admin/agenda/:id` | Mengubah nama, frekuensi, jadwal, keterangan, urutan, atau status aktif agenda | Objek agenda yang diperbarui (`200`) |
+| DELETE | `/api/admin/agenda/:id` | Menghapus agenda kegiatan berdasarkan ID | `{ "deletedId" }` |
+| GET | `/api/admin/donation-settings` | Membaca konfigurasi donasi (QRIS, rekening bank, WhatsApp) dari `m_pengaturan_website` beserta `readiness` | Objek pengaturan donasi + `readiness` |
+| PUT | `/api/admin/donation-settings` | Memvalidasi dan menyimpan pengaturan rekening bank, nomor WhatsApp, dan QRIS ke `m_pengaturan_website` | Objek pengaturan donasi ternormalisasi + `readiness` |
 | GET | `/api/admin/website-settings` | Membaca pengaturan WhatsApp, email, alamat, Google Maps, dan visibilitas laporan | Objek pengaturan website |
 | PUT | `/api/admin/website-settings` | Memvalidasi dan menyimpan pengaturan kontak & website (termasuk validasi HTTPS Google Maps) | Objek pengaturan website yang diperbarui |
 | GET | `/api/admin/accounts` | Daftar akun pengurus beserta pencarian `?query=` | `{ "accounts", "totalCount", "filteredCount" }` |
-| GET | `/api/admin/report-access` | Status metadata kode akses laporan publik (tanpa membocorkan kode/hash) | `{ "active", "changedDate", "changedTime", "changedBy" }` |
+| POST | `/api/admin/accounts` | Menambah akun pengurus baru (`bcrypt` cost 12); dibatasi `Super Admin` jika sedang login | Objek akun aman tanpa `password` (`201`) |
+| PUT | `/api/admin/accounts/:id` | Mengubah nama, email, role, status, atau password baru akun pengurus; dibatasi `Super Admin` | Objek akun aman tanpa `password` (`200`) |
+| PATCH | `/api/admin/accounts/:id/status` | Mengaktifkan atau menonaktifkan akun pengurus (mencegah menonaktifkan diri sendiri) | Objek akun aman tanpa `password` (`200`) |
+| DELETE | `/api/admin/accounts/:id` | Menghapus akun pengurus jika belum memiliki riwayat transaksi/log; dibatasi `Super Admin` | `{ "deletedId" }` |
+| GET | `/api/admin/report-access` | Status metadata kode akses laporan publik (tanpa membocorkan kode/hash) | `{ "active", "publicReportEnabled", "changedDate", "changedTime", "changedBy" }` |
+| PUT | `/api/admin/report-access` | Mengubah & meng-hash kode akses laporan di `m_pengaturan_website` (langsung disinkronkan ke gate publik); dibatasi `Super Admin` | Metadata status kode akses terbaru (`200`) |
 | GET | `/api/admin/activity-logs` | Riwayat aktivitas pengurus dengan pengelompokan tanggal, 5 notifikasi header, & filter | `{ "activities", "groups", "headerNotifications", "totalCount", "filteredCount" }` |
 
 Base URL lokal backend: `http://127.0.0.1:3000/api`. Frontend development menggunakan `/api` melalui proxy Vite. Endpoint publik di atas belum memakai autentikasi pengguna dan saat ini menyajikan data terstruktur contoh sampai koneksi PostgreSQL siap.

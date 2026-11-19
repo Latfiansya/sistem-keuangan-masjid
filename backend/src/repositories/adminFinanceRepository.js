@@ -154,10 +154,10 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
       return rows[0] ? mapCategoryRow(rows[0]) : null
     },
 
-    async insertCategory({ label }) {
+    async insertCategory({ label }, auditUserId = null) {
       try {
         return await withDatabaseTransaction(db, async (client) => {
-          const userId = await resolveAuditPenggunaId(client)
+          const userId = auditUserId ? Number(auditUserId) : await resolveAuditPenggunaId(client)
           await client.query("SELECT set_config('app.user_id', $1, true)", [String(userId)])
 
           const res = await client.query(
@@ -173,13 +173,13 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
       }
     },
 
-    async updateCategoryById(apiId, { label }) {
+    async updateCategoryById(apiId, { label }, auditUserId = null) {
       const dbId = resolveCategoryDbId(apiId)
       if (!dbId) return null
 
       try {
         return await withDatabaseTransaction(db, async (client) => {
-          const userId = await resolveAuditPenggunaId(client)
+          const userId = auditUserId ? Number(auditUserId) : await resolveAuditPenggunaId(client)
           await client.query("SELECT set_config('app.user_id', $1, true)", [String(userId)])
 
           const res = await client.query(
@@ -225,13 +225,13 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
       return res.rows[0]?.is_used === true
     },
 
-    async deleteCategoryById(apiId) {
+    async deleteCategoryById(apiId, auditUserId = null) {
       const dbId = resolveCategoryDbId(apiId)
       if (!dbId) return false
 
       try {
         return await withDatabaseTransaction(db, async (client) => {
-          const userId = await resolveAuditPenggunaId(client)
+          const userId = auditUserId ? Number(auditUserId) : await resolveAuditPenggunaId(client)
           await client.query("SELECT set_config('app.user_id', $1, true)", [String(userId)])
 
           const res = await client.query(
@@ -452,7 +452,7 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
       }
     },
 
-    async insertTransaction(payload) {
+    async insertTransaction(payload, auditUserId = null) {
       const dbCategoryId = resolveCategoryDbId(payload.categoryId)
       if (!dbCategoryId) {
         throw createHttpError(400, 'BAD_REQUEST', 'Pilih kategori dana yang tersedia.')
@@ -460,7 +460,7 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
 
       try {
         return await withDatabaseTransaction(db, async (client) => {
-          const userId = await resolveAuditPenggunaId(client)
+          const userId = auditUserId ? Number(auditUserId) : await resolveAuditPenggunaId(client)
           await client.query("SELECT set_config('app.user_id', $1, true)", [String(userId)])
 
           const catRes = await client.query(
@@ -505,7 +505,7 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
       }
     },
 
-    async updateTransactionById(rawId, changes) {
+    async updateTransactionById(rawId, changes, auditUserId = null) {
       if (!/^\d+$/.test(String(rawId))) return null
       const trxId = Number(rawId)
       const dbCategoryId = resolveCategoryDbId(changes.categoryId)
@@ -515,7 +515,7 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
 
       try {
         return await withDatabaseTransaction(db, async (client) => {
-          const userId = await resolveAuditPenggunaId(client)
+          const userId = auditUserId ? Number(auditUserId) : await resolveAuditPenggunaId(client)
           await client.query("SELECT set_config('app.user_id', $1, true)", [String(userId)])
 
           const catRes = await client.query(
@@ -565,13 +565,13 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
       }
     },
 
-    async deleteTransactionById(rawId) {
+    async deleteTransactionById(rawId, auditUserId = null) {
       if (!/^\d+$/.test(String(rawId))) return false
       const trxId = Number(rawId)
 
       try {
         return await withDatabaseTransaction(db, async (client) => {
-          const userId = await resolveAuditPenggunaId(client)
+          const userId = auditUserId ? Number(auditUserId) : await resolveAuditPenggunaId(client)
           await client.query("SELECT set_config('app.user_id', $1, true)", [String(userId)])
 
           const res = await client.query(

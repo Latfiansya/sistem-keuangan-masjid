@@ -1,10 +1,15 @@
 import { mockAdminDashboard } from '../mocks/adminDashboard.js'
+import { apiRequest } from '../utils/apiClient.js'
 import { dataSource } from '../utils/env.js'
 
 export async function getAdminDashboard({ signal } = {}) {
   signal?.throwIfAborted()
   if (dataSource !== 'mock') {
-    throw new Error('Dashboard admin melalui API belum tersedia. Gunakan mode mock untuk meninjau tampilan.')
+    const data = await apiRequest('/admin/dashboard', { signal })
+    if (!data || !Array.isArray(data.categories) || !data.totals) {
+      throw new Error('Format data dashboard admin API tidak sesuai kontrak.')
+    }
+    return data
   }
   const source = structuredClone(mockAdminDashboard)
   const categories = source.categories.map((category) => ({

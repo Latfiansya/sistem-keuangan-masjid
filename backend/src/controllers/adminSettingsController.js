@@ -14,7 +14,7 @@ export function createAdminSettingsController(service = defaultAdminSettingsServ
 
     async updateProfile(req, res, next) {
       try {
-        const data = await service.updateProfile(req.body)
+        const data = await service.updateProfile(req.body, req.adminUser?.id ?? null)
         res.status(200).json({ success: true, data })
       } catch (error) {
         next(error)
@@ -24,6 +24,33 @@ export function createAdminSettingsController(service = defaultAdminSettingsServ
     async getAgenda(_req, res, next) {
       try {
         const data = await service.getAgenda()
+        res.status(200).json({ success: true, data })
+      } catch (error) {
+        next(error)
+      }
+    },
+
+    async createAgenda(req, res, next) {
+      try {
+        const data = await service.createAgenda(req.body, req.adminUser?.id ?? null)
+        res.status(201).json({ success: true, data })
+      } catch (error) {
+        next(error)
+      }
+    },
+
+    async updateAgenda(req, res, next) {
+      try {
+        const data = await service.updateAgenda(req.params.id, req.body, req.adminUser?.id ?? null)
+        res.status(200).json({ success: true, data })
+      } catch (error) {
+        next(error)
+      }
+    },
+
+    async deleteAgenda(req, res, next) {
+      try {
+        const data = await service.deleteAgenda(req.params.id, req.adminUser?.id ?? null)
         res.status(200).json({ success: true, data })
       } catch (error) {
         next(error)
@@ -41,7 +68,7 @@ export function createAdminSettingsController(service = defaultAdminSettingsServ
 
     async updateDonationSettings(req, res, next) {
       try {
-        const data = await service.updateDonationSettings(req.body)
+        const data = await service.updateDonationSettings(req.body, req.adminUser?.id ?? null)
         res.status(200).json({ success: true, data })
       } catch (error) {
         next(error)
@@ -59,7 +86,7 @@ export function createAdminSettingsController(service = defaultAdminSettingsServ
 
     async updateWebsiteSettings(req, res, next) {
       try {
-        const data = await service.updateWebsiteSettings(req.body)
+        const data = await service.updateWebsiteSettings(req.body, req.adminUser?.id ?? null)
         res.status(200).json({ success: true, data })
       } catch (error) {
         next(error)

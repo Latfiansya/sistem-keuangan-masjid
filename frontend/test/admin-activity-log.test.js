@@ -73,15 +73,20 @@ test('tujuh kelompok tanggal terurut menurun, setiap item tepat satu kali dan ur
   assert.deepEqual(activities, before)
 })
 
-test('mode API memberi error integrasi tanpa HTTP atau fallback riwayat contoh', async () => {
+test('mode API mengambil activity log dari /api/admin/activity-logs tanpa fallback riwayat contoh', async () => {
   const api = await createTestServer('api')
   const originalFetch = globalThis.fetch
-  let calls = 0
-  globalThis.fetch = async () => { calls++; throw new Error('HTTP tidak diharapkan.') }
+  const calls = []
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init })
+    return new Response(JSON.stringify({ success: true, data: { activities: [{ id: '31', date: '2026-11-18', time: '18:49', admin: 'Migrasi Excel', type: 'add', typeLabel: 'Tambah data', module: 'Konten', title: 'Menambah data Agenda', details: [] }] } }), { status: 200 })
+  }
   try {
     const apiService = await api.ssrLoadModule('/src/services/adminActivityLogService.js')
-    await assert.rejects(apiService.getAdminActivityLog(), /Activity Log melalui API belum tersedia/)
-    assert.equal(calls, 0)
+    const list = await apiService.getAdminActivityLog()
+    assert.equal(list.length, 1)
+    assert.equal(list[0].id, '31')
+    assert.equal(calls[0].url, '/api/admin/activity-logs')
   } finally { globalThis.fetch = originalFetch; await api.close() }
 })
 

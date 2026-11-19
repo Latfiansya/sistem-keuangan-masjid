@@ -66,10 +66,29 @@ test('halaman Agenda menangani loading, error, dan daftar kosong', async () => {
   assert.ok(!html.includes('class="agenda-row"'))
 })
 
-test('mode API melaporkan integrasi belum tersedia tanpa endpoint karangan', async () => {
+test('mode API mengambil agenda publik dari /api/public/agenda dan menghitung counts', async () => {
   const apiServer = await createTestServer('api')
+  const originalFetch = globalThis.fetch
+  const calls = []
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init })
+    return new Response(JSON.stringify({
+      success: true,
+      data: {
+        description: 'Agenda API',
+        groups: [
+          { id: 'weekly', title: 'Mingguan', subtitle: 'Rutin', items: [{ id: '1', name: 'Kajian', schedule: 'Rabu' }] },
+          { id: 'monthly', title: 'Bulanan', subtitle: 'Selapanan', items: [] },
+          { id: 'yearly', title: 'Tahunan', subtitle: 'PHBI', items: [{ id: '2', name: 'Syawalan', schedule: 'Syawal' }] },
+        ],
+      },
+    }), { status: 200, headers: { 'Content-Type': 'application/json' } })
+  }
   try {
     const service = await apiServer.ssrLoadModule('/src/services/agendaService.js')
-    await assert.rejects(service.getAgenda(), /Agenda melalui API belum tersedia/)
-  } finally { await apiServer.close() }
+    const agenda = await service.getAgenda()
+    assert.equal(calls.length, 1)
+    assert.equal(calls[0].url, '/api/public/agenda')
+    assert.deepEqual(agenda.counts.map((c) => c.value), [2, 1, 1])
+  } finally { globalThis.fetch = originalFetch; await apiServer.close() }
 })

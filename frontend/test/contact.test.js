@@ -65,13 +65,20 @@ test('Kontak menangani loading, error, data kosong dan bagian yang belum tersedi
   assert.ok(html.includes('Data belum dikonfirmasi'))
 })
 
-test('service Kontak tetap mendukung pembatalan dan error mode API tanpa endpoint baru', async () => {
+test('service Kontak tetap mendukung pembatalan dan mode API memanggil /api/public/content', async () => {
   const controller = new AbortController()
   controller.abort()
   await assert.rejects(getPublicContent({ signal: controller.signal }), { name: 'AbortError' })
   const apiServer = await createTestServer('api')
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async (url) => {
+    if (url === '/api/public/agenda') {
+      return new Response(JSON.stringify({ success: true, data: { description: '', groups: [] } }), { status: 200 })
+    }
+    return new Response(JSON.stringify({ success: false, error: { message: 'Gagal memuat konten.' } }), { status: 500 })
+  }
   try {
     const service = await apiServer.ssrLoadModule('/src/services/publicContentService.js')
-    await assert.rejects(service.getPublicContent(), /Konten publik melalui API belum tersedia/)
-  } finally { await apiServer.close() }
+    await assert.rejects(service.getPublicContent(), /Gagal memuat konten/)
+  } finally { globalThis.fetch = originalFetch; await apiServer.close() }
 })

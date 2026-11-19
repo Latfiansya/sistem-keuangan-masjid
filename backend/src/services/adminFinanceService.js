@@ -174,7 +174,7 @@ export function createAdminFinanceService(repository = defaultAdminFinanceReposi
       }
     },
 
-    async createCategory(payload) {
+    async createCategory(payload, auditUserId = null) {
       if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Payload kategori tidak valid.')
       }
@@ -206,12 +206,12 @@ export function createAdminFinanceService(repository = defaultAdminFinanceReposi
         throw createHttpError(400, 'BAD_REQUEST', 'Pilih salah satu warna kategori.')
       }
 
-      const created = await repository.insertCategory({ label, color: payload.color })
+      const created = await repository.insertCategory({ label, color: payload.color }, auditUserId)
       const { dbId: _dbId, ...rest } = created
       return rest
     },
 
-    async updateCategory(id, payload) {
+    async updateCategory(id, payload, auditUserId = null) {
       if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Payload kategori tidak valid.')
       }
@@ -254,7 +254,7 @@ export function createAdminFinanceService(repository = defaultAdminFinanceReposi
         throw createHttpError(400, 'BAD_REQUEST', 'Pilih salah satu warna kategori.')
       }
 
-      const updated = await repository.updateCategoryById(id, { label, color: payload.color })
+      const updated = await repository.updateCategoryById(id, { label, color: payload.color }, auditUserId)
       if (!updated) {
         throw createHttpError(404, 'NOT_FOUND', 'Kategori tidak ditemukan.')
       }
@@ -262,7 +262,7 @@ export function createAdminFinanceService(repository = defaultAdminFinanceReposi
       return rest
     },
 
-    async deleteCategory(id) {
+    async deleteCategory(id, auditUserId = null) {
       const category = await repository.findCategoryById(id)
       if (!category) {
         throw createHttpError(404, 'NOT_FOUND', 'Kategori tidak ditemukan.')
@@ -281,7 +281,7 @@ export function createAdminFinanceService(repository = defaultAdminFinanceReposi
         )
       }
 
-      await repository.deleteCategoryById(id)
+      await repository.deleteCategoryById(id, auditUserId)
       return { deletedId: category.id }
     },
 
@@ -371,13 +371,13 @@ export function createAdminFinanceService(repository = defaultAdminFinanceReposi
       return transaction
     },
 
-    async createTransaction(payload) {
+    async createTransaction(payload, auditUserId = null) {
       const categories = await repository.findCategories()
       const validated = validateTransactionPayload(payload, categories)
-      return repository.insertTransaction(validated)
+      return repository.insertTransaction(validated, auditUserId)
     },
 
-    async updateTransaction(id, payload) {
+    async updateTransaction(id, payload, auditUserId = null) {
       const existing = await repository.findTransactionById(id)
       if (!existing) {
         throw createHttpError(404, 'NOT_FOUND', 'Transaksi tidak ditemukan.')
@@ -385,15 +385,15 @@ export function createAdminFinanceService(repository = defaultAdminFinanceReposi
 
       const categories = await repository.findCategories()
       const validated = validateTransactionPayload(payload, categories, existing.type)
-      const updated = await repository.updateTransactionById(id, validated)
+      const updated = await repository.updateTransactionById(id, validated, auditUserId)
       if (!updated) {
         throw createHttpError(404, 'NOT_FOUND', 'Transaksi tidak ditemukan.')
       }
       return updated
     },
 
-    async deleteTransaction(id) {
-      const deleted = await repository.deleteTransactionById(id)
+    async deleteTransaction(id, auditUserId = null) {
+      const deleted = await repository.deleteTransactionById(id, auditUserId)
       if (!deleted) {
         throw createHttpError(404, 'NOT_FOUND', 'Transaksi tidak ditemukan.')
       }

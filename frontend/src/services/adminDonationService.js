@@ -1,4 +1,5 @@
 import { mockPublicContent } from '../mocks/publicContent.js'
+import { apiRequest } from '../utils/apiClient.js'
 import { dataSource } from '../utils/env.js'
 
 export const adminDonationQrisAccept = '.png,.jpg,.jpeg'
@@ -6,7 +7,13 @@ export const adminDonationQrisMaxBytes = 2 * 1024 * 1024
 
 export async function getAdminDonationSettings({ signal } = {}) {
   signal?.throwIfAborted()
-  if (dataSource !== 'mock') throw new Error('Pengaturan donasi melalui API admin belum tersedia. Gunakan mode mock untuk meninjau halaman.')
+  if (dataSource !== 'mock') {
+    const data = await apiRequest('/admin/donation-settings', { signal })
+    if (!data || typeof data !== 'object') {
+      throw new Error('Format pengaturan donasi API tidak sesuai kontrak.')
+    }
+    return data
+  }
   const bank = mockPublicContent.contact.donation.bank
   return {
     qrisFile: null, qrisEnabled: false,
@@ -17,6 +24,25 @@ export async function getAdminDonationSettings({ signal } = {}) {
     messageTemplate: 'Assalamu’alaikum Takmir Masjid Al-Hidayah, saya ingin mengonfirmasi donasi.\nNama: [Nama donatur];\nNomor WhatsApp: [Nomor WhatsApp];\nTanggal donasi: [Tanggal];\nNominal: [Nominal];\nMetode pembayaran: [Metode pembayaran];\nTerima kasih.',
     donationNote: 'Periksa nama penerima sebelum transfer dan simpan bukti donasi.',
   }
+}
+
+export async function saveAdminDonationSettings(values, { signal } = {}) {
+  if (dataSource === 'mock') return normalizeAdminDonationSettings(values)
+  return apiRequest('/admin/donation-settings', {
+    method: 'PUT',
+    body: {
+      bankName: values.bankName || '',
+      accountNumber: values.accountNumber || '',
+      accountName: values.accountName || '',
+      qrisEnabled: values.qrisEnabled === true,
+      bankEnabled: values.bankEnabled === true,
+      whatsappNumber: values.whatsappNumber || '',
+      whatsappEnabled: values.whatsappEnabled === true,
+      messageTemplate: values.messageTemplate || '',
+      donationNote: values.donationNote || '',
+    },
+    signal,
+  })
 }
 
 export function validateAdminDonationQris(files) {

@@ -45,12 +45,23 @@ test('pemeriksaan dapat dibatalkan sebelum maupun selama menunggu', async () => 
   await assert.rejects(result, { name: 'AbortError' })
 })
 
-test('mode API belum tersedia dan tidak memakai sandi mock sebagai validasi produksi', async () => {
+test('mode API memanggil POST /api/public/report/check-password dan tidak memakai sandi mock', async () => {
   const apiServer = await createTestServer('api')
+  const originalFetch = globalThis.fetch
+  const calls = []
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init })
+    const body = JSON.parse(init.body)
+    return new Response(JSON.stringify({ success: true, data: { valid: body.password === 'sandi-db' } }), { status: 200 })
+  }
   try {
     const service = await apiServer.ssrLoadModule('/src/services/reportService.js')
-    await assert.rejects(service.checkReportPassword('demo123'), /Pemeriksaan sandi melalui API belum tersedia/)
-  } finally { await apiServer.close() }
+    assert.deepEqual(await service.checkReportPassword('demo123'), { valid: false })
+    assert.deepEqual(await service.checkReportPassword('sandi-db'), { valid: true })
+    assert.equal(calls.length, 2)
+    assert.equal(calls[0].url, '/api/public/report/check-password')
+    assert.equal(calls[0].init.method, 'POST')
+  } finally { globalThis.fetch = originalFetch; await apiServer.close() }
 })
 
 test('route laporan langsung merender laporan tanpa gate atau layout publik', () => {

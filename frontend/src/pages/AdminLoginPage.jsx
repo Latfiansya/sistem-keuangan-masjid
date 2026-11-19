@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router'
 import { loginAdmin, validateAdminLogin } from '../services/adminAuthService.js'
 import './AdminLoginPage.css'
 
 export default function AdminLoginPage() {
+  const navigate = useNavigate()
+  const { state } = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [errors, setErrors] = useState({})
-  const [error, setError] = useState('')
+  const [error, setError] = useState(state?.message || '')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const pending = useRef(null)
 
@@ -31,6 +34,10 @@ export default function AdminLoginPage() {
     setIsSubmitting(true)
     try {
       await loginAdmin({ email: email.trim(), password }, { signal: controller.signal })
+      if (!controller.signal.aborted) {
+        pending.current = null
+        navigate('/admin/dashboard', { replace: true })
+      }
     } catch (cause) {
       if (!controller.signal.aborted) setError(cause.message)
     } finally {

@@ -1,3 +1,7 @@
+import bcrypt from 'bcryptjs'
+
+const TEST_PASSWORD_HASH = bcrypt.hashSync('password123', 4)
+
 // Repository tiruan (hanya untuk pengujian otomatis di backend/test, bukan bagian runtime src/).
 export function createTestRepositories() {
   let publicContent = {
@@ -51,6 +55,7 @@ export function createTestRepositories() {
     },
   }
 
+  let nextAgendaSeq = 100
   const agenda = {
     description: 'Jadwal kegiatan Masjid Al-Hidayah Sorolaten.',
     groups: [
@@ -58,19 +63,19 @@ export function createTestRepositories() {
         id: 'weekly',
         title: 'Mingguan',
         subtitle: 'Setiap Pekan',
-        items: Array.from({ length: 5 }, (_, i) => ({ id: `w-${i + 1}`, name: `Kajian Pekanan ${i + 1}`, schedule: 'Setiap pekan' })),
+        items: Array.from({ length: 5 }, (_, i) => ({ id: `w-${i + 1}`, name: `Kajian Pekanan ${i + 1}`, frequency: 'weekly', schedule: 'Setiap pekan', description: '', order: i + 1, active: true })),
       },
       {
         id: 'monthly',
         title: 'Bulanan',
         subtitle: 'Setiap Bulan',
-        items: Array.from({ length: 2 }, (_, i) => ({ id: `m-${i + 1}`, name: `Pengajian Bulanan ${i + 1}`, schedule: 'Setiap bulan' })),
+        items: Array.from({ length: 2 }, (_, i) => ({ id: `m-${i + 1}`, name: `Pengajian Bulanan ${i + 1}`, frequency: 'monthly', schedule: 'Setiap bulan', description: '', order: i + 1, active: true })),
       },
       {
         id: 'yearly',
         title: 'Tahunan / PHBI',
         subtitle: 'Tahunan',
-        items: Array.from({ length: 5 }, (_, i) => ({ id: `y-${i + 1}`, name: `PHBI ${i + 1}`, schedule: 'Bulan Ramadhan' })),
+        items: Array.from({ length: 5 }, (_, i) => ({ id: `y-${i + 1}`, name: `PHBI ${i + 1}`, frequency: 'yearly', schedule: 'Bulan Ramadhan', description: '', order: i + 1, active: true })),
       },
     ],
   }
@@ -161,12 +166,22 @@ export function createTestRepositories() {
     donationNote: '',
   }
 
-  const accounts = [
+  let nextAccountSeq = 10
+  let accounts = [
     { id: '1', initials: 'SA', name: 'Super Admin', email: 'superadmin@masjid.id', role: 'Super Admin', createdDate: '2026-04-16', active: true },
     { id: '2', initials: 'AF', name: 'Ahmad Fauzi', email: 'ahmad@masjid.id', role: 'Admin', createdDate: '2026-01-01', active: true },
     { id: '3', initials: 'SR', name: 'Siti Rahmawati', email: 'siti@masjid.id', role: 'Admin', createdDate: '2026-05-15', active: true },
     { id: '4', initials: 'BS', name: 'Budi Santoso', email: 'budi@masjid.id', role: 'Admin', createdDate: '2026-04-20', active: false },
   ]
+  const accountPasswordHashes = new Map(accounts.map((acc) => [acc.id, TEST_PASSWORD_HASH]))
+  const reportAccessState = {
+    codeHash: '',
+    active: true,
+    publicReportEnabled: true,
+    changedDate: '2026-06-10',
+    changedTime: '09:00',
+    changedBy: 'Super Admin',
+  }
 
   const activityLogs = [
     { id: '1', date: '2026-06-14', time: '09:35', admin: 'Ahmad', type: 'edit', typeLabel: 'Edit data', module: 'Keuangan', title: 'mengubah transaksi', details: [] },
@@ -219,6 +234,9 @@ export function createTestRepositories() {
             reportTransactions.filter((item) => item.date >= startDate && item.date <= endDate)
           ),
         }
+      },
+      async findReportAccessPasswordHash() {
+        return reportAccessState.codeHash
       },
     },
     adminFinanceRepository: {
@@ -379,6 +397,59 @@ export function createTestRepositories() {
       async getAgenda() {
         return structuredClone(agenda)
       },
+      async findAgendaById(id) {
+        for (const group of agenda.groups) {
+          const item = group.items.find((entry) => entry.id === String(id))
+          if (item) return structuredClone(item)
+        }
+        return null
+      },
+      async insertAgenda(input) {
+        const nextItem = {
+          id: String(nextAgendaSeq++),
+          name: input.name,
+          frequency: input.groupId,
+          schedule: input.schedule,
+          description: input.description || '',
+          order: input.order,
+          active: input.active,
+        }
+        const targetGroup = agenda.groups.find((group) => group.id === input.groupId)
+        targetGroup.items.push(nextItem)
+        return structuredClone(nextItem)
+      },
+      async updateAgendaById(id, input) {
+        let removed = false
+        for (const group of agenda.groups) {
+          const index = group.items.findIndex((entry) => entry.id === String(id))
+          if (index !== -1) {
+            group.items.splice(index, 1)
+            removed = true
+            break
+          }
+        }
+        if (!removed) return null
+        const updatedItem = {
+          id: String(id),
+          name: input.name,
+          frequency: input.groupId,
+          schedule: input.schedule,
+          description: input.description || '',
+          order: input.order,
+          active: input.active,
+        }
+        const targetGroup = agenda.groups.find((group) => group.id === input.groupId)
+        targetGroup.items.push(updatedItem)
+        return structuredClone(updatedItem)
+      },
+      async deleteAgendaById(id) {
+        for (const group of agenda.groups) {
+          const before = group.items.length
+          group.items = group.items.filter((entry) => entry.id !== String(id))
+          if (group.items.length !== before) return true
+        }
+        return false
+      },
       async getDonationSettings() {
         return structuredClone(donationSettings)
       },
@@ -395,16 +466,90 @@ export function createTestRepositories() {
       },
     },
     adminManagementRepository: {
+      async findUserForLoginByEmail(email) {
+        const found = accounts.find((item) => item.email.toLowerCase() === String(email).toLowerCase())
+        if (!found) return null
+        return {
+          id: Number(found.id),
+          nama: found.name,
+          email: found.email,
+          password: accountPasswordHashes.get(found.id) ?? TEST_PASSWORD_HASH,
+          role: found.role,
+          status: found.active ? 'Aktif' : 'Nonaktif',
+        }
+      },
       async findAccounts() {
         return structuredClone(accounts)
       },
+      async findAccountById(id) {
+        const found = accounts.find((item) => item.id === String(id))
+        return found ? structuredClone(found) : null
+      },
+      async insertAccount({ name, email, passwordHash, role, active }) {
+        const id = String(nextAccountSeq++)
+        const parts = name.trim().split(/\s+/).filter(Boolean)
+        const initials = parts.length === 1 ? parts[0].slice(0, 2).toUpperCase() : `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+        const created = {
+          id,
+          initials,
+          name,
+          email,
+          role,
+          createdDate: '2026-11-19',
+          active,
+        }
+        accounts.push(created)
+        accountPasswordHashes.set(id, passwordHash)
+        return structuredClone(created)
+      },
+      async updateAccountById(id, { name, email, passwordHash, role, active }) {
+        const target = accounts.find((item) => item.id === String(id))
+        if (!target) return null
+        const parts = name.trim().split(/\s+/).filter(Boolean)
+        target.initials = parts.length === 1 ? parts[0].slice(0, 2).toUpperCase() : `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+        target.name = name
+        target.email = email
+        target.role = role
+        target.active = active
+        if (passwordHash) accountPasswordHashes.set(target.id, passwordHash)
+        return structuredClone(target)
+      },
+      async updateAccountStatusById(id, active) {
+        const target = accounts.find((item) => item.id === String(id))
+        if (!target) return null
+        target.active = active
+        return structuredClone(target)
+      },
+      async deleteAccountById(id) {
+        const exists = accounts.some((item) => item.id === String(id))
+        if (!exists) return false
+        accounts = accounts.filter((item) => item.id !== String(id))
+        accountPasswordHashes.delete(String(id))
+        return true
+      },
       async findReportAccessStatus() {
         return {
-          active: true,
-          publicReportEnabled: true,
-          changedDate: '2026-06-10',
-          changedTime: '09:00',
-          changedBy: 'Super Admin',
+          active: reportAccessState.active,
+          publicReportEnabled: reportAccessState.publicReportEnabled,
+          changedDate: reportAccessState.changedDate,
+          changedTime: reportAccessState.changedTime,
+          changedBy: reportAccessState.changedBy,
+        }
+      },
+      async saveReportAccessCode({ codeHash, publicReportEnabled }, auditUserId = null) {
+        reportAccessState.codeHash = codeHash
+        reportAccessState.active = true
+        if (typeof publicReportEnabled === 'boolean') {
+          reportAccessState.publicReportEnabled = publicReportEnabled
+        }
+        const actor = accounts.find((item) => item.id === String(auditUserId))
+        if (actor) reportAccessState.changedBy = actor.name
+        return {
+          active: reportAccessState.active,
+          publicReportEnabled: reportAccessState.publicReportEnabled,
+          changedDate: reportAccessState.changedDate,
+          changedTime: reportAccessState.changedTime,
+          changedBy: reportAccessState.changedBy,
         }
       },
       async findActivityLogs({ admin, type, date, moduleName, query } = {}) {

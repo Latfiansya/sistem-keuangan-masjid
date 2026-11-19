@@ -57,15 +57,25 @@ test('pencarian nama/email mengabaikan kapital dan spasi luar, tanpa memfilter r
   assert.deepEqual(accounts, before)
 })
 
-test('mode API belum tersedia tanpa HTTP atau fallback akun contoh', async () => {
+test('mode API mengambil dan mengelola akun lewat /api/admin/accounts tanpa fallback contoh', async () => {
   const api = await createTestServer('api')
   const originalFetch = globalThis.fetch
-  let calls = 0
-  globalThis.fetch = async () => { calls++; throw new Error('HTTP tidak diharapkan.') }
+  const calls = []
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init })
+    if (init.method === 'GET') {
+      return new Response(JSON.stringify({ success: true, data: { accounts: [{ id: '2', initials: 'SA', name: 'Super Admin', email: 'superadmin@masjid.id', role: 'Super Admin', createdDate: '2026-11-02', active: true }] } }), { status: 200 })
+    }
+    return new Response(JSON.stringify({ success: true, data: { id: '3', initials: 'AB', name: 'Admin Baru', email: 'baru@masjid.id', role: 'Admin', createdDate: '2026-11-19', active: true } }), { status: 201 })
+  }
   try {
     const service = await api.ssrLoadModule('/src/services/adminAccountsService.js')
-    await assert.rejects(service.getAdminAccounts(), /Manajemen akun admin melalui API belum tersedia/)
-    assert.equal(calls, 0)
+    const list = await service.getAdminAccounts()
+    assert.equal(list.length, 1)
+    assert.equal(list[0].email, 'superadmin@masjid.id')
+    const created = await service.createAdminAccount({ name: 'Admin Baru', email: 'baru@masjid.id', password: 'password123', role: 'Admin', active: true })
+    assert.equal(created.id, '3')
+    assert.deepEqual(calls.map((c) => [c.init.method, c.url]), [['GET', '/api/admin/accounts'], ['POST', '/api/admin/accounts']])
   } finally { globalThis.fetch = originalFetch; await api.close() }
 })
 

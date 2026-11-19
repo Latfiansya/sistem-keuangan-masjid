@@ -1,4 +1,5 @@
 import { mockPublicContent } from '../mocks/publicContent.js'
+import { apiRequest } from '../utils/apiClient.js'
 import { dataSource } from '../utils/env.js'
 
 export const adminProfilePhotoAccept = '.jpg,.jpeg,.png,.webp'
@@ -19,7 +20,11 @@ export function validateAdminProfilePhoto(files) {
 export async function getAdminProfile({ signal } = {}) {
   signal?.throwIfAborted()
   if (dataSource !== 'mock') {
-    throw new Error('Profil admin melalui API belum tersedia. Gunakan mode mock untuk meninjau formulir.')
+    const data = await apiRequest('/admin/profile', { signal })
+    if (!data || typeof data.name !== 'string') {
+      throw new Error('Format data profil admin API tidak sesuai kontrak.')
+    }
+    return data
   }
   const phone = mockPublicContent.contact.information.find((item) => item.id === 'phone')
   return {
@@ -28,6 +33,20 @@ export async function getAdminProfile({ signal } = {}) {
     address: mockPublicContent.address,
     contact: phone?.verified && typeof phone.value === 'string' ? phone.value : '',
   }
+}
+
+export async function saveAdminProfile(values, { signal } = {}) {
+  if (dataSource === 'mock') return { ...values }
+  return apiRequest('/admin/profile', {
+    method: 'PUT',
+    body: {
+      name: values.name,
+      description: values.description || '',
+      address: values.address || '',
+      contact: values.contact || '',
+    },
+    signal,
+  })
 }
 
 export function validateAdminProfile({ name, contact }) {

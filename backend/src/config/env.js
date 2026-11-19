@@ -18,6 +18,16 @@ function parsePositiveInteger(rawValue, defaultValue, label) {
   return value
 }
 
+function parseCorsOrigins(rawValue) {
+  const value = rawValue ?? 'http://localhost:5173,http://127.0.0.1:5173'
+  return Object.freeze(
+    String(value)
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+  )
+}
+
 function parseDatabaseConfig(source) {
   const rawUrl = source.DATABASE_URL?.trim() || ''
   let parsedUrl = null
@@ -88,6 +98,20 @@ export function loadEnv(source = process.env) {
     reportPasswordHash = hashPassword(rawDevPassword)
   }
 
+  const corsOrigins = parseCorsOrigins(source.CORS_ORIGIN)
+  const adminAuthRequired =
+    nodeEnv === 'production' || source.ADMIN_AUTH_REQUIRED?.trim().toLowerCase() === 'true'
+  const authSecret = source.AUTH_SECRET?.trim() || ''
+  const authTokenTtlMs = parsePositiveInteger(
+    source.AUTH_TOKEN_TTL_MS,
+    8 * 60 * 60 * 1000,
+    'AUTH_TOKEN_TTL_MS'
+  )
+
+  if (adminAuthRequired && authSecret.length < 32) {
+    throw new Error('AUTH_SECRET wajib diisi minimal 32 karakter saat ADMIN_AUTH_REQUIRED aktif.')
+  }
+
   const db = parseDatabaseConfig(source)
 
   return Object.freeze({
@@ -99,6 +123,10 @@ export function loadEnv(source = process.env) {
     rateLimitWindowMs,
     rateLimitMax,
     reportPasswordHash,
+    corsOrigins,
+    adminAuthRequired,
+    authSecret,
+    authTokenTtlMs,
     db,
   })
 }

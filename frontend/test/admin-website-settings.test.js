@@ -58,15 +58,24 @@ test('validasi opsional WhatsApp, email dan HTTPS Google Maps menerima format la
   }
 })
 
-test('mode API menolak integrasi yang belum tersedia tanpa HTTP atau fallback mock', async () => {
+test('mode API mengambil dan menyimpan pengaturan ke /api/admin/website-settings tanpa fallback mock', async () => {
   const api = await createTestServer('api')
   const originalFetch = globalThis.fetch
-  let calls = 0
-  globalThis.fetch = async () => { calls++; throw new Error('HTTP tidak diharapkan.') }
+  const calls = []
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url, init })
+    if (init.method === 'PUT') {
+      return new Response(JSON.stringify({ success: true, data: JSON.parse(init.body) }), { status: 200 })
+    }
+    return new Response(JSON.stringify({ success: true, data: { whatsapp: '628123456789', email: 'takmir@masjid.id', address: 'Sorolaten', mapsUrl: 'https://maps.google.com/?q=Sorolaten', publicReportEnabled: true } }), { status: 200 })
+  }
   try {
     const service = await api.ssrLoadModule('/src/services/adminWebsiteSettingsService.js')
-    await assert.rejects(service.getAdminWebsiteSettings(), /Kontak dan pengaturan admin melalui API belum tersedia/)
-    assert.equal(calls, 0)
+    const settings = await service.getAdminWebsiteSettings()
+    assert.equal(settings.publicReportEnabled, true)
+    const saved = await service.saveAdminWebsiteSettings({ ...settings, publicReportEnabled: false })
+    assert.equal(saved.publicReportEnabled, false)
+    assert.deepEqual(calls.map((c) => [c.init.method, c.url]), [['GET', '/api/admin/website-settings'], ['PUT', '/api/admin/website-settings']])
   } finally { globalThis.fetch = originalFetch; await api.close() }
 })
 

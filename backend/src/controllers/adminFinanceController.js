@@ -23,7 +23,7 @@ export function createAdminFinanceController(service = defaultAdminFinanceServic
 
     async createCategory(req, res, next) {
       try {
-        const data = await service.createCategory(req.body)
+        const data = await service.createCategory(req.body, req.adminUser?.id ?? null)
         res.status(201).json({ success: true, data })
       } catch (error) {
         next(error)
@@ -32,7 +32,7 @@ export function createAdminFinanceController(service = defaultAdminFinanceServic
 
     async updateCategory(req, res, next) {
       try {
-        const data = await service.updateCategory(req.params.id, req.body)
+        const data = await service.updateCategory(req.params.id, req.body, req.adminUser?.id ?? null)
         res.status(200).json({ success: true, data })
       } catch (error) {
         next(error)
@@ -41,7 +41,7 @@ export function createAdminFinanceController(service = defaultAdminFinanceServic
 
     async deleteCategory(req, res, next) {
       try {
-        const data = await service.deleteCategory(req.params.id)
+        const data = await service.deleteCategory(req.params.id, req.adminUser?.id ?? null)
         res.status(200).json({ success: true, data })
       } catch (error) {
         next(error)
@@ -68,7 +68,7 @@ export function createAdminFinanceController(service = defaultAdminFinanceServic
 
     async createTransaction(req, res, next) {
       try {
-        const data = await service.createTransaction(req.body)
+        const data = await service.createTransaction(req.body, req.adminUser?.id ?? null)
         res.status(201).json({ success: true, data })
       } catch (error) {
         next(error)
@@ -77,7 +77,7 @@ export function createAdminFinanceController(service = defaultAdminFinanceServic
 
     async updateTransaction(req, res, next) {
       try {
-        const data = await service.updateTransaction(req.params.id, req.body)
+        const data = await service.updateTransaction(req.params.id, req.body, req.adminUser?.id ?? null)
         res.status(200).json({ success: true, data })
       } catch (error) {
         next(error)
@@ -86,7 +86,7 @@ export function createAdminFinanceController(service = defaultAdminFinanceServic
 
     async deleteTransaction(req, res, next) {
       try {
-        const data = await service.deleteTransaction(req.params.id)
+        const data = await service.deleteTransaction(req.params.id, req.adminUser?.id ?? null)
         res.status(200).json({ success: true, data })
       } catch (error) {
         next(error)

@@ -173,5 +173,68 @@ describe('Endpoint konten, profil, agenda, donasi, dan pengaturan website pengur
     assert.equal(updated.mapsUrl, 'https://maps.app.goo.gl/AbCdEfGh123')
     assert.equal(updated.publicReportEnabled, false)
   })
+
+  it('CRUD /api/admin/agenda menambah, memvalidasi duplikasi, mengubah, dan menghapus agenda', async () => {
+    // Validasi frekuensi tidak sah -> 400
+    const badFreqRes = await fetch(`${baseUrl}/agenda`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'Kajian Khusus', frequency: 'daily', schedule: 'Setiap hari' }),
+    })
+    assert.equal(badFreqRes.status, 400)
+
+    // Tambah agenda baru -> 201
+    const createRes = await fetch(`${baseUrl}/agenda`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Tahsin Al-Quran',
+        frequency: 'weekly',
+        schedule: 'Ahad Pagi 07:00',
+        description: 'Bimbingan membaca Al-Quran.',
+        order: 6,
+      }),
+    })
+    assert.equal(createRes.status, 201)
+    const created = (await createRes.json()).data
+    assert.equal(created.name, 'Tahsin Al-Quran')
+    assert.equal(created.frequency, 'weekly')
+
+    // Tolak duplikasi nama + frekuensi yang sama (case-insensitive) -> 400
+    const dupRes = await fetch(`${baseUrl}/agenda`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: '  tahsin al-quran  ',
+        frequency: 'Mingguan',
+        schedule: 'Ahad 08:00',
+      }),
+    })
+    assert.equal(dupRes.status, 400)
+
+    // Ubah agenda (termasuk pindah kelompok frekuensi ke monthly) -> 200
+    const updateRes = await fetch(`${baseUrl}/agenda/${created.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Tahsin & Tadabbur Bulanan',
+        frequency: 'monthly',
+        schedule: 'Sabtu Wage 19:30',
+        active: true,
+      }),
+    })
+    assert.equal(updateRes.status, 200)
+    const updated = (await updateRes.json()).data
+    assert.equal(updated.frequency, 'monthly')
+
+    // Hapus agenda -> 200
+    const deleteRes = await fetch(`${baseUrl}/agenda/${created.id}`, { method: 'DELETE' })
+    assert.equal(deleteRes.status, 200)
+    assert.equal((await deleteRes.json()).data.deletedId, created.id)
+
+    // Hapus ulang ID tidak ada -> 404
+    const missingDeleteRes = await fetch(`${baseUrl}/agenda/${created.id}`, { method: 'DELETE' })
+    assert.equal(missingDeleteRes.status, 404)
+  })
 })
 

@@ -1,5 +1,10 @@
 import { defaultAdminManagementRepository } from '../repositories/adminManagementRepository.js'
+import { hashAccountPassword, signAdminToken, verifyAccountPassword } from '../utils/adminAuth.js'
 import { createHttpError } from '../utils/httpError.js'
+import { hashPassword } from '../utils/passwordHash.js'
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const ALLOWED_ROLES = ['Admin', 'Super Admin']
 
 function hasControlChars(value) {
   return [...String(value)].some((character) => {
@@ -43,8 +48,11 @@ function resolveActivityTarget(activity) {
   return '/admin/activity-log'
 }
 
-// Business logic layer untuk autentikasi stub, akun pengurus, status kode akses, dan activity log.
-export function createAdminManagementService(repository = defaultAdminManagementRepository) {
+// Business logic layer untuk autentikasi pengurus, daftar akun, status kode akses, dan activity log.
+export function createAdminManagementService(
+  repository = defaultAdminManagementRepository,
+  { authSecret = '', authTokenTtlMs = 8 * 60 * 60 * 1000 } = {}
+) {
   return {
     async loginAdmin(payload) {
       if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
@@ -66,12 +74,40 @@ export function createAdminManagementService(repository = defaultAdminManagement
         throw createHttpError(400, 'BAD_REQUEST', 'Password tidak boleh mengandung karakter kontrol.')
       }
 
-      // Autentikasi sesi/JWT pengurus menunggu penyepakatan mekanisme token/session lintas tim.
-      throw createHttpError(
-        503,
-        'SERVICE_UNAVAILABLE',
-        'Login pengurus belum tersedia. Silakan hubungi tim pengelola untuk informasi akses.'
-      )
+      if (
+        typeof repository.findUserForLoginByEmail !== 'function' ||
+        typeof authSecret !== 'string' ||
+        authSecret.length < 32
+      ) {
+        throw createHttpError(
+          503,
+          'SERVICE_UNAVAILABLE',
+          'Konfigurasi autentikasi server belum siap.'
+        )
+      }
+
+      const account = await repository.findUserForLoginByEmail(email.trim())
+      const passwordValid = account
+        ? await verifyAccountPassword(password, account.password)
+        : false
+
+      if (!account || !passwordValid) {
+        throw createHttpError(401, 'UNAUTHORIZED', 'Email atau password tidak sesuai.')
+      }
+
+      if (account.status !== 'Aktif') {
+        throw createHttpError(403, 'FORBIDDEN', 'Akun pengurus sedang dinonaktifkan.')
+      }
+
+      const user = {
+        id: String(account.id),
+        name: account.nama,
+        email: account.email,
+        role: account.role,
+      }
+      const { token, expiresAt } = signAdminToken(user, authSecret, authTokenTtlMs)
+
+      return { token, expiresAt, user }
     },
 
     async logoutAdmin() {
@@ -103,6 +139,207 @@ export function createAdminManagementService(repository = defaultAdminManagement
 
     async getReportAccessStatus() {
       return repository.findReportAccessStatus()
+    },
+
+    async createAccount(payload, auditUserId = null) {
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Payload akun pengurus tidak valid.')
+      }
+
+      const rawName = payload.name
+      if (typeof rawName !== 'string' || !rawName.trim()) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Nama pengurus wajib diisi.')
+      }
+      const name = rawName.trim()
+      if (name.length > 100 || hasControlChars(rawName)) {
+        throw createHttpError(
+          400,
+          'BAD_REQUEST',
+          'Nama pengurus tidak boleh mengandung karakter kontrol atau melebihi 100 karakter.'
+        )
+      }
+
+      if (typeof payload.email !== 'string' || !payload.email.trim()) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Email wajib diisi.')
+      }
+      const email = payload.email.trim().toLowerCase()
+      if (!EMAIL_PATTERN.test(email) || email.length > 150 || hasControlChars(payload.email)) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Masukkan alamat email yang valid.')
+      }
+
+      if (typeof payload.password !== 'string' || !payload.password.trim()) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Password wajib diisi.')
+      }
+      if (payload.password.length < 8 || payload.password.length > 128 || hasControlChars(payload.password)) {
+        throw createHttpError(
+          400,
+          'BAD_REQUEST',
+          'Password minimal 8 karakter, maksimal 128 karakter, dan tanpa karakter kontrol.'
+        )
+      }
+
+      const role = payload.role ?? 'Admin'
+      if (!ALLOWED_ROLES.includes(role)) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Role akun harus Admin atau Super Admin.')
+      }
+
+      const active = payload.active ?? true
+      if (typeof active !== 'boolean') {
+        throw createHttpError(400, 'BAD_REQUEST', 'Status aktif akun harus berupa boolean.')
+      }
+
+      const accounts = await repository.findAccounts()
+      if (accounts.some((item) => item.email.toLowerCase() === email)) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Email sudah terdaftar pada akun lain.')
+      }
+
+      const passwordHash = await hashAccountPassword(payload.password)
+      return repository.insertAccount({ name, email, passwordHash, role, active }, auditUserId)
+    },
+
+    async updateAccount(id, payload, auditUserId = null) {
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Payload pembaruan akun tidak valid.')
+      }
+
+      const existing = await repository.findAccountById(id)
+      if (!existing) {
+        throw createHttpError(404, 'NOT_FOUND', 'Akun pengurus tidak ditemukan.')
+      }
+
+      const rawName = payload.name !== undefined ? payload.name : existing.name
+      if (typeof rawName !== 'string' || !rawName.trim()) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Nama pengurus wajib diisi.')
+      }
+      const name = rawName.trim()
+      if (name.length > 100 || hasControlChars(rawName)) {
+        throw createHttpError(
+          400,
+          'BAD_REQUEST',
+          'Nama pengurus tidak boleh mengandung karakter kontrol atau melebihi 100 karakter.'
+        )
+      }
+
+      const rawEmail = payload.email !== undefined ? payload.email : existing.email
+      if (typeof rawEmail !== 'string' || !rawEmail.trim()) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Email wajib diisi.')
+      }
+      const email = rawEmail.trim().toLowerCase()
+      if (!EMAIL_PATTERN.test(email) || email.length > 150 || hasControlChars(rawEmail)) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Masukkan alamat email yang valid.')
+      }
+
+      const role = payload.role !== undefined ? payload.role : existing.role
+      if (!ALLOWED_ROLES.includes(role)) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Role akun harus Admin atau Super Admin.')
+      }
+
+      const active = payload.active !== undefined ? payload.active : existing.active
+      if (typeof active !== 'boolean') {
+        throw createHttpError(400, 'BAD_REQUEST', 'Status aktif akun harus berupa boolean.')
+      }
+
+      if (auditUserId && String(auditUserId) === String(existing.id) && active === false) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Anda tidak dapat menonaktifkan akun Anda sendiri.')
+      }
+
+      const accounts = await repository.findAccounts()
+      if (accounts.some((item) => item.id !== existing.id && item.email.toLowerCase() === email)) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Email sudah terdaftar pada akun lain.')
+      }
+
+      let passwordHash
+      if (payload.password !== undefined && payload.password !== '') {
+        if (
+          typeof payload.password !== 'string' ||
+          payload.password.length < 8 ||
+          payload.password.length > 128 ||
+          hasControlChars(payload.password)
+        ) {
+          throw createHttpError(
+            400,
+            'BAD_REQUEST',
+            'Password baru minimal 8 karakter, maksimal 128 karakter, dan tanpa karakter kontrol.'
+          )
+        }
+        passwordHash = await hashAccountPassword(payload.password)
+      }
+
+      const updated = await repository.updateAccountById(
+        id,
+        { name, email, passwordHash, role, active },
+        auditUserId
+      )
+      if (!updated) {
+        throw createHttpError(404, 'NOT_FOUND', 'Akun pengurus tidak ditemukan.')
+      }
+      return updated
+    },
+
+    async setAccountStatus(id, payload, auditUserId = null) {
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload) || typeof payload.active !== 'boolean') {
+        throw createHttpError(400, 'BAD_REQUEST', 'Status akun (active) harus berupa boolean.')
+      }
+
+      const existing = await repository.findAccountById(id)
+      if (!existing) {
+        throw createHttpError(404, 'NOT_FOUND', 'Akun pengurus tidak ditemukan.')
+      }
+
+      if (auditUserId && String(auditUserId) === String(existing.id) && payload.active === false) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Anda tidak dapat menonaktifkan akun Anda sendiri.')
+      }
+
+      const updated = await repository.updateAccountStatusById(id, payload.active, auditUserId)
+      if (!updated) {
+        throw createHttpError(404, 'NOT_FOUND', 'Akun pengurus tidak ditemukan.')
+      }
+      return updated
+    },
+
+    async deleteAccount(id, auditUserId = null) {
+      const existing = await repository.findAccountById(id)
+      if (!existing) {
+        throw createHttpError(404, 'NOT_FOUND', 'Akun pengurus tidak ditemukan.')
+      }
+
+      if (auditUserId && String(auditUserId) === String(existing.id)) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Anda tidak dapat menghapus akun Anda sendiri.')
+      }
+
+      const deleted = await repository.deleteAccountById(id, auditUserId)
+      if (!deleted) {
+        throw createHttpError(404, 'NOT_FOUND', 'Akun pengurus tidak ditemukan.')
+      }
+      return { deletedId: existing.id }
+    },
+
+    async updateReportAccess(payload, auditUserId = null) {
+      if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Payload kode akses laporan tidak valid.')
+      }
+
+      const rawCode = payload.code ?? payload.password
+      if (typeof rawCode !== 'string' || !rawCode.trim()) {
+        throw createHttpError(400, 'BAD_REQUEST', 'Kode akses baru wajib diisi.')
+      }
+      if (rawCode.length < 6 || rawCode.length > 128 || hasControlChars(rawCode)) {
+        throw createHttpError(
+          400,
+          'BAD_REQUEST',
+          'Kode akses minimal 6 karakter, maksimal 128 karakter, dan tanpa karakter kontrol.'
+        )
+      }
+
+      if (payload.publicReportEnabled !== undefined && typeof payload.publicReportEnabled !== 'boolean') {
+        throw createHttpError(400, 'BAD_REQUEST', 'Status visibilitas laporan publik harus berupa boolean.')
+      }
+
+      const codeHash = hashPassword(rawCode)
+      return repository.saveReportAccessCode(
+        { codeHash, publicReportEnabled: payload.publicReportEnabled },
+        auditUserId
+      )
     },
 
     async listActivityLogs(queryParams = {}) {

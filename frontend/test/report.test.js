@@ -114,7 +114,7 @@ test('komponen tabel dan ringkasan konsisten dengan hasil filter serta menangani
   }
 })
 
-test('API laporan belum tersedia dan AbortSignal tetap didukung', async () => {
+test('API laporan memanggil /api/public/finance/report, menormalisasi months dan AbortSignal tetap didukung', async () => {
   const controller = new AbortController()
   controller.abort()
   await assert.rejects(getReport({ signal: controller.signal }), { name: 'AbortError' })
@@ -123,8 +123,27 @@ test('API laporan belum tersedia dan AbortSignal tetap didukung', async () => {
   pendingController.abort()
   await assert.rejects(pending, { name: 'AbortError' })
   const apiServer = await createServer({ root, server: { middlewareMode: true, ws: false, hmr: false }, appType: 'custom', define: { 'import.meta.env.VITE_DATA_SOURCE': JSON.stringify('api') } })
+  const originalFetch = globalThis.fetch
+  const calls = []
+  globalThis.fetch = async (url) => {
+    calls.push(url)
+    return new Response(JSON.stringify({
+      success: true,
+      data: {
+        name: 'Masjid API',
+        status: 'ready',
+        coverage: { startDate: '2026-01-01', endDate: '2026-10-31' },
+        months: [{ id: '2026-04', label: 'April 2026' }],
+        range: { startDate: '2026-04-01', endDate: '2026-04-30' },
+        transactions: [],
+        summary: { rows: [], totals: { openingBalance: 0, income: 0, expense: 0, closingBalance: 0 } },
+      },
+    }), { status: 200 })
+  }
   try {
     const service = await apiServer.ssrLoadModule('/src/services/reportService.js')
-    await assert.rejects(service.getReport(), /Laporan keuangan melalui API belum tersedia/)
-  } finally { await apiServer.close() }
+    const report = await service.getReport({ startDate: '2026-04-01', endDate: '2026-04-30' })
+    assert.equal(calls[0], '/api/public/finance/report?startDate=2026-04-01&endDate=2026-04-30')
+    assert.deepEqual(report.months, ['2026-04'])
+  } finally { globalThis.fetch = originalFetch; await apiServer.close() }
 })
