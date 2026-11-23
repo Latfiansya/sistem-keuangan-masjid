@@ -1,16 +1,6 @@
 import { defaultAdminSettingsRepository } from '../repositories/adminSettingsRepository.js'
 import { createHttpError } from '../utils/httpError.js'
-
-function hasControlChars(value, allowMultiline = false) {
-  return [...String(value)].some((character) => {
-    const code = character.codePointAt(0)
-    if (code === 127) return true
-    if (code < 32) {
-      return !(allowMultiline && (code === 9 || code === 10 || code === 13))
-    }
-    return false
-  })
-}
+import { hasControlChars } from '../utils/textValidation.js'
 
 const AGENDA_FREQUENCY_MAP = new Map([
   ['weekly', { groupId: 'weekly', dbValue: 'Mingguan' }],
@@ -97,6 +87,24 @@ function isDuplicateAgendaItem(agendaData, { name, groupId }, excludeId = null) 
       String(item.id) !== String(excludeId ?? '') &&
       String(item.name || '').trim().toLowerCase() === normalizedName
   )
+}
+
+// Teks opsional: dikembalikan dalam bentuk ter-trim; kosong berarti dihapus dari database.
+function validateOptionalText(value, label, max, allowMultiline = false) {
+  const text = value ?? ''
+  if (typeof text !== 'string' || text.trim().length > max || hasControlChars(text, allowMultiline)) {
+    throw createHttpError(400, 'BAD_REQUEST', `${label} tidak valid atau melebihi ${max} karakter.`)
+  }
+  return text.trim()
+}
+
+// Bilangan bulat opsional: null atau string kosong berarti belum diisi.
+function validateOptionalInteger(value, label, min, max) {
+  if (value === null || value === undefined || value === '') return null
+  if (!Number.isInteger(value) || value < min || value > max) {
+    throw createHttpError(400, 'BAD_REQUEST', `${label} harus berupa bilangan bulat ${min}–${max}.`)
+  }
+  return value
 }
 
 function isValidPhoneFormat(phone) {
@@ -187,17 +195,21 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
         )
       }
 
-      const description = payload.description ?? ''
+      // Field yang tidak dikirim mempertahankan nilai tersimpan agar klien lama tetap aman.
+      const current = await repository.getProfile()
+      const pick = (key) => (payload[key] !== undefined ? payload[key] : current[key])
+
+      const description = pick('description') ?? ''
       if (typeof description !== 'string' || description.length > 1000 || hasControlChars(description, true)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Deskripsi singkat tidak valid atau melebihi 1000 karakter.')
       }
 
-      const address = payload.address ?? ''
+      const address = pick('address') ?? ''
       if (typeof address !== 'string' || address.length > 255 || hasControlChars(address, true)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Alamat tidak valid atau melebihi 255 karakter.')
       }
 
-      const contact = payload.contact ?? ''
+      const contact = pick('contact') ?? ''
       if (typeof contact !== 'string' || contact.length > 20 || hasControlChars(contact, false)) {
         throw createHttpError(400, 'BAD_REQUEST', 'Kontak tidak valid atau melebihi 20 karakter.')
       }
@@ -212,8 +224,17 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
 
       return repository.saveProfile({
         name: payload.name.trim(),
-        description,
-        address,
+        tagline: validateOptionalText(pick('tagline'), 'Tagline', 255, true),
+        description: description.trim(),
+        location: validateOptionalText(pick('location'), 'Lokasi', 100),
+        foundedYear: validateOptionalInteger(pick('foundedYear'), 'Tahun berdiri', 1800, 2100),
+        buildingArea: validateOptionalInteger(pick('buildingArea'), 'Luas bangunan', 0, 1000000),
+        buildingAreaNote: validateOptionalText(pick('buildingAreaNote'), 'Keterangan luas', 255, true),
+        capacity: validateOptionalInteger(pick('capacity'), 'Kapasitas jamaah', 0, 1000000),
+        capacityNote: validateOptionalText(pick('capacityNote'), 'Keterangan kapasitas', 255, true),
+        vision: validateOptionalText(pick('vision'), 'Visi', 255, true),
+        managementPeriod: validateOptionalText(pick('managementPeriod'), 'Periode pengurus', 20),
+        address: address.trim(),
         contact: trimmedContact,
       }, auditUserId)
     },
@@ -432,11 +453,25 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
         throw createHttpError(400, 'BAD_REQUEST', 'Status visibilitas laporan publik harus berupa boolean.')
       }
 
+      const pick = (key) => (payload[key] !== undefined ? payload[key] : current[key])
+      const phone = validateOptionalText(pick('phone'), 'Nomor telepon', 20)
+      if (phone && !isValidPhoneFormat(phone)) {
+        throw createHttpError(
+          400,
+          'BAD_REQUEST',
+          'Masukkan nomor telepon dengan 8–15 digit; tanda + di awal, spasi, kurung, titik atau tanda hubung diperbolehkan.'
+        )
+      }
+
       return repository.saveWebsiteSettings({
         whatsapp: trimmedWhatsapp,
         email: trimmedEmail,
-        address,
+        address: address.trim(),
         mapsUrl: trimmedMapsUrl,
+        phone,
+        phoneNote: validateOptionalText(pick('phoneNote'), 'Keterangan telepon', 100),
+        hours: validateOptionalText(pick('hours'), 'Jam operasional', 150),
+        mapLabel: validateOptionalText(pick('mapLabel'), 'Label peta', 100),
         publicReportEnabled,
       }, auditUserId)
     },

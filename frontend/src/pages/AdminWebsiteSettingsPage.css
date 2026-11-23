@@ -10,6 +10,7 @@
 .admin-settings-form h3 { display: flex; align-items: center; gap: 12px; margin: 0 0 2px; color: #34465f; font-size: 18px; font-weight: 700; line-height: 1.5; }
 .admin-settings-form h3 svg { color: #00a775; }
 .admin-settings-field { min-width: 0; }
+.admin-settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .admin-settings-field label { display: block; margin-bottom: 6px; color: #34465f; font-size: 14px; font-weight: 600; line-height: 1.5; }
 .admin-settings-field input, .admin-settings-field textarea { display: block; width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid #e1e9f4; border-radius: 14px; color: #253247; background: #f7f9fc; font: inherit; font-size: 14px; line-height: 1.5; }
 .admin-settings-field input::placeholder { color: #8794a7; opacity: 1; }
@@ -35,6 +36,7 @@
   .admin-settings-field input, .admin-settings-field textarea { min-height: 44px; font-size: 16px; }
 }
 @media (max-width: 479px) {
+  .admin-settings-grid { grid-template-columns: minmax(0, 1fr); }
   .admin-settings { gap: 20px; }
   .admin-settings-heading { align-items: flex-start; flex-direction: column; gap: 18px; }
   .admin-settings-heading h2 { font-size: 28px; }

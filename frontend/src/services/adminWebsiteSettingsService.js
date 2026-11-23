@@ -16,9 +16,15 @@ export async function getAdminWebsiteSettings({ signal } = {}) {
     email: '',
     address: mockPublicContent.address,
     mapsUrl: mockPublicContent.contact.location.verified ? mockPublicContent.contact.location.url || '' : '',
+    phone: '',
+    phoneNote: '',
+    hours: '',
+    mapLabel: '',
     publicReportEnabled: true,
   }
 }
+
+const isValidPhone = (value) => /^\+?[\d ().-]+$/.test(value) && /^\d{8,15}$/.test(value.replace(/\D/g, ''))
 
 export async function saveAdminWebsiteSettings(values, { signal } = {}) {
   if (dataSource === 'mock') return { ...values }
@@ -29,16 +35,22 @@ export async function saveAdminWebsiteSettings(values, { signal } = {}) {
       email: values.email || '',
       address: values.address || '',
       mapsUrl: values.mapsUrl || '',
+      phone: String(values.phone ?? '').trim(),
+      phoneNote: String(values.phoneNote ?? '').trim(),
+      hours: String(values.hours ?? '').trim(),
+      mapLabel: String(values.mapLabel ?? '').trim(),
       publicReportEnabled: values.publicReportEnabled === true,
     },
     signal,
   })
 }
 
-export function validateAdminWebsiteSettings({ whatsapp, email, mapsUrl }) {
+export function validateAdminWebsiteSettings({ whatsapp, email, mapsUrl, phone = '' }) {
   const errors = {}
-  const phone = whatsapp.trim()
-  if (phone && (!/^\+?[\d ().-]+$/.test(phone) || !/^\d{8,15}$/.test(phone.replace(/\D/g, '')))) errors.whatsapp = 'Masukkan nomor WhatsApp dengan 8–15 digit; gunakan tanda + hanya di awal.'
+  const whatsappValue = whatsapp.trim()
+  if (whatsappValue && !isValidPhone(whatsappValue)) errors.whatsapp = 'Masukkan nomor WhatsApp dengan 8–15 digit; gunakan tanda + hanya di awal.'
+  const phoneValue = String(phone ?? '').trim()
+  if (phoneValue && !isValidPhone(phoneValue)) errors.phone = 'Masukkan nomor telepon dengan 8–15 digit; tanda + di awal, spasi, kurung, titik atau tanda hubung diperbolehkan.'
   if (email.trim() && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || Array.from(email).some((character) => character.charCodeAt(0) < 32 || character.charCodeAt(0) === 127))) errors.email = 'Masukkan alamat email yang valid.'
   if (mapsUrl.trim()) {
     try {

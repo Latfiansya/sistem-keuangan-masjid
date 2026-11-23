@@ -64,16 +64,20 @@ Prefix default `/api` dapat dikonfigurasi melalui `API_BASE_PATH` di environment
 | POST | `/api/admin/transactions` | Menambah transaksi pemasukan/pengeluaran baru dengan validasi sisi server | Objek transaksi baru (`201`) |
 | PUT | `/api/admin/transactions/:id` | Mengubah data transaksi berdasarkan ID | Objek transaksi yang diperbarui (`200`) |
 | DELETE | `/api/admin/transactions/:id` | Menghapus transaksi berdasarkan ID | `{ "deletedId" }` |
-| GET | `/api/admin/profile` | Membaca data profil masjid untuk formulir admin | `{ "name", "description", "address", "contact" }` |
-| PUT | `/api/admin/profile` | Memvalidasi dan menyimpan perubahan profil masjid | `{ "name", "description", "address", "contact" }` |
+| GET | `/api/admin/profile` | Membaca profil masjid (`m_profil_masjid`) beserta alamat & telepon (`m_pengaturan_website`) untuk formulir admin | `{ "name", "tagline", "description", "location", "foundedYear", "buildingArea", "buildingAreaNote", "capacity", "capacityNote", "vision", "managementPeriod", "address", "contact", "photoPath" }` |
+| PUT | `/api/admin/profile` | Memvalidasi dan menyimpan profil masjid; field yang tidak dikirim mempertahankan nilai tersimpan. `contact` disimpan ke kolom `telepon` | Objek profil yang sama dengan GET |
+| GET | `/api/admin/profile-content` | Daftar misi, program, sejarah, dan pengurus (termasuk yang disembunyikan) | `{ "missions", "programs", "history", "officers" }` |
+| POST | `/api/admin/profile-content/:section` | Menambah item pada `section` = `missions` \| `programs` \| `history` \| `officers` | Objek item baru (`201`) |
+| PUT | `/api/admin/profile-content/:section/:id` | Mengubah item konten profil | Objek item yang diperbarui (`200`) |
+| DELETE | `/api/admin/profile-content/:section/:id` | Menghapus item konten profil | `{ "deletedId" }` |
 | GET | `/api/admin/agenda` | Daftar kelompok kegiatan beserta ringkasan `counts` (`total`, `weekly`, `monthly`, `yearly`) | `{ "description", "groups", "counts" }` |
 | POST | `/api/admin/agenda` | Menambah kegiatan agenda baru pada `m_agenda` dengan validasi frekuensi & nama unik per frekuensi | Objek agenda baru (`201`) |
 | PUT | `/api/admin/agenda/:id` | Mengubah nama, frekuensi, jadwal, keterangan, urutan, atau status aktif agenda | Objek agenda yang diperbarui (`200`) |
 | DELETE | `/api/admin/agenda/:id` | Menghapus agenda kegiatan berdasarkan ID | `{ "deletedId" }` |
 | GET | `/api/admin/donation-settings` | Membaca konfigurasi donasi (QRIS, rekening bank, WhatsApp) dari `m_pengaturan_website` beserta `readiness` | Objek pengaturan donasi + `readiness` |
 | PUT | `/api/admin/donation-settings` | Memvalidasi dan menyimpan pengaturan rekening bank, nomor WhatsApp, dan QRIS ke `m_pengaturan_website` | Objek pengaturan donasi ternormalisasi + `readiness` |
-| GET | `/api/admin/website-settings` | Membaca pengaturan WhatsApp, email, alamat, Google Maps, dan visibilitas laporan | Objek pengaturan website |
-| PUT | `/api/admin/website-settings` | Memvalidasi dan menyimpan pengaturan kontak & website (termasuk validasi HTTPS Google Maps) | Objek pengaturan website yang diperbarui |
+| GET | `/api/admin/website-settings` | Membaca pengaturan WhatsApp, email, alamat, Google Maps, telepon, keterangan telepon, jam operasional, label peta, dan visibilitas laporan | `{ "whatsapp", "email", "address", "mapsUrl", "phone", "phoneNote", "hours", "mapLabel", "publicReportEnabled" }` |
+| PUT | `/api/admin/website-settings` | Memvalidasi dan menyimpan pengaturan kontak & website (HTTPS Google Maps, telepon 8–15 digit); field yang tidak dikirim dipertahankan | Objek pengaturan website yang diperbarui |
 | GET | `/api/admin/accounts` | Daftar akun pengurus beserta pencarian `?query=` | `{ "accounts", "totalCount", "filteredCount" }` |
 | POST | `/api/admin/accounts` | Menambah akun pengurus baru (`bcrypt` cost 12); dibatasi `Super Admin` jika sedang login | Objek akun aman tanpa `password` (`201`) |
 | PUT | `/api/admin/accounts/:id` | Mengubah nama, email, role, status, atau password baru akun pengurus; dibatasi `Super Admin` | Objek akun aman tanpa `password` (`200`) |
@@ -227,3 +231,16 @@ Penjumlahan aktual cocok dengan audit. Resume Blade salah menuliskan pengeluaran
 Preset mock menggunakan acuan 30 April 2026: 1w = 24–30 April; 1m = 1–30 April; 3m = 1 Februari–30 April (unavailable). Draft kustom berlaku setelah Terapkan. Pilihan bulan menggunakan awal/akhir bulan kalender. Tidak ada filter kategori atau sorting. M1.6a memakai hasil getReport yang sama untuk pilihan format dan pratinjau PDF/PNG di frontend, tanpa kebutuhan endpoint atau perubahan payload. M1.6b merender lembar yang sama menjadi PDF atau PNG/ZIP sepenuhnya di browser, tanpa permintaan data baru, upload, endpoint ekspor atau perubahan kontrak HTTP.
 
 Endpoint GET `/api/public/finance/report?startDate=2026-04-01&endDate=2026-04-30` mengembalikan envelope proyek dengan data berbentuk hasil `getReport` di atas, termasuk saldo awal sesuai rentang dan ringkasan yang konsisten dengan transaksi. Jika `startDate` dan `endDate` sama-sama tidak dikirim, backend memakai rentang cakupan default (1–30 April 2026); jika hanya salah satu dikirim, format tanggal kalender tidak valid, terbalik, atau melebihi batas 366 hari, backend mengembalikan HTTP 400 `BAD_REQUEST`. Rentang valid di luar cakupan mengembalikan HTTP 200 dengan `status: "unavailable"`, `transactions: []`, dan `summary: null`. Sumber database PostgreSQL serta endpoint pengurus/CRUD akan dihubungkan pada fase berikutnya. Gate sandi tetap hanya pembatas antarmuka dan tidak melindungi endpoint laporan tanpa autentikasi.
+
+## Konten profil admin — fitur/konten-profil-admin
+
+Item tiap `section` memiliki `id` (string) dan `order` (bilangan bulat 0–32767, default 0). Teks di-trim; teks opsional yang kosong disimpan sebagai `NULL` dan dikembalikan sebagai string kosong. Batas panjang mengikuti kolom tabel `keu_masjid`.
+
+| Section | Tabel | Field (wajib *) |
+| --- | --- | --- |
+| `missions` | `m_misi_masjid` | `text`* (≤255), `order` |
+| `programs` | `m_program_masjid` | `title`* (≤100), `description`* (≤500), `order`, `active` (boolean, default true) |
+| `history` | `m_sejarah_masjid` | `year`* (1800–2100), `era` (≤50), `placeName` (≤150), `title`* (≤150), `description` (≤2000), `order` |
+| `officers` | `m_pengurus` | `name`* (≤150), `role`* (≤50), `note` (≤150), `order`, `active` (boolean, default true) |
+
+Section tidak dikenal atau ID tidak ditemukan menghasilkan `404 NOT_FOUND`; payload tidak valid menghasilkan `400 BAD_REQUEST`. Setiap perubahan tercatat otomatis di `t_activity_log` (modul `Konten`) melalui trigger database. Pengurus tidak memakai foto (halaman publik menampilkan inisial), sehingga kolom `m_pengurus.foto_path` sengaja tidak diekspos.

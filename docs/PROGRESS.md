@@ -1373,3 +1373,28 @@ Status: implementasi selesai dan tervalidasi pada branch `fitur/backend-admin`; 
 - **Catatan Database yang masih perlu dilengkapi tim DB**: beberapa kolom/data bisnis masih kosong (`bank_no_rekening`, `nomor_whatsapp`, `kode_akses_laporan`, `laporan_publik_aktif=false`), role akun `id=2` (`Super Admin`) masih bertipe `Admin`, file `/images/qris-donasi.png` belum ada di aset publik frontend, serta beberapa kolom UI belum tersedia di tabel PostgreSQL (`warna` kategori, `personName`/`notes`/`showDonorNamePublic` transaksi, `messageTemplate`/`donationNote` + toggle terpisah donasi, endpoint `t_kwitansi`, dan endpoint upload file gambar).
 
 Usulan pesan commit: `feat: hubungkan service frontend dan crud admin ke backend api`.
+
+## Konten Profil Admin & Kelengkapan Profil/Kontak (23 November 2026)
+
+Status: implementasi selesai dan tervalidasi pada branch `fitur/konten-profil-admin`; menunggu peninjauan dan commit manual oleh pengguna. Skema database tidak diubah dan tidak ada data yang ditulis ke database tim.
+
+### Implementasi
+
+- **Backend**: endpoint baru `GET /api/admin/profile-content` serta `POST/PUT/DELETE /api/admin/profile-content/:section[/:id]` untuk `m_misi_masjid`, `m_program_masjid`, `m_sejarah_masjid`, dan `m_pengurus` (controller/service/repository `profileContent*`). Helper `hasControlChars` dipindah ke `utils/textValidation.js`.
+- **Profil Masjid**: `GET/PUT /api/admin/profile` kini mencakup tagline, deskripsi, lokasi, tahun berdiri, luas & keterangan, kapasitas & keterangan, visi, dan periode pengurus. Perbaikan: sebelumnya formulir menampilkan `tagline` tetapi menyimpan ke `deskripsi`, dan field Kontak menyimpan ke `nomor_whatsapp`. Kini setiap field memakai kolomnya sendiri dan Kontak/Telepon disimpan ke `telepon`.
+- **Kontak & Pengaturan**: menambah `telepon`, `keterangan_telepon`, `jam_operasional`, dan `label_peta`. Kolom `latitude`/`longitude` sengaja tidak dikelola dari admin.
+- **Frontend**: halaman `/admin/konten-profil`, service `adminProfileContentService` (mode mock di memori dan mode API), serta field baru pada Profil Masjid dan Kontak & Pengaturan.
+
+### Verifikasi
+
+- Backend `npm run lint` dan `npm test`: **PASS** (49 test).
+- Frontend `npm run lint`: 0 error (1 peringatan lama di `admin-report-download.browser.test.js`). `npm test`: **PASS** (132 lulus, 11 suite browser dilewati). `npm run build`: **PASS**.
+- Seluruh SQL baru dicek ke `db_keuangan_masjid_dev` dalam sesi read-only: pembacaan dijalankan langsung, 15 query tulis hanya divalidasi dengan `EXPLAIN` lalu di-ROLLBACK. Jumlah `t_activity_log` tetap 69.
+
+### Batasan
+
+- Unggah logo dan foto masjid belum tersedia (butuh endpoint unggah berkas). Pengurus memang tidak memakai foto; kartu publik menampilkan inisial.
+- Peta publik memang memakai `link_gmaps`; `latitude`/`longitude` tidak dipakai halaman publik maupun admin.
+- Tampilan belum diuji manual di browser terhadap API langsung.
+
+Usulan pesan commit: `feat: tambah kelola konten profil dan lengkapi field profil serta kontak admin`.

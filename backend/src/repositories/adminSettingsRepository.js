@@ -2,6 +2,49 @@ import { getDefaultDatabasePool, withDatabaseTransaction } from '../config/datab
 import { mapPgErrorToHttpError, resolveAuditPenggunaId } from '../utils/financeMapping.js'
 import { createAgendaRepository } from './agendaRepository.js'
 
+function toNullableNumber(value) {
+  return value === null || value === undefined ? null : Number(value)
+}
+
+function formatProfile(profil, settings) {
+  return {
+    name: profil?.nama_masjid || '',
+    tagline: profil?.tagline || '',
+    description: profil?.deskripsi || '',
+    location: profil?.lokasi || '',
+    foundedYear: toNullableNumber(profil?.tahun_berdiri),
+    buildingArea: toNullableNumber(profil?.luas_bangunan_m2),
+    buildingAreaNote: profil?.keterangan_luas || '',
+    capacity: toNullableNumber(profil?.kapasitas_jamaah),
+    capacityNote: profil?.keterangan_kapasitas || '',
+    vision: profil?.visi || '',
+    managementPeriod: profil?.periode_pengurus || '',
+    address: settings?.alamat_lengkap || '',
+    contact: settings?.telepon || '',
+    photoPath: profil?.foto_path || null,
+  }
+}
+
+const PROFILE_COLUMNS = `nama_masjid, tagline, deskripsi, lokasi, tahun_berdiri, luas_bangunan_m2, keterangan_luas,
+                kapasitas_jamaah, keterangan_kapasitas, visi, periode_pengurus, foto_path`
+
+function formatWebsiteSettings(row) {
+  return {
+    whatsapp: row?.nomor_whatsapp || '',
+    email: row?.email_pengurus || '',
+    address: row?.alamat_lengkap || '',
+    mapsUrl: row?.link_gmaps || '',
+    phone: row?.telepon || '',
+    phoneNote: row?.keterangan_telepon || '',
+    hours: row?.jam_operasional || '',
+    mapLabel: row?.label_peta || '',
+    publicReportEnabled: row ? row.laporan_publik_aktif === true : true,
+  }
+}
+
+const WEBSITE_SETTINGS_COLUMNS = `laporan_publik_aktif, nomor_whatsapp, email_pengurus, alamat_lengkap, link_gmaps,
+                telepon, keterangan_telepon, jam_operasional, label_peta`
+
 // Data access layer profil masjid, agenda, donasi, dan pengaturan website pengurus menggunakan PostgreSQL.
 export function createAdminSettingsRepository(db = getDefaultDatabasePool()) {
   const agendaRepository = createAgendaRepository(db)
@@ -10,29 +53,20 @@ export function createAdminSettingsRepository(db = getDefaultDatabasePool()) {
     async getProfile() {
       const [profilRes, settingsRes] = await Promise.all([
         db.query(
-          `SELECT id, nama_masjid, deskripsi, foto_path, lokasi, tagline
+          `SELECT ${PROFILE_COLUMNS}
            FROM keu_masjid.m_profil_masjid
            WHERE id = 1
            LIMIT 1`
         ),
         db.query(
-          `SELECT id, alamat_lengkap, nomor_whatsapp, telepon
+          `SELECT alamat_lengkap, telepon
            FROM keu_masjid.m_pengaturan_website
            WHERE id = 1
            LIMIT 1`
         ),
       ])
 
-      const profil = profilRes.rows[0]
-      const settings = settingsRes.rows[0]
-
-      return {
-        name: profil?.nama_masjid || '',
-        description: profil?.tagline || profil?.deskripsi || '',
-        address: settings?.alamat_lengkap || '',
-        contact: settings?.telepon || settings?.nomor_whatsapp || '',
-        photoPath: profil?.foto_path || null,
-      }
+      return formatProfile(profilRes.rows[0], settingsRes.rows[0])
     },
 
     async saveProfile(nextProfile, auditUserId = null) {
@@ -41,34 +75,56 @@ export function createAdminSettingsRepository(db = getDefaultDatabasePool()) {
           const userId = auditUserId ? Number(auditUserId) : await resolveAuditPenggunaId(client)
           await client.query("SELECT set_config('app.user_id', $1, true)", [String(userId)])
 
-          await client.query(
-            `INSERT INTO keu_masjid.m_profil_masjid (id, nama_masjid, deskripsi, created_by)
-             VALUES (1, $1, $2, $3)
+          const profilRes = await client.query(
+            `INSERT INTO keu_masjid.m_profil_masjid (
+               id, nama_masjid, tagline, deskripsi, lokasi, tahun_berdiri, luas_bangunan_m2, keterangan_luas,
+               kapasitas_jamaah, keterangan_kapasitas, visi, periode_pengurus, created_by
+             )
+             VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
              ON CONFLICT (id) DO UPDATE
              SET nama_masjid = EXCLUDED.nama_masjid,
+                 tagline = EXCLUDED.tagline,
                  deskripsi = EXCLUDED.deskripsi,
+                 lokasi = EXCLUDED.lokasi,
+                 tahun_berdiri = EXCLUDED.tahun_berdiri,
+                 luas_bangunan_m2 = EXCLUDED.luas_bangunan_m2,
+                 keterangan_luas = EXCLUDED.keterangan_luas,
+                 kapasitas_jamaah = EXCLUDED.kapasitas_jamaah,
+                 keterangan_kapasitas = EXCLUDED.keterangan_kapasitas,
+                 visi = EXCLUDED.visi,
+                 periode_pengurus = EXCLUDED.periode_pengurus,
                  updated_at = CURRENT_TIMESTAMP,
-                 updated_by = $3`,
-            [nextProfile.name, nextProfile.description, userId]
+                 updated_by = $12
+             RETURNING ${PROFILE_COLUMNS}`,
+            [
+              nextProfile.name,
+              nextProfile.tagline || null,
+              nextProfile.description || null,
+              nextProfile.location || null,
+              nextProfile.foundedYear,
+              nextProfile.buildingArea,
+              nextProfile.buildingAreaNote || null,
+              nextProfile.capacity,
+              nextProfile.capacityNote || null,
+              nextProfile.vision || null,
+              nextProfile.managementPeriod || null,
+              userId,
+            ]
           )
 
-          await client.query(
-            `INSERT INTO keu_masjid.m_pengaturan_website (id, alamat_lengkap, nomor_whatsapp, created_by)
+          const settingsRes = await client.query(
+            `INSERT INTO keu_masjid.m_pengaturan_website (id, alamat_lengkap, telepon, created_by)
              VALUES (1, $1, $2, $3)
              ON CONFLICT (id) DO UPDATE
              SET alamat_lengkap = EXCLUDED.alamat_lengkap,
-                 nomor_whatsapp = EXCLUDED.nomor_whatsapp,
+                 telepon = EXCLUDED.telepon,
                  updated_at = CURRENT_TIMESTAMP,
-                 updated_by = $3`,
+                 updated_by = $3
+             RETURNING alamat_lengkap, telepon`,
             [nextProfile.address || null, nextProfile.contact || null, userId]
           )
 
-          return {
-            name: nextProfile.name,
-            description: nextProfile.description,
-            address: nextProfile.address,
-            contact: nextProfile.contact,
-          }
+          return formatProfile(profilRes.rows[0], settingsRes.rows[0])
         })
       } catch (error) {
         throw mapPgErrorToHttpError(error)
@@ -170,21 +226,13 @@ export function createAdminSettingsRepository(db = getDefaultDatabasePool()) {
 
     async getWebsiteSettings() {
       const { rows } = await db.query(
-        `SELECT id, laporan_publik_aktif, nomor_whatsapp, email_pengurus,
-                alamat_lengkap, link_gmaps
+        `SELECT ${WEBSITE_SETTINGS_COLUMNS}
          FROM keu_masjid.m_pengaturan_website
          WHERE id = 1
          LIMIT 1`
       )
 
-      const row = rows[0]
-      return {
-        whatsapp: row?.nomor_whatsapp || '',
-        email: row?.email_pengurus || '',
-        address: row?.alamat_lengkap || '',
-        mapsUrl: row?.link_gmaps || '',
-        publicReportEnabled: row ? row.laporan_publik_aktif === true : true,
-      }
+      return formatWebsiteSettings(rows[0])
     },
 
     async saveWebsiteSettings(nextSettings, auditUserId = null) {
@@ -195,36 +243,38 @@ export function createAdminSettingsRepository(db = getDefaultDatabasePool()) {
 
           const res = await client.query(
             `INSERT INTO keu_masjid.m_pengaturan_website (
-               id, nomor_whatsapp, email_pengurus, alamat_lengkap, link_gmaps, laporan_publik_aktif, created_by
+               id, nomor_whatsapp, email_pengurus, alamat_lengkap, link_gmaps, laporan_publik_aktif,
+               telepon, keterangan_telepon, jam_operasional, label_peta, created_by
              )
-             VALUES (1, $1, $2, $3, $4, $5, $6)
+             VALUES (1, $1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
              ON CONFLICT (id) DO UPDATE
              SET nomor_whatsapp = EXCLUDED.nomor_whatsapp,
                  email_pengurus = EXCLUDED.email_pengurus,
                  alamat_lengkap = EXCLUDED.alamat_lengkap,
                  link_gmaps = EXCLUDED.link_gmaps,
                  laporan_publik_aktif = EXCLUDED.laporan_publik_aktif,
+                 telepon = EXCLUDED.telepon,
+                 keterangan_telepon = EXCLUDED.keterangan_telepon,
+                 jam_operasional = EXCLUDED.jam_operasional,
+                 label_peta = EXCLUDED.label_peta,
                  updated_at = CURRENT_TIMESTAMP,
-                 updated_by = $6
-             RETURNING nomor_whatsapp, email_pengurus, alamat_lengkap, link_gmaps, laporan_publik_aktif`,
+                 updated_by = $10
+             RETURNING ${WEBSITE_SETTINGS_COLUMNS}`,
             [
               nextSettings.whatsapp || null,
               nextSettings.email || null,
               nextSettings.address || null,
               nextSettings.mapsUrl || null,
               nextSettings.publicReportEnabled,
+              nextSettings.phone || null,
+              nextSettings.phoneNote || null,
+              nextSettings.hours || null,
+              nextSettings.mapLabel || null,
               userId,
             ]
           )
 
-          const row = res.rows[0]
-          return {
-            whatsapp: row.nomor_whatsapp || '',
-            email: row.email_pengurus || '',
-            address: row.alamat_lengkap || '',
-            mapsUrl: row.link_gmaps || '',
-            publicReportEnabled: row.laporan_publik_aktif === true,
-          }
+          return formatWebsiteSettings(res.rows[0])
         })
       } catch (error) {
         throw mapPgErrorToHttpError(error)

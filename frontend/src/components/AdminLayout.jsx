@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
-import { ArrowRightLeft, Building2, CalendarDays, ClipboardList, Contact, FileText, Folder, HandHeart, KeyRound, LayoutDashboard, LogOut, Menu, Receipt, Users, X } from 'lucide-react'
+import { ArrowRightLeft, Building2, CalendarDays, ClipboardList, Contact, FileText, Folder, HandHeart, KeyRound, LayoutDashboard, LayoutList, LogOut, Menu, Receipt, Users, X } from 'lucide-react'
 import { getAdminSession, logoutAdmin } from '../services/adminAuthService.js'
 import { deleteApiAdminCategory, deleteMockAdminCategory, saveApiAdminCategory, saveMockAdminCategory } from '../services/adminCategoryService.js'
 import { getAdminDashboard } from '../services/adminDashboardService.js'
@@ -28,6 +28,7 @@ const navigation = [
   ] },
   { label: 'Konten Website', items: [
     { label: 'Profil Masjid', icon: Building2, to: '/admin/profil-masjid' },
+    { label: 'Konten Profil', title: 'Konten Profil Masjid', icon: LayoutList, to: '/admin/konten-profil' },
     { label: 'Agenda', icon: CalendarDays, to: '/admin/agenda' },
     { label: 'Kontak & Pengaturan', title: 'Kontak & Pengaturan Website', icon: Contact, to: '/admin/kontak-pengaturan' },
     { label: 'Donasi', icon: HandHeart, to: '/admin/donasi' },

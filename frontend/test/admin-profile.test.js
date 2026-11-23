@@ -28,7 +28,23 @@ after(async () => { await server?.close() })
 test('profil admin mengambil salinan field publik dan tidak mengarang nomor kontak', async () => {
   const before = structuredClone(source)
   const profile = await getAdminProfile()
-  assert.deepEqual(profile, { name: source.name, description: source.heroDescription, address: source.address, contact: '' })
+  const area = source.statistics.find((item) => item.id === 'area')
+  const capacity = source.statistics.find((item) => item.id === 'capacity')
+  assert.deepEqual(profile, {
+    name: source.name,
+    tagline: source.heroDescription,
+    description: source.profile.introduction,
+    location: source.profile.location,
+    foundedYear: source.profile.foundedYear,
+    buildingArea: area.amount,
+    buildingAreaNote: area.description,
+    capacity: capacity.amount,
+    capacityNote: capacity.description,
+    vision: source.vision,
+    managementPeriod: source.profile.managementPeriod,
+    address: source.address,
+    contact: '',
+  })
   profile.name = 'Nama untuk review'
   profile.description = 'Deskripsi baru'
   profile.address = 'Alamat baru'
@@ -49,6 +65,17 @@ test('validasi nama wajib dan kontak opsional mendukung format telepon yang lazi
   for (const contact of ['nomor belum ada', '123', '1234567890123456', '0812+34567890', '0812\n34567890', '<script>']) {
     assert.match(validateAdminProfile({ name: 'Masjid', contact }).contact, /8–15 digit/)
   }
+})
+
+test('validasi tahun berdiri, luas, kapasitas, dan periode pengurus mengikuti batas database', () => {
+  const base = { name: 'Masjid', contact: '' }
+  assert.deepEqual(validateAdminProfile({ ...base, foundedYear: '1980', buildingArea: '265', capacity: 290, managementPeriod: '2023–2026' }), {})
+  assert.deepEqual(validateAdminProfile({ ...base, foundedYear: '', buildingArea: null, capacity: undefined }), {})
+  assert.match(validateAdminProfile({ ...base, foundedYear: '1799' }).foundedYear, /1800–2100/)
+  assert.match(validateAdminProfile({ ...base, foundedYear: '1980.5' }).foundedYear, /bilangan bulat/)
+  assert.match(validateAdminProfile({ ...base, buildingArea: '-1' }).buildingArea, /0–1000000/)
+  assert.match(validateAdminProfile({ ...base, capacity: 'banyak' }).capacity, /bilangan bulat/)
+  assert.match(validateAdminProfile({ ...base, managementPeriod: 'x'.repeat(21) }).managementPeriod, /20 karakter/)
 })
 
 test('foto hanya menerima satu JPG/PNG/WebP dengan ekstensi dan MIME sesuai, tidak kosong dan maksimal 5 MB', () => {
@@ -81,8 +108,11 @@ test('mode API mengambil dan menyimpan profil masjid ke /api/admin/profile', asy
     const service = await api.ssrLoadModule('/src/services/adminProfileService.js')
     const loaded = await service.getAdminProfile()
     assert.equal(loaded.name, 'Masjid API')
-    const saved = await service.saveAdminProfile({ ...loaded, name: 'Masjid Baru' })
+    const saved = await service.saveAdminProfile({ ...loaded, name: 'Masjid Baru', foundedYear: '1980', buildingArea: '', capacity: '290' })
     assert.equal(saved.name, 'Masjid Baru')
+    assert.equal(saved.foundedYear, 1980)
+    assert.equal(saved.buildingArea, null)
+    assert.equal(saved.capacity, 290)
     assert.deepEqual(calls.map((c) => [c.init.method, c.url]), [['GET', '/api/admin/profile'], ['PUT', '/api/admin/profile']])
   } finally { globalThis.fetch = originalFetch; await api.close() }
 })
