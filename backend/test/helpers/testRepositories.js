@@ -140,9 +140,19 @@ export function createTestRepositories() {
 
   let adminProfile = {
     name: 'Masjid Al-Hidayah',
-    description: 'Pusat ibadah dan kegiatan umat.',
+    tagline: 'Pusat ibadah dan kegiatan umat.',
+    description: 'Sejarah dan struktur kepengurusan masjid.',
+    location: 'Sorolaten',
+    foundedYear: 1980,
+    buildingArea: 265,
+    buildingAreaNote: '',
+    capacity: 290,
+    capacityNote: '',
+    vision: 'Menjadi pusat ibadah dan pembinaan masyarakat.',
+    managementPeriod: '2023–2026',
     address: 'Sorolaten, Sidokarto, Godean, Sleman',
     contact: '',
+    photoPath: null,
   }
 
   let websiteSettings = {
@@ -150,7 +160,22 @@ export function createTestRepositories() {
     email: '',
     address: 'Sorolaten, Sidokarto, Godean, Sleman',
     mapsUrl: '',
+    phone: '',
+    phoneNote: '',
+    hours: '',
+    mapLabel: '',
     publicReportEnabled: true,
+  }
+
+  let nextProfileContentSeq = 100
+  const profileContent = {
+    missions: [
+      { id: '1', text: 'Menyelenggarakan ibadah rutin', order: 1 },
+      { id: '2', text: 'Menjaga transparansi dana umat', order: 2 },
+    ],
+    programs: [{ id: '1', title: 'Kajian Rutin', description: 'Kajian pekanan bersama warga.', order: 1, active: true }],
+    history: [{ id: '1', year: 1980, era: 'Era Perintisan', placeName: 'Mushola Al Qodar', title: 'Awal Mula', description: 'Didirikan warga.', order: 1 }],
+    officers: [{ id: '1', name: 'Pengurus Satu', role: 'KETUA', note: '', order: 1, active: true }],
   }
 
   let donationSettings = {
@@ -463,6 +488,30 @@ export function createTestRepositories() {
       async saveWebsiteSettings(next) {
         websiteSettings = structuredClone(next)
         return structuredClone(websiteSettings)
+      },
+    },
+    profileContentRepository: {
+      async findAll() {
+        return structuredClone(profileContent)
+      },
+      async insert(section, values) {
+        const created = {
+          id: String(nextProfileContentSeq++),
+          ...Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value ?? ''])),
+        }
+        profileContent[section].push(created)
+        return structuredClone(created)
+      },
+      async updateById(section, id, values) {
+        const target = profileContent[section].find((item) => item.id === String(id))
+        if (!target) return null
+        Object.assign(target, Object.fromEntries(Object.entries(values).map(([key, value]) => [key, value ?? ''])))
+        return structuredClone(target)
+      },
+      async deleteById(section, id) {
+        const before = profileContent[section].length
+        profileContent[section] = profileContent[section].filter((item) => item.id !== String(id))
+        return profileContent[section].length < before
       },
     },
     adminManagementRepository: {

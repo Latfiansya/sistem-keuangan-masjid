@@ -489,3 +489,13 @@ Desain tabel, kategori, lebar area dokumen, A4 landscape, isi dan pagination tet
 Tombol navigasi dan preset di laporan utama mengikuti radius tombol Kembali ke Laporan/Lanjut ke Pratinjau (16 px pada desktop besar, 12 px pada layar ≤1399 px), dengan border 1 px, surface terang dan teks/ikon hijau. Pilih Tanggal aktif tetap hijau solid; tinggi dan ukuran luar tombol sebelumnya dipertahankan. Kontrol unduhan di pemilihan format/pratinjau tidak ikut berubah.
 
 Panel Pemasukan/Pengeluaran memakai kepadatan Detail Periode Admin sebagai acuan: header desktop 72 px, ikon 40 px, judul 20 px, subtotal 24 px, baris minimum 56 px, uraian 14 px dan badge 11 px. Mobile menggunakan header 64 px dan teks membungkus sesuai kebutuhan. Dua kolom desktop, teal/rose, identitas kategori, Resume Saldo dan template ekspor dipertahankan. CSS dibatasi pada laporan utama; hasil PNG tetap identik dengan baseline. Bukti empat viewport tersedia di `tmp/public-report-density-qa/`, tidak di-stage.
+
+## Admin — Konten Profil dan kelengkapan Profil/Kontak (tanpa frame Figma)
+
+Tidak ada frame Figma untuk fitur ini. Atas keputusan pengguna (perancang UI proyek), tampilan mengikuti gaya halaman admin yang sudah ada dan tidak dianggap sebagai frame resmi baru.
+
+- Route `/admin/konten-profil` (menu **Konten Profil** di grup Konten Website, judul Topbar "Konten Profil Masjid"). Heading beraksen oranye seperti Agenda; empat panel putih (Misi, Program Kemakmuran, Sejarah, Pengurus) dengan ikon hijau, jumlah item, tombol hijau "Tambah …", daftar baris abu-abu muda dengan aksi Edit (hijau) dan Hapus (merah) 44 px. Item yang disembunyikan diberi label "Disembunyikan".
+- Dialog tambah/edit/hapus memakai `AdminModalDialog.css` yang sama dengan Agenda dan Kelola Akun. Field dibentuk dari definisi bagian di `adminProfileContentService`.
+- Profil Masjid ditambah field Tagline Beranda, Visi, Lokasi Singkat, Tahun Berdiri, Periode Pengurus, Luas Bangunan + keterangan, Kapasitas Jamaah + keterangan, dengan gaya field yang sama. Label "Kontak" menjadi "Telepon".
+- Kontak & Pengaturan ditambah Nomor Telepon, Keterangan Telepon, Jam Operasional, dan Label Peta. Telepon dan keterangannya memakai grid dua kolom yang menjadi satu kolom pada layar ≤479 px.
+- Mode mock tetap berjalan tanpa backend: perubahan Konten Profil disimpan di memori selama sesi dan hilang saat dimuat ulang.

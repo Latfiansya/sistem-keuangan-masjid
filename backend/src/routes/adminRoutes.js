@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { createAdminFinanceController } from '../controllers/adminFinanceController.js'
 import { createAdminManagementController } from '../controllers/adminManagementController.js'
 import { createAdminSettingsController } from '../controllers/adminSettingsController.js'
+import { createProfileContentController } from '../controllers/profileContentController.js'
 import { createRateLimiter } from '../middlewares/rateLimiter.js'
 import { createRequireAdminAuth } from '../middlewares/requireAdminAuth.js'
 
@@ -9,6 +10,7 @@ export function createAdminRoutes({
   adminFinanceController = createAdminFinanceController(),
   adminSettingsController = createAdminSettingsController(),
   adminManagementController = createAdminManagementController(),
+  profileContentController = createProfileContentController(),
   loginRateLimiter = createRateLimiter(),
   requireAdminAuth = createRequireAdminAuth(),
 } = {}) {
@@ -36,6 +38,11 @@ export function createAdminRoutes({
 
   router.get('/profile', adminSettingsController.getProfile)
   router.put('/profile', adminSettingsController.updateProfile)
+
+  router.get('/profile-content', profileContentController.list)
+  router.post('/profile-content/:section', profileContentController.create)
+  router.put('/profile-content/:section/:id', profileContentController.update)
+  router.delete('/profile-content/:section/:id', profileContentController.remove)
 
   router.get('/agenda', adminSettingsController.getAgenda)
   router.post('/agenda', adminSettingsController.createAgenda)

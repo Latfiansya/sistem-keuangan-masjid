@@ -5,7 +5,7 @@ import { dataSource } from '../utils/env.js'
 import './AdminProfilePage.css'
 
 export default function AdminProfilePage() {
-  const [values, setValues] = useState({ name: '', description: '', address: '', contact: '', photoPath: null })
+  const [values, setValues] = useState({ name: '', tagline: '', description: '', location: '', foundedYear: '', buildingArea: '', buildingAreaNote: '', capacity: '', capacityNote: '', vision: '', managementPeriod: '', address: '', contact: '', photoPath: null })
   const [ready, setReady] = useState(false)
   const [error, setError] = useState('')
   const [submitError, setSubmitError] = useState('')
@@ -120,20 +120,67 @@ export default function AdminProfilePage() {
             {errors.name && <p id="admin-profile-name-error" className="admin-profile-error" role="alert">{errors.name}</p>}
           </div>
           <div className="admin-profile-field">
+            <label htmlFor="admin-profile-tagline">Tagline Beranda</label>
+            <textarea id="admin-profile-tagline" name="tagline" rows={2} maxLength={255} value={values.tagline ?? ''} disabled={saving} onChange={handleChange} aria-describedby="admin-profile-tagline-help" />
+            <p id="admin-profile-tagline-help" className="admin-profile-help">Kalimat singkat di bawah nama masjid pada Beranda. Maksimal 255 karakter.</p>
+          </div>
+          <div className="admin-profile-field">
             <label htmlFor="admin-profile-description">Deskripsi Singkat</label>
-            <textarea id="admin-profile-description" name="description" rows={3} maxLength={1000} value={values.description} disabled={saving} onChange={handleChange} />
+            <textarea id="admin-profile-description" name="description" rows={3} maxLength={1000} value={values.description ?? ''} disabled={saving} onChange={handleChange} aria-describedby="admin-profile-description-help" />
+            <p id="admin-profile-description-help" className="admin-profile-help">Pengantar pada halaman Profil.</p>
+          </div>
+          <div className="admin-profile-field">
+            <label htmlFor="admin-profile-vision">Visi</label>
+            <textarea id="admin-profile-vision" name="vision" rows={2} maxLength={255} value={values.vision ?? ''} disabled={saving} onChange={handleChange} aria-describedby="admin-profile-vision-help" />
+            <p id="admin-profile-vision-help" className="admin-profile-help">Daftar misi, program, sejarah, dan pengurus diatur di menu Konten Profil.</p>
+          </div>
+          <div className="admin-profile-grid">
+            <div className="admin-profile-field">
+              <label htmlFor="admin-profile-location">Lokasi Singkat</label>
+              <input id="admin-profile-location" name="location" maxLength={100} placeholder="Contoh: Sorolaten" value={values.location ?? ''} disabled={saving} onChange={handleChange} />
+            </div>
+            <div className="admin-profile-field">
+              <label htmlFor="admin-profile-foundedYear">Tahun Berdiri</label>
+              <input id="admin-profile-foundedYear" name="foundedYear" type="number" inputMode="numeric" min={1800} max={2100} step={1} value={values.foundedYear ?? ''} disabled={saving} onChange={handleChange} aria-invalid={Boolean(errors.foundedYear)} aria-describedby={errors.foundedYear ? 'admin-profile-foundedYear-error' : undefined} />
+              {errors.foundedYear && <p id="admin-profile-foundedYear-error" className="admin-profile-error" role="alert">{errors.foundedYear}</p>}
+            </div>
+            <div className="admin-profile-field">
+              <label htmlFor="admin-profile-managementPeriod">Periode Pengurus</label>
+              <input id="admin-profile-managementPeriod" name="managementPeriod" maxLength={20} placeholder="Contoh: 2023–2026" value={values.managementPeriod ?? ''} disabled={saving} onChange={handleChange} aria-invalid={Boolean(errors.managementPeriod)} aria-describedby={errors.managementPeriod ? 'admin-profile-managementPeriod-error' : undefined} />
+              {errors.managementPeriod && <p id="admin-profile-managementPeriod-error" className="admin-profile-error" role="alert">{errors.managementPeriod}</p>}
+            </div>
+          </div>
+          <div className="admin-profile-grid admin-profile-grid--stat">
+            <div className="admin-profile-field">
+              <label htmlFor="admin-profile-buildingArea">Luas Bangunan (m²)</label>
+              <input id="admin-profile-buildingArea" name="buildingArea" type="number" inputMode="numeric" min={0} max={1000000} step={1} value={values.buildingArea ?? ''} disabled={saving} onChange={handleChange} aria-invalid={Boolean(errors.buildingArea)} aria-describedby={errors.buildingArea ? 'admin-profile-buildingArea-error' : undefined} />
+              {errors.buildingArea && <p id="admin-profile-buildingArea-error" className="admin-profile-error" role="alert">{errors.buildingArea}</p>}
+            </div>
+            <div className="admin-profile-field">
+              <label htmlFor="admin-profile-buildingAreaNote">Keterangan Luas</label>
+              <textarea id="admin-profile-buildingAreaNote" name="buildingAreaNote" rows={2} maxLength={255} value={values.buildingAreaNote ?? ''} disabled={saving} onChange={handleChange} />
+            </div>
+            <div className="admin-profile-field">
+              <label htmlFor="admin-profile-capacity">Kapasitas Jamaah</label>
+              <input id="admin-profile-capacity" name="capacity" type="number" inputMode="numeric" min={0} max={1000000} step={1} value={values.capacity ?? ''} disabled={saving} onChange={handleChange} aria-invalid={Boolean(errors.capacity)} aria-describedby={errors.capacity ? 'admin-profile-capacity-error' : undefined} />
+              {errors.capacity && <p id="admin-profile-capacity-error" className="admin-profile-error" role="alert">{errors.capacity}</p>}
+            </div>
+            <div className="admin-profile-field">
+              <label htmlFor="admin-profile-capacityNote">Keterangan Kapasitas</label>
+              <textarea id="admin-profile-capacityNote" name="capacityNote" rows={2} maxLength={255} value={values.capacityNote ?? ''} disabled={saving} onChange={handleChange} />
+            </div>
           </div>
           <div className="admin-profile-field">
             <label htmlFor="admin-profile-address">Alamat</label>
             <textarea id="admin-profile-address" name="address" rows={2} maxLength={500} value={values.address} disabled={saving} onChange={handleChange} autoComplete="street-address" />
           </div>
           <div className="admin-profile-field admin-profile-contact">
-            <label htmlFor="admin-profile-contact"><Phone size={16} aria-hidden="true" />Kontak</label>
+            <label htmlFor="admin-profile-contact"><Phone size={16} aria-hidden="true" />Telepon</label>
             <input id="admin-profile-contact" name="contact" type="tel" autoComplete="tel" maxLength={30} value={values.contact} disabled={saving} onChange={handleChange} aria-invalid={Boolean(errors.contact)} aria-describedby={`admin-profile-contact-help${errors.contact ? ' admin-profile-contact-error' : ''}`} />
             {errors.contact && <p id="admin-profile-contact-error" className="admin-profile-error" role="alert">{errors.contact}</p>}
             <p id="admin-profile-contact-help" className="admin-profile-help">Opsional.{dataSource === 'mock' ? ' Nomor telepon resmi belum tersedia.' : ''}</p>
           </div>
-          <p id="admin-profile-note" className="admin-profile-note">{dataSource === 'mock' ? 'Mode simulasi: perubahan hanya berlaku di halaman ini dan akan hilang saat halaman ditinggalkan atau dimuat ulang. Profil publik tidak berubah.' : 'Terhubung ke database · Simpan Perubahan akan memperbarui nama, deskripsi, alamat, dan kontak masjid di PostgreSQL.'}</p>
+          <p id="admin-profile-note" className="admin-profile-note">{dataSource === 'mock' ? 'Mode simulasi: perubahan hanya berlaku di halaman ini dan akan hilang saat halaman ditinggalkan atau dimuat ulang. Profil publik tidak berubah.' : 'Terhubung ke database · Simpan Perubahan akan memperbarui identitas, visi, statistik, alamat, dan telepon masjid di PostgreSQL.'}</p>
           {submitError && <p className="admin-profile-error" role="alert">{submitError}</p>}
           {saved && <p ref={feedback} className="admin-profile-feedback" role="status">{dataSource === 'mock' ? `Simulasi berhasil. Perubahan tersimpan sementara di halaman ini, belum tersimpan permanen ke server.${photoFile ? ' Foto baru hanya dipratinjau dan belum tersimpan ke server.' : ''}` : `Perubahan profil masjid berhasil disimpan ke database.${photoFile ? ' Catatan: foto baru belum diunggah karena endpoint upload file belum tersedia.' : ''}`}</p>}
         </form>

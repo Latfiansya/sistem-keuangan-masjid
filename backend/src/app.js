@@ -5,6 +5,7 @@ import { createAdminFinanceController } from './controllers/adminFinanceControll
 import { createAdminManagementController } from './controllers/adminManagementController.js'
 import { createAdminSettingsController } from './controllers/adminSettingsController.js'
 import { createHealthController } from './controllers/healthController.js'
+import { createProfileContentController } from './controllers/profileContentController.js'
 import { createPublicController } from './controllers/publicController.js'
 import { createReportController } from './controllers/reportController.js'
 import { createRateLimiter } from './middlewares/rateLimiter.js'
@@ -15,6 +16,7 @@ import { createAdminManagementRepository } from './repositories/adminManagementR
 import { createAdminSettingsRepository } from './repositories/adminSettingsRepository.js'
 import { createAgendaRepository } from './repositories/agendaRepository.js'
 import { createFinanceReportRepository } from './repositories/financeReportRepository.js'
+import { createProfileContentRepository } from './repositories/profileContentRepository.js'
 import { createPublicContentRepository } from './repositories/publicContentRepository.js'
 import { createAdminRoutes } from './routes/adminRoutes.js'
 import { createHealthRoutes } from './routes/healthRoutes.js'
@@ -23,6 +25,7 @@ import { createAdminFinanceService } from './services/adminFinanceService.js'
 import { createAdminManagementService } from './services/adminManagementService.js'
 import { createAdminSettingsService } from './services/adminSettingsService.js'
 import { createAgendaService } from './services/agendaService.js'
+import { createProfileContentService } from './services/profileContentService.js'
 import { createPublicContentService } from './services/publicContentService.js'
 import { createReportService } from './services/reportService.js'
 
@@ -52,6 +55,7 @@ export function createApp(overrides = {}) {
   const adminFinanceRepository = repos.adminFinanceRepository ?? createAdminFinanceRepository(dbPool)
   const adminSettingsRepository = repos.adminSettingsRepository ?? createAdminSettingsRepository(dbPool)
   const adminManagementRepository = repos.adminManagementRepository ?? createAdminManagementRepository(dbPool)
+  const profileContentRepository = repos.profileContentRepository ?? createProfileContentRepository(dbPool)
 
   const app = express()
 
@@ -76,6 +80,7 @@ export function createApp(overrides = {}) {
   const adminFinanceController = createAdminFinanceController(adminFinanceService)
   const adminSettingsService = createAdminSettingsService(adminSettingsRepository)
   const adminSettingsController = createAdminSettingsController(adminSettingsService)
+  const profileContentController = createProfileContentController(createProfileContentService(profileContentRepository))
   const adminManagementService = createAdminManagementService(adminManagementRepository, {
     authSecret,
     authTokenTtlMs,
@@ -101,6 +106,7 @@ export function createApp(overrides = {}) {
       adminFinanceController,
       adminSettingsController,
       adminManagementController,
+      profileContentController,
       loginRateLimiter,
       requireAdminAuth,
     })

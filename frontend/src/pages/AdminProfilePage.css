@@ -20,6 +20,8 @@
 .admin-profile-photo-cancel { min-height: 40px; padding: 8px 12px; border: 1px solid #dce6ef; border-radius: 10px; color: #34465f; background: #f7f9fc; font-size: 13px; }
 .admin-profile-photo-cancel:hover { background: #edf3f8; }
 .admin-profile-field { min-width: 0; }
+.admin-profile-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.admin-profile-grid--stat { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
 .admin-profile-field label { display: flex; align-items: center; gap: 4px; }
 .admin-profile-field label > span { color: #f2243d; }
 .admin-profile-field input, .admin-profile-field textarea { display: block; width: 100%; min-height: 42px; padding: 10px 12px; border: 1px solid #e1e9f4; border-radius: 14px; color: #253247; background: #f7f9fc; font: inherit; font-size: 14px; line-height: 1.5; }
@@ -38,6 +40,7 @@
   .admin-profile-photo-cancel { min-height: 44px; }
   .admin-profile-field input, .admin-profile-field textarea { min-height: 44px; font-size: 16px; }
   .admin-profile-banner img { aspect-ratio: 2.2; }
+  .admin-profile-grid, .admin-profile-grid--stat { grid-template-columns: minmax(0, 1fr); }
 }
 @media (max-width: 479px) {
   .admin-profile { gap: 20px; }

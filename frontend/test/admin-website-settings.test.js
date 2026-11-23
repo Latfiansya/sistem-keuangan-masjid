@@ -29,7 +29,7 @@ after(async () => { await server?.close() })
 test('pengaturan memakai salinan alamat, kontak belum dikonfirmasi kosong dan tidak menyinkronkan publik/profil', async () => {
   const before = structuredClone(source)
   const initial = await getAdminWebsiteSettings()
-  assert.deepEqual(initial, { whatsapp: '', email: '', address: source.address, mapsUrl: '', publicReportEnabled: true })
+  assert.deepEqual(initial, { whatsapp: '', email: '', address: source.address, mapsUrl: '', phone: '', phoneNote: '', hours: '', mapLabel: '', publicReportEnabled: true })
   const changed = await getAdminWebsiteSettings()
   changed.address = 'Alamat sementara'
   changed.whatsapp = '+62 812 0000 0000'
@@ -58,6 +58,13 @@ test('validasi opsional WhatsApp, email dan HTTPS Google Maps menerima format la
   }
 })
 
+test('validasi nomor telepon opsional menerima format lazim dan menolak digit yang kurang', () => {
+  const base = { whatsapp: '', email: '', mapsUrl: '' }
+  assert.deepEqual(validateAdminWebsiteSettings({ ...base, phone: '(0274) 123456' }), {})
+  assert.deepEqual(validateAdminWebsiteSettings({ ...base, phone: '' }), {})
+  assert.match(validateAdminWebsiteSettings({ ...base, phone: '123' }).phone, /8–15 digit/)
+})
+
 test('mode API mengambil dan menyimpan pengaturan ke /api/admin/website-settings tanpa fallback mock', async () => {
   const api = await createTestServer('api')
   const originalFetch = globalThis.fetch
@@ -73,8 +80,10 @@ test('mode API mengambil dan menyimpan pengaturan ke /api/admin/website-settings
     const service = await api.ssrLoadModule('/src/services/adminWebsiteSettingsService.js')
     const settings = await service.getAdminWebsiteSettings()
     assert.equal(settings.publicReportEnabled, true)
-    const saved = await service.saveAdminWebsiteSettings({ ...settings, publicReportEnabled: false })
+    const saved = await service.saveAdminWebsiteSettings({ ...settings, publicReportEnabled: false, phone: ' 0274 123456 ' })
     assert.equal(saved.publicReportEnabled, false)
+    assert.equal('latitude' in saved, false)
+    assert.equal(saved.phone, '0274 123456')
     assert.deepEqual(calls.map((c) => [c.init.method, c.url]), [['GET', '/api/admin/website-settings'], ['PUT', '/api/admin/website-settings']])
   } finally { globalThis.fetch = originalFetch; await api.close() }
 })

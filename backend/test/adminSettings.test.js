@@ -174,6 +174,60 @@ describe('Endpoint konten, profil, agenda, donasi, dan pengaturan website pengur
     assert.equal(updated.publicReportEnabled, false)
   })
 
+  it('PUT /api/admin/profile menyimpan kolom profil lengkap dan mempertahankan field yang tidak dikirim', async () => {
+    const put = (body) => fetch(`${baseUrl}/profile`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    assert.equal((await put({ name: 'Masjid', foundedYear: 1700 })).status, 400)
+    assert.equal((await put({ name: 'Masjid', buildingArea: -1 })).status, 400)
+    assert.equal((await put({ name: 'Masjid', capacity: '290' })).status, 400)
+    assert.equal((await put({ name: 'Masjid', managementPeriod: 'x'.repeat(21) })).status, 400)
+
+    const res = await put({
+      name: 'Masjid Al-Hidayah',
+      tagline: 'Pusat ibadah warga Sorolaten.',
+      vision: 'Menjadi pusat ibadah dan pembinaan masyarakat Sorolaten.',
+      foundedYear: 1981,
+      buildingArea: null,
+      managementPeriod: '2023–2026',
+    })
+    assert.equal(res.status, 200)
+    const data = (await res.json()).data
+    assert.equal(data.tagline, 'Pusat ibadah warga Sorolaten.')
+    assert.equal(data.foundedYear, 1981)
+    assert.equal(data.buildingArea, null)
+    assert.equal(data.capacity, 290)
+    assert.equal(data.location, 'Sorolaten')
+  })
+
+  it('PUT /api/admin/website-settings menyimpan telepon, keterangan telepon, jam operasional, dan label peta', async () => {
+    const put = (body) => fetch(`${baseUrl}/website-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+
+    assert.equal((await put({ phone: '123' })).status, 400)
+    assert.equal((await put({ hours: 'x'.repeat(151) })).status, 400)
+    assert.equal((await put({ mapLabel: 'Label\u0000' })).status, 400)
+
+    const res = await put({
+      phone: '(0274) 123456',
+      phoneNote: 'Sekretariat takmir',
+      hours: 'Setiap hari · 04.30 – 21.00 WIB',
+      mapLabel: 'Masjid Al-Hidayah Sorolaten',
+    })
+    assert.equal(res.status, 200)
+    const data = (await res.json()).data
+    assert.equal(data.phone, '(0274) 123456')
+    assert.equal(data.mapLabel, 'Masjid Al-Hidayah Sorolaten')
+    assert.equal(data.email, 'takmir@alhidayah.id')
+    assert.equal('latitude' in data, false)
+  })
+
   it('CRUD /api/admin/agenda menambah, memvalidasi duplikasi, mengubah, dan menghapus agenda', async () => {
     // Validasi frekuensi tidak sah -> 400
     const badFreqRes = await fetch(`${baseUrl}/agenda`, {
