@@ -499,3 +499,11 @@ Tidak ada frame Figma untuk fitur ini. Atas keputusan pengguna (perancang UI pro
 - Profil Masjid ditambah field Tagline Beranda, Visi, Lokasi Singkat, Tahun Berdiri, Periode Pengurus, Luas Bangunan + keterangan, Kapasitas Jamaah + keterangan, dengan gaya field yang sama. Label "Kontak" menjadi "Telepon".
 - Kontak & Pengaturan ditambah Nomor Telepon, Keterangan Telepon, Jam Operasional, dan Label Peta. Telepon dan keterangannya memakai grid dua kolom yang menjadi satu kolom pada layar ≤479 px.
 - Mode mock tetap berjalan tanpa backend: perubahan Konten Profil disimpan di memori selama sesi dan hilang saat dimuat ulang.
+
+## Unggah foto, logo, dan QRIS (tanpa frame Figma)
+
+Atas keputusan pengguna (perancang UI proyek), tampilan mengikuti gaya halaman admin yang sudah ada.
+
+- Profil Masjid: kontrol Ganti Foto yang sudah ada kini benar-benar mengunggah saat Simpan Perubahan; tombol "Pakai Foto Bawaan" bila foto unggahan aktif. Blok baru **Logo Masjid** di bawah banner: pratinjau logo (tinggi 56 px, object-fit contain) dalam kotak abu-abu muda, tombol Ganti Logo dan Batalkan/Pakai Logo Bawaan.
+- Donasi: Unggah/Ganti/Hapus QRIS yang sudah ada kini tersimpan ke server saat Simpan Perubahan (mode API).
+- Publik: foto unggahan menggantikan latar halaman (variabel CSS `--public-scene-image`) dan foto hero Beranda; overlay gedung hero disembunyikan bila foto diganti karena overlay dibuat khusus untuk foto bawaan. Logo unggahan dipakai pada Navbar. Tanpa unggahan, seluruh tampilan identik dengan sebelumnya. Logo sidebar admin, halaman login, dan lembar unduhan tetap memakai aset bawaan.

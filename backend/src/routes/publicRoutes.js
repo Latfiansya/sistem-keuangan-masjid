@@ -5,6 +5,7 @@ export function createPublicRoutes({
   publicController = createPublicController(),
   reportController,
   passwordRateLimiter,
+  fileController,
 }) {
   const publicRoutes = Router()
 
@@ -12,6 +13,7 @@ export function createPublicRoutes({
   publicRoutes.get('/agenda', publicController.getAgenda)
   publicRoutes.post('/report/check-password', passwordRateLimiter, reportController.postCheckPassword)
   publicRoutes.get('/finance/report', reportController.getReport)
+  if (fileController) publicRoutes.get('/files/:target/:hash', fileController.show)
 
   return publicRoutes
 }

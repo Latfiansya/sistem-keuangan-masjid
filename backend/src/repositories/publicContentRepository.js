@@ -71,6 +71,9 @@ export function createPublicContentRepository(db = getDefaultDatabasePool()) {
       const profil = profilRes.rows[0] ?? null
       const settings = settingsRes.rows[0] ?? null
 
+      // Hash foto unggahan (bagian dari URL) agar frontend dapat mengenali foto bawaan dan tetap memakai overlay hero.
+      const photoSha256 = /^\/api\/public\/files\/masjid-photo\/([0-9a-f]{64})$/.exec(profil?.foto_path || '')?.[1] || null
+
       const addressValue = settings?.alamat_lengkap?.trim() || ''
       const phoneValue =
         settings?.telepon?.trim() || settings?.nomor_whatsapp?.trim() || ''
@@ -125,6 +128,7 @@ export function createPublicContentRepository(db = getDefaultDatabasePool()) {
         copyrightYear: new Date().getFullYear(),
         heroDescription: profil?.tagline || profil?.deskripsi || '',
         photoPath: profil?.foto_path || null,
+        photoSha256,
         logoPath: profil?.logo_path || null,
         publicReportEnabled: settings?.laporan_publik_aktif ?? true,
         statistics,

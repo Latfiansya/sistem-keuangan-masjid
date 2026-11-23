@@ -1398,3 +1398,30 @@ Status: implementasi selesai dan tervalidasi pada branch `fitur/konten-profil-ad
 - Tampilan belum diuji manual di browser terhadap API langsung.
 
 Usulan pesan commit: `feat: tambah kelola konten profil dan lengkapi field profil serta kontak admin`.
+
+## Unggah Berkas Foto, Logo, dan QRIS (23 November 2026)
+
+Status: implementasi selesai pada branch `fitur/upload-berkas` (dibuat dari `fitur/konten-profil-admin`); SQL `docs/sql/2026-11-23-gambar-di-kolom.sql` sudah dijalankan DBA dan foto/logo bawaan sudah di-seed; menunggu commit manual oleh pengguna.
+
+### Implementasi
+
+- **Database (dijalankan manual oleh DBA)**: tanpa tabel baru. Kolom `foto_isi`/`foto_mime` dan `logo_isi`/`logo_mime` ditambahkan ke `m_profil_masjid`, serta `qris_isi`/`qris_mime` ke `m_pengaturan_website`, dengan constraint format dan ukuran. `fn_log_activity` diperbarui hanya pada `v_skip` agar isi biner tidak dicatat di activity log (definisi lain disalin dari database live). Rancangan awal tabel `m_berkas` dibatalkan atas keputusan DBA.
+- **Backend**: `PUT/DELETE /api/admin/files/:target` dan `GET /api/public/files/:target/:hash` (controller/service/repository `file*`, `utils/imageFile.js`). Unggah memakai `express.raw` bawaan Express sehingga tanpa dependency baru. URL gambar berbasis hash isi sehingga aman di-cache lama dan `photoSha256` dapat diturunkan tanpa query tambahan.
+- **Salinan gambar bawaan**: skrip `npm run db:seed-images --workspace backend` (`src/scripts/seedDefaultImages.js`) untuk menyimpan foto dan logo bawaan ke kolom `foto_isi`/`logo_isi`; dijalankan sendiri oleh pengguna setelah SQL dijalankan (`--dry-run` tersedia, tidak menimpa unggahan kecuali `--force`). Skrip menerima berkas asli lewat `--photo`/`--logo` (PNG asli foto 2,29 MB dan logo 0,6 MB memenuhi batas unggahan) serta `--qris` opsional. Overlay hero tetap tampil untuk salinan foto bawaan, baik WebP maupun PNG asli, karena dikenali dari `photoSha256` (`DEFAULT_MASJID_PHOTO_SHA256S`; hash WebP dijaga test terhadap aset).
+- **Frontend**: `apiUpload` di `apiClient.js`, `adminFileService.js`, `utils/uploadedImage.js`; unggah foto/logo di Profil Masjid dan QRIS di Donasi; foto, logo, dan QRIS unggahan dipakai di halaman publik (latar, hero Beranda, Navbar, bagian donasi).
+
+### Verifikasi
+
+- Backend `npm run lint` dan `npm test`: **PASS** (53 test).
+- Frontend `npm run lint`: 0 error (1 peringatan lama). `npm test`: **PASS** (137 lulus, 11 suite browser dilewati). `npm run build`: **PASS**.
+- SQL migrasi dicek sintaksnya ke `db_keuangan_masjid_dev` dalam sesi read-only: 12 perintah lolos parsing dan ditolak hanya karena mode read-only; database tidak berubah.
+- Setelah DBA menjalankan SQL: 6 kolom, 3 constraint, dan `v_skip` terverifikasi; 6 query simpan/hapus lolos `EXPLAIN` tanpa dieksekusi. Seed `masjid-background.webp` dan `masjid-logo.webp` (dijalankan pengguna) tersimpan dengan hash isi cocok dengan URL. `GET /api/public/files/...` menyajikan isi identik dengan aset (200, cache immutable, 304 dengan ETag), hash salah dan QRIS yang belum diunggah menghasilkan 404. `photoSha256` sama dengan hash foto bawaan sehingga overlay hero tetap tampil. Activity log mencatat 2 entri Edit Profil Masjid tanpa isi biner.
+
+### Batasan
+
+- QRIS yang dipakai sementara adalah gambar contoh `QRIS Placeholder.png` (bukan QRIS yang dapat dipindai) karena QRIS resmi belum diterima dari klien; ganti lewat menu Donasi setelah tersedia. Teks alternatif QRIS publik dibuat netral ("QRIS donasi Masjid Al-Hidayah") agar tidak mengklaim QRIS terverifikasi.
+- Path lama `/images/...` di database tidak menunjuk ke berkas yang ada; frontend mengabaikannya sampai pengurus mengunggah ulang foto, logo, dan QRIS.
+- Logo sidebar admin, halaman login, dan lembar unduhan laporan masih memakai aset bawaan.
+- Tampilan belum diuji manual di browser terhadap API langsung.
+
+Usulan pesan commit: `feat: unggah foto, logo, dan qris ke database dan tampilkan di halaman publik`.

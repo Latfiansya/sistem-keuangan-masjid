@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Camera, Check, Phone } from 'lucide-react'
-import { adminProfilePhotoAccept, getAdminProfile, saveAdminProfile, validateAdminProfile, validateAdminProfilePhoto } from '../services/adminProfileService.js'
+import { adminProfilePhotoAccept, getAdminProfile, saveAdminProfile, validateAdminProfile, validateAdminProfileLogo, validateAdminProfilePhoto } from '../services/adminProfileService.js'
+import { removeAdminFile, resolveUploadedImage, uploadAdminFile } from '../services/adminFileService.js'
 import { dataSource } from '../utils/env.js'
 import './AdminProfilePage.css'
 
@@ -18,6 +19,13 @@ export default function AdminProfilePage() {
   const photoFile = photo?.file
   const photoPreview = photo?.url || ''
   const [photoError, setPhotoError] = useState('')
+  const [photoReset, setPhotoReset] = useState(false)
+  const [logo, setLogo] = useState(null)
+  const [logoError, setLogoError] = useState('')
+  const [logoReset, setLogoReset] = useState(false)
+  const logoFile = logo?.file
+  const logoPreview = logo?.url || ''
+  const [uploadNote, setUploadNote] = useState('')
 
   useEffect(() => {
     const controller = new AbortController()
@@ -50,12 +58,63 @@ export default function AdminProfilePage() {
     setPhotoError(validation)
     if (validation) return
     setPhoto({ file: files[0], url: URL.createObjectURL(files[0]) })
+    setPhotoReset(false)
   }
 
   function cancelPhoto() {
     setPhoto(null)
     setPhotoError('')
+    setPhotoReset(false)
     setSaved(false)
+  }
+
+  function handleLogoChange(event) {
+    const files = Array.from(event.target.files || [])
+    event.target.value = ''
+    if (!files.length) return
+    setSaved(false)
+    setSubmitError('')
+    const validation = validateAdminProfileLogo(files)
+    setLogoError(validation)
+    if (validation) return
+    setLogo({ file: files[0], url: URL.createObjectURL(files[0]) })
+    setLogoReset(false)
+  }
+
+  function cancelLogo() {
+    setLogo(null)
+    setLogoError('')
+    setLogoReset(false)
+    setSaved(false)
+  }
+
+  useEffect(() => () => {
+    if (logoPreview) URL.revokeObjectURL(logoPreview)
+  }, [logoPreview])
+
+  // Unggah atau hapus berkas sebelum profil disimpan; mengembalikan catatan untuk pesan sukses.
+  async function applyFileChanges() {
+    const notes = []
+    let changes = {}
+    if (photoFile) {
+      const result = await uploadAdminFile('masjid-photo', photoFile)
+      changes = { ...changes, photoPath: result.path }
+      notes.push('foto masjid diunggah')
+    } else if (photoReset) {
+      await removeAdminFile('masjid-photo')
+      changes = { ...changes, photoPath: null }
+      notes.push('foto masjid dikembalikan ke bawaan')
+    }
+    if (logoFile) {
+      const result = await uploadAdminFile('logo', logoFile)
+      changes = { ...changes, logoPath: result.path }
+      notes.push('logo diunggah')
+    } else if (logoReset) {
+      await removeAdminFile('logo')
+      changes = { ...changes, logoPath: null }
+      notes.push('logo dikembalikan ke bawaan')
+    }
+    return { changes, notes }
   }
 
   function handleChange(event) {
@@ -83,8 +142,15 @@ export default function AdminProfilePage() {
     }
     setSaving(true)
     try {
+      const { changes, notes } = await applyFileChanges()
+      if (Object.keys(changes).length) setValues((previous) => ({ ...previous, ...changes }))
+      setPhoto(null)
+      setLogo(null)
+      setPhotoReset(false)
+      setLogoReset(false)
       const updated = await saveAdminProfile(values)
       setValues((previous) => ({ ...previous, ...updated }))
+      setUploadNote(notes.length ? ` Berkas: ${notes.join(', ')}.` : '')
       setSaved(true)
     } catch (cause) {
       setSubmitError(cause.message)
@@ -94,7 +160,10 @@ export default function AdminProfilePage() {
   }
 
   const fallbackPhoto = `${import.meta.env.BASE_URL}assets/masjid-background.webp`
-  const currentServerPhoto = !photoLoadFallback && values.photoPath ? values.photoPath : fallbackPhoto
+  const uploadedPhoto = photoReset ? null : resolveUploadedImage(values.photoPath)
+  const currentServerPhoto = !photoLoadFallback && uploadedPhoto ? uploadedPhoto : fallbackPhoto
+  const fallbackLogo = `${import.meta.env.BASE_URL}assets/masjid-logo.webp`
+  const uploadedLogo = logoReset ? null : resolveUploadedImage(values.logoPath)
 
   return (
     <div className="admin-profile">
@@ -110,9 +179,22 @@ export default function AdminProfilePage() {
               <img src={photoPreview || currentServerPhoto} alt={photoPreview ? 'Pratinjau foto masjid pilihan, belum tersimpan ke server' : 'Tampak depan Masjid Al-Hidayah Sorolaten'} width="1928" height="1089" onError={() => { if (photoPreview) { setPhoto(null); setPhotoError('Gambar tidak dapat dibaca. Pilih berkas JPG, PNG atau WebP yang valid.'); setSaved(false) } else if (values.photoPath && !photoLoadFallback) { setPhotoLoadFallback(true) } }} />
               <label className="admin-profile-photo-picker"><Camera size={16} aria-hidden="true" /><span>Ganti Foto</span><input id="admin-profile-photo" name="photo" type="file" accept={adminProfilePhotoAccept} aria-label="Ganti foto masjid" aria-invalid={Boolean(photoError)} aria-describedby={`admin-profile-photo-help${photoError ? ' admin-profile-photo-error' : ''}`} onChange={handlePhotoChange} /></label>
             </div>
-            <div className="admin-profile-photo-info"><p id="admin-profile-photo-help" className="admin-profile-help">Satu gambar JPG, PNG atau WebP, maksimal 5 MB.</p>{photoFile && <button className="admin-profile-photo-cancel" type="button" onClick={cancelPhoto}>Batalkan Foto</button>}</div>
+            <div className="admin-profile-photo-info"><p id="admin-profile-photo-help" className="admin-profile-help">Satu gambar JPG, PNG atau WebP, maksimal 5 MB. Dipakai sebagai latar halaman publik.</p>{photoFile || photoReset ? <button className="admin-profile-photo-cancel" type="button" disabled={saving} onClick={cancelPhoto}>Batalkan</button> : uploadedPhoto && dataSource !== 'mock' && <button className="admin-profile-photo-cancel" type="button" disabled={saving} onClick={() => { setPhotoReset(true); setSaved(false) }}>Pakai Foto Bawaan</button>}</div>
             {photoError && <p id="admin-profile-photo-error" className="admin-profile-error" role="alert">{photoError}</p>}
-            {photoFile && <p className="admin-profile-help" role="status">Foto baru hanya dipratinjau (endpoint unggah berkas foto belum dibuat di backend). Batalkan Foto untuk kembali ke foto sebelumnya.</p>}
+            {(photoFile || photoReset) && <p className="admin-profile-help" role="status">{dataSource === 'mock' ? 'Mode simulasi: foto baru hanya dipratinjau dan tidak diunggah.' : photoReset ? 'Foto bawaan akan dipakai kembali setelah Simpan Perubahan.' : 'Foto baru akan diunggah ke server saat Simpan Perubahan.'}</p>}
+          </div>
+          <div className="admin-profile-logo">
+            <p>Logo Masjid</p>
+            <div className="admin-profile-logo-row">
+              <img src={logoPreview || uploadedLogo || fallbackLogo} alt={logoPreview ? 'Pratinjau logo masjid pilihan, belum tersimpan ke server' : 'Logo Masjid Al-Hidayah'} width="640" height="191" onError={() => { if (logoPreview) { setLogo(null); setLogoError('Gambar tidak dapat dibaca. Pilih berkas JPG, PNG atau WebP yang valid.') } }} />
+              <div className="admin-profile-logo-actions">
+                <label className="admin-profile-photo-cancel admin-profile-logo-picker"><Camera size={16} aria-hidden="true" /><span>Ganti Logo</span><input id="admin-profile-logo" name="logo" type="file" accept={adminProfilePhotoAccept} aria-label="Ganti logo masjid" aria-invalid={Boolean(logoError)} aria-describedby={`admin-profile-logo-help${logoError ? ' admin-profile-logo-error' : ''}`} disabled={saving} onChange={handleLogoChange} /></label>
+                {logoFile || logoReset ? <button className="admin-profile-photo-cancel" type="button" disabled={saving} onClick={cancelLogo}>Batalkan</button> : uploadedLogo && dataSource !== 'mock' && <button className="admin-profile-photo-cancel" type="button" disabled={saving} onClick={() => { setLogoReset(true); setSaved(false) }}>Pakai Logo Bawaan</button>}
+              </div>
+            </div>
+            <p id="admin-profile-logo-help" className="admin-profile-help">Satu gambar JPG, PNG atau WebP, maksimal 2 MB; disarankan latar transparan dan rasio lebar seperti logo bawaan. Dipakai pada Navbar halaman publik.</p>
+            {logoError && <p id="admin-profile-logo-error" className="admin-profile-error" role="alert">{logoError}</p>}
+            {(logoFile || logoReset) && <p className="admin-profile-help" role="status">{dataSource === 'mock' ? 'Mode simulasi: logo baru hanya dipratinjau dan tidak diunggah.' : logoReset ? 'Logo bawaan akan dipakai kembali setelah Simpan Perubahan.' : 'Logo baru akan diunggah ke server saat Simpan Perubahan.'}</p>}
           </div>
           <div className="admin-profile-field">
             <label htmlFor="admin-profile-name">Nama Masjid<span aria-hidden="true">*</span></label>
@@ -182,7 +264,7 @@ export default function AdminProfilePage() {
           </div>
           <p id="admin-profile-note" className="admin-profile-note">{dataSource === 'mock' ? 'Mode simulasi: perubahan hanya berlaku di halaman ini dan akan hilang saat halaman ditinggalkan atau dimuat ulang. Profil publik tidak berubah.' : 'Terhubung ke database · Simpan Perubahan akan memperbarui identitas, visi, statistik, alamat, dan telepon masjid di PostgreSQL.'}</p>
           {submitError && <p className="admin-profile-error" role="alert">{submitError}</p>}
-          {saved && <p ref={feedback} className="admin-profile-feedback" role="status">{dataSource === 'mock' ? `Simulasi berhasil. Perubahan tersimpan sementara di halaman ini, belum tersimpan permanen ke server.${photoFile ? ' Foto baru hanya dipratinjau dan belum tersimpan ke server.' : ''}` : `Perubahan profil masjid berhasil disimpan ke database.${photoFile ? ' Catatan: foto baru belum diunggah karena endpoint upload file belum tersedia.' : ''}`}</p>}
+          {saved && <p ref={feedback} className="admin-profile-feedback" role="status">{dataSource === 'mock' ? `Simulasi berhasil. Perubahan tersimpan sementara di halaman ini, belum tersimpan permanen ke server.${photoFile || logoFile ? ' Foto/logo baru hanya dipratinjau dan belum tersimpan ke server.' : ''}` : `Perubahan profil masjid berhasil disimpan ke database.${uploadNote}`}</p>}
         </form>
       )}
     </div>

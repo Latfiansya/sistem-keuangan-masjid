@@ -22,11 +22,12 @@ function formatProfile(profil, settings) {
     address: settings?.alamat_lengkap || '',
     contact: settings?.telepon || '',
     photoPath: profil?.foto_path || null,
+    logoPath: profil?.logo_path || null,
   }
 }
 
 const PROFILE_COLUMNS = `nama_masjid, tagline, deskripsi, lokasi, tahun_berdiri, luas_bangunan_m2, keterangan_luas,
-                kapasitas_jamaah, keterangan_kapasitas, visi, periode_pengurus, foto_path`
+                kapasitas_jamaah, keterangan_kapasitas, visi, periode_pengurus, foto_path, logo_path`
 
 function formatWebsiteSettings(row) {
   return {

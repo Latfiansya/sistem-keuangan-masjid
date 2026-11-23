@@ -29,11 +29,11 @@ button:disabled { cursor: not-allowed; }
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(180deg, #dcecf7cc 0%, #edf5fac9 65%, #f5f9f3e6 100%), url("/assets/masjid-background.webp") center / cover no-repeat;
+  background: linear-gradient(180deg, #dcecf7cc 0%, #edf5fac9 65%, #f5f9f3e6 100%), var(--public-scene-image, url("/assets/masjid-background.webp")) center / cover no-repeat;
   filter: blur(10px);
   clip-path: inset(0);
 }
-.public-layout:is(.public-layout--agenda, .public-layout--profile, .public-layout--contact)::before { opacity: var(--public-scene-opacity, .65); background-image: var(--public-scene-overlay, linear-gradient(180deg, #dcecf7cc 0%, #edf5fab8 65%, #f5f9f3e6 100%)), url("/assets/masjid-background.webp"); background-size: 100% 100%, var(--public-scene-size, auto 120%); background-position: 0 0, var(--public-scene-position, 72% bottom); filter: var(--public-scene-blur, blur(8px)); }
+.public-layout:is(.public-layout--agenda, .public-layout--profile, .public-layout--contact)::before { opacity: var(--public-scene-opacity, .65); background-image: var(--public-scene-overlay, linear-gradient(180deg, #dcecf7cc 0%, #edf5fab8 65%, #f5f9f3e6 100%)), var(--public-scene-image, url("/assets/masjid-background.webp")); background-size: 100% 100%, var(--public-scene-size, auto 120%); background-position: 0 0, var(--public-scene-position, 72% bottom); filter: var(--public-scene-blur, blur(8px)); }
 .page-container { width: min(82%, 1408px); margin-inline: auto; }
 .skip-link { position: absolute; top: 8px; left: 12px; z-index: 20; padding: 10px 16px; background: white; transform: translateY(-160%); }
 .skip-link:focus { transform: translateY(0); }

@@ -66,6 +66,8 @@ Prefix default `/api` dapat dikonfigurasi melalui `API_BASE_PATH` di environment
 | DELETE | `/api/admin/transactions/:id` | Menghapus transaksi berdasarkan ID | `{ "deletedId" }` |
 | GET | `/api/admin/profile` | Membaca profil masjid (`m_profil_masjid`) beserta alamat & telepon (`m_pengaturan_website`) untuk formulir admin | `{ "name", "tagline", "description", "location", "foundedYear", "buildingArea", "buildingAreaNote", "capacity", "capacityNote", "vision", "managementPeriod", "address", "contact", "photoPath" }` |
 | PUT | `/api/admin/profile` | Memvalidasi dan menyimpan profil masjid; field yang tidak dikirim mempertahankan nilai tersimpan. `contact` disimpan ke kolom `telepon` | Objek profil yang sama dengan GET |
+| PUT | `/api/admin/files/:target` | Mengunggah gambar sebagai body biner (`Content-Type: image/png\|image/jpeg\|image/webp`); `target` = `masjid-photo` (≤5 MB), `logo` (≤2 MB), `qris` (≤2 MB) | `{ "id", "path", "mimeType", "size" }` (`201`) |
+| DELETE | `/api/admin/files/:target` | Menghapus berkas target dan mengosongkan kolom path-nya (kembali ke gambar bawaan/belum ada) | `{ "path": null }` |
 | GET | `/api/admin/profile-content` | Daftar misi, program, sejarah, dan pengurus (termasuk yang disembunyikan) | `{ "missions", "programs", "history", "officers" }` |
 | POST | `/api/admin/profile-content/:section` | Menambah item pada `section` = `missions` \| `programs` \| `history` \| `officers` | Objek item baru (`201`) |
 | PUT | `/api/admin/profile-content/:section/:id` | Mengubah item konten profil | Objek item yang diperbarui (`200`) |
@@ -244,3 +246,12 @@ Item tiap `section` memiliki `id` (string) dan `order` (bilangan bulat 0–32767
 | `officers` | `m_pengurus` | `name`* (≤150), `role`* (≤50), `note` (≤150), `order`, `active` (boolean, default true) |
 
 Section tidak dikenal atau ID tidak ditemukan menghasilkan `404 NOT_FOUND`; payload tidak valid menghasilkan `400 BAD_REQUEST`. Setiap perubahan tercatat otomatis di `t_activity_log` (modul `Konten`) melalui trigger database. Pengurus tidak memakai foto (halaman publik menampilkan inisial), sehingga kolom `m_pengurus.foto_path` sengaja tidak diekspos.
+
+## Berkas gambar website — fitur/upload-berkas
+
+- Isi berkas disimpan di kolom tabel yang sudah ada sesuai `docs/sql/2026-11-23-gambar-di-kolom.sql`: `m_profil_masjid.foto_isi`/`foto_mime`, `m_profil_masjid.logo_isi`/`logo_mime`, dan `m_pengaturan_website.qris_isi`/`qris_mime` (bytea + jenis MIME). Kolom `foto_path`, `logo_path`, dan `qris_path` berisi URL publik berbasis hash isi `/api/public/files/<target>/<sha256>`; mengganti gambar menimpa isi lama sehingga URL lama otomatis tidak berlaku.
+- `GET /api/public/files/:target/:hash` (publik) hanya menyajikan gambar terkini milik target tersebut, dengan `Content-Type` sesuai berkas, `Cache-Control: public, max-age=31536000, immutable`, `ETag` berbasis SHA-256 (mendukung `304`), serta `X-Content-Type-Options: nosniff`. Hash tidak dikenal atau sudah diganti menghasilkan `404`.
+- Validasi server: `Content-Type` wajib PNG/JPEG/WebP dan harus cocok dengan tanda tangan biner berkas (`415` bila tidak), berkas kosong `400`, melebihi batas per target `413`, target tidak dikenal `404`. SVG dan format lain ditolak. Nama berkas asli tidak disimpan.
+- `GET /api/admin/profile` kini juga mengembalikan `logoPath`. `GET /api/public/content` menambahkan `photoSha256` (SHA-256 foto unggahan, diambil dari URL `foto_path`, atau `null`) agar frontend tetap menampilkan overlay gedung hero bila foto di database adalah salinan foto bawaan.
+- Skrip `npm run db:seed-images --workspace backend` menyimpan foto dan logo ke kolom `foto_isi`/`logo_isi`: aset WebP bawaan, atau berkas asli PNG/JPG/WebP lewat `--photo=<jalur>` dan `--logo=<jalur>` (format dikenali dari isi berkas). QRIS hanya disimpan bila `--qris=<jalur>` diberikan. `--dry-run` hanya memeriksa, `--force` menimpa unggahan yang ada.
+- Frontend hanya memakai path berpola `/api/public/files/<masjid-photo|logo|qris>/<sha256>`; path lama seperti `/images/...` diabaikan dan halaman kembali memakai aset bawaan.
