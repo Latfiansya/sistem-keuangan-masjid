@@ -4,6 +4,7 @@ import { createAdminManagementController } from '../controllers/adminManagementC
 import { createAdminSettingsController } from '../controllers/adminSettingsController.js'
 import { createFileController } from '../controllers/fileController.js'
 import { createProfileContentController } from '../controllers/profileContentController.js'
+import { createReceiptController } from '../controllers/receiptController.js'
 import { createRateLimiter } from '../middlewares/rateLimiter.js'
 import { createRequireAdminAuth } from '../middlewares/requireAdminAuth.js'
 
@@ -13,6 +14,7 @@ export function createAdminRoutes({
   adminManagementController = createAdminManagementController(),
   profileContentController = createProfileContentController(),
   fileController = createFileController(),
+  receiptController = createReceiptController(),
   loginRateLimiter = createRateLimiter(),
   requireAdminAuth = createRequireAdminAuth(),
 } = {}) {
@@ -32,6 +34,11 @@ export function createAdminRoutes({
   router.delete('/categories/:id', adminFinanceController.deleteCategory)
 
   router.get('/finance/report', adminFinanceController.getFinanceReport)
+
+  router.get('/receipts', receiptController.list)
+  router.post('/receipts', receiptController.create)
+  router.put('/receipts/:id', receiptController.update)
+  router.post('/receipts/:id/cancel', receiptController.cancel)
 
   router.get('/transactions/:id', adminFinanceController.getTransactionById)
   router.post('/transactions', adminFinanceController.createTransaction)

@@ -1,6 +1,6 @@
 import { receiptDateToIso } from '../utils/adminReceipt.js'
 
-export async function createReceiptPng({ sheet, date, signal }) {
+export async function createReceiptPng({ sheet, date, number = '', signal }) {
   if (!sheet?.matches('.admin-receipt-document') || !receiptDateToIso(date)) throw new Error('Pratinjau kwitansi belum siap.')
   signal?.throwIfAborted()
   const { toCanvas, getFontEmbedCSS } = await import('html-to-image')
@@ -20,7 +20,10 @@ export async function createReceiptPng({ sheet, date, signal }) {
     if (canvas.width !== width * 2 || canvas.height < height * 2) throw new Error('Resolusi gambar kwitansi tidak mencukupi.')
     const blob = await new Promise((resolve, reject) => canvas.toBlob((file) => file?.size ? resolve(file) : reject(new Error('Gambar PNG gagal dibuat.')), 'image/png'))
     signal?.throwIfAborted()
-    return { blob, filename: `draft-kwitansi-masjid-al-hidayah-${receiptDateToIso(date)}.png` }
+    const filename = number
+      ? `kwitansi-masjid-al-hidayah-${number.replace(/[^0-9A-Za-z]+/g, '-')}.png`
+      : `draft-kwitansi-masjid-al-hidayah-${receiptDateToIso(date)}.png`
+    return { blob, filename }
   } finally {
     if (canvas) { canvas.width = 0; canvas.height = 0 }
   }

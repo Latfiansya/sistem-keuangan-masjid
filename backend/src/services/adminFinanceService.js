@@ -6,7 +6,7 @@ const MAX_RANGE_DAYS = 366
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 const MAX_AMOUNT = 999_999_999_999
 
-function parseIsoCalendarDate(value) {
+export function parseIsoCalendarDate(value) {
   if (typeof value !== 'string') return null
   const match = ISO_DATE_PATTERN.exec(value)
   if (!match) return null
@@ -57,7 +57,7 @@ function cleanCategoryName(name) {
     .replace(/\s+/gu, ' ')
 }
 
-function hasControlChars(value, allowMultiline = false) {
+export function hasControlChars(value, allowMultiline = false) {
   return [...String(value)].some((character) => {
     const code = character.codePointAt(0)
     if (code === 127) return true
@@ -68,7 +68,7 @@ function hasControlChars(value, allowMultiline = false) {
   })
 }
 
-function parseTransactionAmount(rawAmount) {
+export function parseTransactionAmount(rawAmount) {
   if (typeof rawAmount === 'number') {
     if (!Number.isSafeInteger(rawAmount) || rawAmount <= 0 || rawAmount > MAX_AMOUNT) {
       return null

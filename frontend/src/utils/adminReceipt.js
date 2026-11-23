@@ -1,5 +1,7 @@
 export const receiptMethods = ['Tunai', 'Transfer Bank', 'QRIS']
 export const emptyReceipt = { payer: '', amount: '', purpose: '', method: '', date: '' }
+// Batas panjang mengikuti kolom t_kwitansi (telah_terima_dari 150) dan uraian t_transaksi (255).
+export const receiptTextLimits = { payer: 100, purpose: 255 }
 
 export function receiptDateToIso(value) {
   const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value)
@@ -21,7 +23,7 @@ export function getLocalReceiptDate(date = new Date()) {
 
 export function validateReceipt(values) {
   const errors = {}
-  for (const [field, label, limit] of [['payer', 'Nama pemberi pembayaran', 100], ['purpose', 'Tujuan pembayaran', 500]]) {
+  for (const [field, label, limit] of [['payer', 'Nama pemberi pembayaran', receiptTextLimits.payer], ['purpose', 'Tujuan pembayaran', receiptTextLimits.purpose]]) {
     if (!values[field].trim()) errors[field] = `${label} wajib diisi.`
     else if (values[field].trim().length > limit || [...values[field]].some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)) errors[field] = `${label} tidak valid atau terlalu panjang.`
   }

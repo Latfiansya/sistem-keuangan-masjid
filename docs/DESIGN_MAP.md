@@ -507,3 +507,12 @@ Atas keputusan pengguna (perancang UI proyek), tampilan mengikuti gaya halaman a
 - Profil Masjid: kontrol Ganti Foto yang sudah ada kini benar-benar mengunggah saat Simpan Perubahan; tombol "Pakai Foto Bawaan" bila foto unggahan aktif. Blok baru **Logo Masjid** di bawah banner: pratinjau logo (tinggi 56 px, object-fit contain) dalam kotak abu-abu muda, tombol Ganti Logo dan Batalkan/Pakai Logo Bawaan.
 - Donasi: Unggah/Ganti/Hapus QRIS yang sudah ada kini tersimpan ke server saat Simpan Perubahan (mode API).
 - Publik: foto unggahan menggantikan latar halaman (variabel CSS `--public-scene-image`) dan foto hero Beranda; overlay gedung hero disembunyikan bila foto diganti karena overlay dibuat khusus untuk foto bawaan. Logo unggahan dipakai pada Navbar. Tanpa unggahan, seluruh tampilan identik dengan sebelumnya. Logo sidebar admin, halaman login, dan lembar unduhan tetap memakai aset bawaan.
+
+## Kwitansi tersimpan (mengikuti frame 20/21 yang sudah ada)
+
+Frame resmi Kwitansi tetap dipakai. Penyesuaian atas keputusan pengguna (perancang UI proyek):
+
+- Formulir Buat Kwitansi (mode API) menambah pilihan **Masuk ke Kategori Dana** setelah Metode Pembayaran, dengan gaya field yang sama. Tombol simpan menampilkan "Menyimpan…" dan pesan error dari server.
+- Nomor kwitansi tampil pada baris "No" setelah tersimpan; label "Draft / Belum tersimpan ke server" hanya muncul untuk pratinjau mode mock. Berkas PNG dinamai `kwitansi-masjid-al-hidayah-<nomor>.png`.
+- Panel baru **Riwayat Kwitansi** di bawah tombol Unduh PNG (mode API): daftar nomor, pemberi, tanggal, kategori, nominal hijau, dan tombol "Tampilkan" untuk memuat kwitansi ke pratinjau dan mengunduh ulang, diikuti tombol ikon Edit (hijau) dan Batalkan (ikon Ban, merah) 40 px untuk kwitansi aktif. Kwitansi dibatalkan diberi badge merah "Dibatalkan", nomor dan nominal abu-abu dengan nominal dicoret, dan hanya tombol "Tampilkan". Baris terpilih berlatar hijau muda.
+- Edit memakai formulir Buat Kwitansi yang sama dengan judul "Edit Kwitansi <nomor>" dan tombol "Simpan Perubahan". Batalkan memakai dialog konfirmasi `AdminModalDialog.css` ("Batalkan Kwitansi?", tombol "Ya, Batalkan Kwitansi") dengan checkbox "Hapus juga transaksi pemasukannya" (bawaan tidak dicentang) dan keterangan dampaknya. Pratinjau kwitansi dibatalkan menampilkan label merah "Dibatalkan — kwitansi ini tidak berlaku" dan tombol Unduh PNG nonaktif.
