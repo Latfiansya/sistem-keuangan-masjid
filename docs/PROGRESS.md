@@ -1373,3 +1373,26 @@ Status: implementasi selesai dan tervalidasi pada branch `fitur/backend-admin`; 
 - **Catatan Database yang masih perlu dilengkapi tim DB**: beberapa kolom/data bisnis masih kosong (`bank_no_rekening`, `nomor_whatsapp`, `kode_akses_laporan`, `laporan_publik_aktif=false`), role akun `id=2` (`Super Admin`) masih bertipe `Admin`, file `/images/qris-donasi.png` belum ada di aset publik frontend, serta beberapa kolom UI belum tersedia di tabel PostgreSQL (`warna` kategori, `personName`/`notes`/`showDonorNamePublic` transaksi, `messageTemplate`/`donationNote` + toggle terpisah donasi, endpoint `t_kwitansi`, dan endpoint upload file gambar).
 
 Usulan pesan commit: `feat: hubungkan service frontend dan crud admin ke backend api`.
+
+## Transfer Dana antar Kategori (23 November 2026)
+
+Status: implementasi selesai dan tervalidasi pada branch `fitur/transfer-dana` (dibuat dari `main`, terpisah dari `fitur/konten-profil-admin`); menunggu peninjauan dan commit manual oleh pengguna. Skema database tidak diubah dan tidak ada data yang ditulis ke database tim.
+
+### Implementasi
+
+- **Backend**: endpoint `GET/POST /api/admin/transfers` dan `DELETE /api/admin/transfers/:id` (controller/service/repository `transfer*`). Helper `parseIsoCalendarDate`, `parseTransactionAmount`, dan `hasControlChars` di `adminFinanceService.js` diekspor untuk dipakai ulang. Perhitungan saldo dan penolakan saldo negatif mengandalkan trigger/function database yang sudah dibuat tim DB.
+- **Frontend**: tombol dan dialog Transfer Dana serta panel Riwayat Transfer Dana di halaman Kelola Dana (`components/AdminTransfer.jsx`), service `adminTransferService.js` (mode mock di memori dan mode API), serta `reloadWorkspace` di `AdminLayout` agar saldo Dashboard diperbarui setelah transfer.
+
+### Verifikasi
+
+- Backend `npm run lint` dan `npm test`: **PASS** (47 test).
+- Frontend `npm run lint`: 0 error (1 peringatan lama di `admin-report-download.browser.test.js`). `npm test`: **PASS** (129 lulus, 11 suite browser dilewati). `npm run build`: **PASS**.
+- SQL transfer dicek ke `db_keuangan_masjid_dev` dalam sesi read-only: pembacaan dijalankan langsung, `INSERT`/`DELETE` hanya divalidasi dengan `EXPLAIN` lalu di-ROLLBACK. Jumlah transfer tetap 1 dan `t_activity_log` tetap 69.
+
+### Batasan
+
+- Laporan keuangan (publik dan admin) hanya memperhitungkan transfer yang terjadi sebelum awal periode laporan; transfer di dalam periode belum tercermin pada saldo per kategori di laporan. Total seluruh kategori tidak terpengaruh. Perilaku ini sudah ada sebelum fitur ini dan perlu diputuskan tersendiri.
+- Edit transfer belum tersedia; koreksi dengan hapus lalu catat ulang.
+- Tampilan belum diuji manual di browser terhadap API langsung.
+
+Usulan pesan commit: `feat: tambah transfer dana antar kategori di kelola dana`.

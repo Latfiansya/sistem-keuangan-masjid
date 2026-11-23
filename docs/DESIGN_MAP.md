@@ -489,3 +489,12 @@ Desain tabel, kategori, lebar area dokumen, A4 landscape, isi dan pagination tet
 Tombol navigasi dan preset di laporan utama mengikuti radius tombol Kembali ke Laporan/Lanjut ke Pratinjau (16 px pada desktop besar, 12 px pada layar ≤1399 px), dengan border 1 px, surface terang dan teks/ikon hijau. Pilih Tanggal aktif tetap hijau solid; tinggi dan ukuran luar tombol sebelumnya dipertahankan. Kontrol unduhan di pemilihan format/pratinjau tidak ikut berubah.
 
 Panel Pemasukan/Pengeluaran memakai kepadatan Detail Periode Admin sebagai acuan: header desktop 72 px, ikon 40 px, judul 20 px, subtotal 24 px, baris minimum 56 px, uraian 14 px dan badge 11 px. Mobile menggunakan header 64 px dan teks membungkus sesuai kebutuhan. Dua kolom desktop, teal/rose, identitas kategori, Resume Saldo dan template ekspor dipertahankan. CSS dibatasi pada laporan utama; hasil PNG tetap identik dengan baseline. Bukti empat viewport tersedia di `tmp/public-report-density-qa/`, tidak di-stage.
+
+## Admin — Transfer Dana pada Kelola Dana (tanpa frame Figma)
+
+Tidak ada frame Figma; atas keputusan pengguna (perancang UI proyek) tampilan mengikuti gaya halaman admin yang sudah ada.
+
+- Panel Kelola Transaksi pada `/admin/kelola-dana` mendapat tombol ketiga **Transfer Dana** berwarna biru (#1f6fb2) dengan ikon ArrowRightLeft, sejajar tombol Pemasukan (hijau) dan Pengeluaran (merah). Tombol nonaktif bila kategori dana kurang dari dua.
+- Dialog memakai `AdminModalDialog.css`: Tanggal Transfer, Dari Kategori (beserta saldo), Ke Kategori (tanpa kategori asal), Nominal dengan `AdminRupiahInput`, Keterangan opsional, dan petunjuk saldo kategori asal.
+- Panel **Riwayat Transfer Dana** di bawah Transaksi Terbaru: ikon biru, rute "Asal → Tujuan", tanggal dan keterangan, nominal biru, serta tombol hapus merah 44 px dengan dialog konfirmasi.
+- Mode mock: transfer dicatat di memori sesi dan tidak mengubah snapshot saldo, konsisten dengan perilaku transaksi mock.

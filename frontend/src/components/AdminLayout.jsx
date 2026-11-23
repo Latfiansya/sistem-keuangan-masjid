@@ -157,6 +157,12 @@ export default function AdminLayout() {
     setDashboard(await loadWorkspace())
   }
 
+  // Memuat ulang ringkasan saldo setelah perubahan di luar transaksi (misalnya transfer dana); mode mock memakai snapshot tetap.
+  async function reloadWorkspace() {
+    if (dataSource === 'mock') return
+    setDashboard(await loadWorkspace())
+  }
+
   async function handleLogout() {
     if (dataSource !== 'mock') {
       try { await logoutAdmin() } catch { /* tetap arahkan ke login */ }
@@ -191,7 +197,7 @@ export default function AdminLayout() {
           <h1>{title}</h1>
           <AdminHeaderActions key={pathname} account={account} dashboard={dashboard} onOpen={() => setMenuOpen(false)} />
         </header>
-        <main id="admin-content" className="admin-content" tabIndex={-1}><Outlet context={{ dashboard, error, saveCategory, deleteCategory, addTransaction, editTransaction, deleteTransaction, reportView, setReportView, reportDownload, setReportDownload, donationDraft, setDonationDraft }} /></main>
+        <main id="admin-content" className="admin-content" tabIndex={-1}><Outlet context={{ dashboard, error, saveCategory, deleteCategory, addTransaction, editTransaction, deleteTransaction, reloadWorkspace, reportView, setReportView, reportDownload, setReportDownload, donationDraft, setDonationDraft }} /></main>
       </div>
     </div>
   )

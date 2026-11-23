@@ -12,6 +12,8 @@
 .admin-funds-buttons { display: flex; flex-wrap: wrap; gap: 12px; }
 .admin-funds-buttons button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 12px 20px; border: 0; border-radius: 14px; color: #fff; background: #148642; box-shadow: 0 4px 8px #203d2526; font-size: 16px; font-weight: 650; line-height: 1.5; }
 .admin-funds-buttons button + button { background: #ca003a; }
+.admin-funds-buttons .admin-funds-transfer { background: #1f6fb2; }
+.admin-funds-buttons button:disabled { opacity: .65; cursor: not-allowed; }
 @media (max-width: 1023px) {
   .admin-funds-hero { padding: 28px 32px; }
   .admin-funds-hero h2 { font-size: 32px; }

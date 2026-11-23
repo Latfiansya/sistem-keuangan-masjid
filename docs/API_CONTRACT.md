@@ -60,6 +60,9 @@ Prefix default `/api` dapat dikonfigurasi melalui `API_BASE_PATH` di environment
 | PUT | `/api/admin/categories/:id` | Mengubah nama dan warna kategori dana | Objek kategori yang diperbarui (`200`) |
 | DELETE | `/api/admin/categories/:id` | Menghapus kategori dana (ditolak jika kategori memiliki saldo atau dipakai transaksi) | `{ "deletedId" }` |
 | GET | `/api/admin/finance/report` | Laporan keuangan admin (249 transaksi Jan–Okt 2026, rekap 10 bulan, filter, & pagination) | Objek laporan lengkap beserta `monthlyRecap` & `pagination` |
+| GET | `/api/admin/transfers` | Riwayat transfer dana antar kategori, terbaru lebih dulu | `{ "transfers", "totalCount" }` |
+| POST | `/api/admin/transfers` | Mencatat transfer dana antar kategori; saldo diperbarui trigger database dan ditolak bila saldo asal tidak mencukupi | Objek transfer baru (`201`) |
+| DELETE | `/api/admin/transfers/:id` | Menghapus transfer dana; ditolak database bila saldo kategori tujuan menjadi negatif | `{ "deletedId" }` |
 | GET | `/api/admin/transactions/:id` | Detail satu transaksi berdasarkan ID | Objek transaksi |
 | POST | `/api/admin/transactions` | Menambah transaksi pemasukan/pengeluaran baru dengan validasi sisi server | Objek transaksi baru (`201`) |
 | PUT | `/api/admin/transactions/:id` | Mengubah data transaksi berdasarkan ID | Objek transaksi yang diperbarui (`200`) |
@@ -227,3 +230,19 @@ Penjumlahan aktual cocok dengan audit. Resume Blade salah menuliskan pengeluaran
 Preset mock menggunakan acuan 30 April 2026: 1w = 24–30 April; 1m = 1–30 April; 3m = 1 Februari–30 April (unavailable). Draft kustom berlaku setelah Terapkan. Pilihan bulan menggunakan awal/akhir bulan kalender. Tidak ada filter kategori atau sorting. M1.6a memakai hasil getReport yang sama untuk pilihan format dan pratinjau PDF/PNG di frontend, tanpa kebutuhan endpoint atau perubahan payload. M1.6b merender lembar yang sama menjadi PDF atau PNG/ZIP sepenuhnya di browser, tanpa permintaan data baru, upload, endpoint ekspor atau perubahan kontrak HTTP.
 
 Endpoint GET `/api/public/finance/report?startDate=2026-04-01&endDate=2026-04-30` mengembalikan envelope proyek dengan data berbentuk hasil `getReport` di atas, termasuk saldo awal sesuai rentang dan ringkasan yang konsisten dengan transaksi. Jika `startDate` dan `endDate` sama-sama tidak dikirim, backend memakai rentang cakupan default (1–30 April 2026); jika hanya salah satu dikirim, format tanggal kalender tidak valid, terbalik, atau melebihi batas 366 hari, backend mengembalikan HTTP 400 `BAD_REQUEST`. Rentang valid di luar cakupan mengembalikan HTTP 200 dengan `status: "unavailable"`, `transactions: []`, dan `summary: null`. Sumber database PostgreSQL serta endpoint pengurus/CRUD akan dihubungkan pada fase berikutnya. Gate sandi tetap hanya pembatas antarmuka dan tidak melindungi endpoint laporan tanpa autentikasi.
+
+## Transfer dana antar kategori — fitur/transfer-dana
+
+Payload `POST /api/admin/transfers`:
+
+| Field | Aturan |
+| --- | --- |
+| `fromCategoryId` | ID API kategori asal (`mosque`, `maintenance`, `friday`, atau ID numerik), wajib dan aktif |
+| `toCategoryId` | ID API kategori tujuan, wajib, aktif, dan berbeda dari asal |
+| `amount` | Bilangan bulat Rupiah 1–999.999.999.999 |
+| `date` | Tanggal kalender `YYYY-MM-DD` |
+| `note` | Opsional, maksimal 255 karakter |
+
+Objek transfer: `{ "id", "date", "fromCategoryId", "fromCategoryLabel", "toCategoryId", "toCategoryLabel", "amount", "note", "createdBy" }`.
+
+Backend tidak menghitung saldo sendiri. Trigger `trg_t_transfer_dana_saldo` memperbarui `saldo_terkini` kedua kategori melalui `fn_hitung_saldo`, dan `fn_cek_saldo_tidak_negatif` menolak transfer atau penghapusan yang membuat saldo negatif; pesan database tersebut diteruskan sebagai `400 BAD_REQUEST`. Setiap transfer tercatat di `t_activity_log` (modul `Keuangan`). Transfer tidak dihitung sebagai pemasukan atau pengeluaran. Edit transfer belum tersedia; koreksi dilakukan dengan menghapus lalu mencatat ulang.

@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs'
+import { createHttpError } from '../../src/utils/httpError.js'
 
 const TEST_PASSWORD_HASH = bcrypt.hashSync('password123', 4)
 
@@ -165,6 +166,12 @@ export function createTestRepositories() {
     messageTemplate: 'Template konfirmasi donasi uji',
     donationNote: '',
   }
+
+  let nextTransferSeq = 2
+  let transfers = [
+    { id: '1', date: '2026-02-01', fromCategoryId: 'mosque', fromCategoryLabel: 'Kas Masjid', toCategoryId: 'maintenance', toCategoryLabel: 'Kotak Pembangunan & Pemeliharaan', amount: 753000, note: 'Dana tambahan internal', createdBy: 'Migrasi Excel' },
+  ]
+  const transferBalances = { mosque: 12868200, maintenance: 3654000, friday: 856000 }
 
   let nextAccountSeq = 10
   let accounts = [
@@ -463,6 +470,37 @@ export function createTestRepositories() {
       async saveWebsiteSettings(next) {
         websiteSettings = structuredClone(next)
         return structuredClone(websiteSettings)
+      },
+    },
+    transferRepository: {
+      async findAll() {
+        return structuredClone([...transfers].sort((x, y) => y.date.localeCompare(x.date) || Number(y.id) - Number(x.id)))
+      },
+      async insert({ fromCategoryId, toCategoryId, amount, date, note }) {
+        const labels = { mosque: 'Kas Masjid', maintenance: 'Kotak Pembangunan & Pemeliharaan', friday: "Kotak Jum'at Berkah" }
+        if (!labels[fromCategoryId] || !labels[toCategoryId]) {
+          throw createHttpError(400, 'BAD_REQUEST', 'Kategori dana asal atau tujuan tidak ditemukan atau tidak aktif.')
+        }
+        // Meniru trigger fn_cek_saldo_tidak_negatif di database.
+        if (amount > transferBalances[fromCategoryId]) {
+          throw createHttpError(400, 'BAD_REQUEST', `Saldo kategori dana "${labels[fromCategoryId]}" tidak mencukupi.`)
+        }
+        transferBalances[fromCategoryId] -= amount
+        transferBalances[toCategoryId] += amount
+        const created = {
+          id: String(nextTransferSeq++), date, fromCategoryId, fromCategoryLabel: labels[fromCategoryId],
+          toCategoryId, toCategoryLabel: labels[toCategoryId], amount, note, createdBy: 'Super Admin',
+        }
+        transfers.push(created)
+        return structuredClone(created)
+      },
+      async deleteById(id) {
+        const target = transfers.find((item) => item.id === String(id))
+        if (!target) return false
+        transferBalances[target.fromCategoryId] += target.amount
+        transferBalances[target.toCategoryId] -= target.amount
+        transfers = transfers.filter((item) => item.id !== String(id))
+        return true
       },
     },
     adminManagementRepository: {
