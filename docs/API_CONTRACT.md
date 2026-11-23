@@ -60,6 +60,10 @@ Prefix default `/api` dapat dikonfigurasi melalui `API_BASE_PATH` di environment
 | PUT | `/api/admin/categories/:id` | Mengubah nama dan warna kategori dana | Objek kategori yang diperbarui (`200`) |
 | DELETE | `/api/admin/categories/:id` | Menghapus kategori dana (ditolak jika kategori memiliki saldo atau dipakai transaksi) | `{ "deletedId" }` |
 | GET | `/api/admin/finance/report` | Laporan keuangan admin (249 transaksi Jan–Okt 2026, rekap 10 bulan, filter, & pagination) | Objek laporan lengkap beserta `monthlyRecap` & `pagination` |
+| GET | `/api/admin/receipts` | Riwayat kwitansi jamaah (aktif dan dibatalkan) beserta transaksi pemasukannya, terbaru lebih dulu | `{ "receipts", "totalCount" }` |
+| POST | `/api/admin/receipts` | Mencatat transaksi pemasukan dan menerbitkan kwitansi bernomor dalam satu transaksi database | Objek kwitansi baru (`201`) |
+| PUT | `/api/admin/receipts/:id` | Mengubah kwitansi aktif beserta transaksi pemasukannya (payload sama dengan POST); nomor kwitansi tetap; kwitansi dibatalkan menghasilkan `409` | Objek kwitansi yang diperbarui (`200`) |
+| POST | `/api/admin/receipts/:id/cancel` | Membatalkan kwitansi (baris tetap tersimpan); body `{ "withTransaction": true }` ikut menghapus transaksi pemasukannya | `{ "receipt", "deletedTransactionId" }` |
 | GET | `/api/admin/transactions/:id` | Detail satu transaksi berdasarkan ID | Objek transaksi |
 | POST | `/api/admin/transactions` | Menambah transaksi pemasukan/pengeluaran baru dengan validasi sisi server | Objek transaksi baru (`201`) |
 | PUT | `/api/admin/transactions/:id` | Mengubah data transaksi berdasarkan ID | Objek transaksi yang diperbarui (`200`) |
@@ -255,3 +259,28 @@ Section tidak dikenal atau ID tidak ditemukan menghasilkan `404 NOT_FOUND`; payl
 - `GET /api/admin/profile` kini juga mengembalikan `logoPath`. `GET /api/public/content` menambahkan `photoSha256` (SHA-256 foto unggahan, diambil dari URL `foto_path`, atau `null`) agar frontend tetap menampilkan overlay gedung hero bila foto di database adalah salinan foto bawaan.
 - Skrip `npm run db:seed-images --workspace backend` menyimpan foto dan logo ke kolom `foto_isi`/`logo_isi`: aset WebP bawaan, atau berkas asli PNG/JPG/WebP lewat `--photo=<jalur>` dan `--logo=<jalur>` (format dikenali dari isi berkas). QRIS hanya disimpan bila `--qris=<jalur>` diberikan. `--dry-run` hanya memeriksa, `--force` menimpa unggahan yang ada.
 - Frontend hanya memakai path berpola `/api/public/files/<masjid-photo|logo|qris>/<sha256>`; path lama seperti `/images/...` diabaikan dan halaman kembali memakai aset bawaan.
+
+## Kwitansi jamaah — fitur/simpan-kwitansi
+
+Payload `POST /api/admin/receipts`:
+
+| Field | Aturan |
+| --- | --- |
+| `categoryId` | ID API kategori dana tujuan pemasukan (`mosque`, `maintenance`, `friday`, atau ID numerik), wajib dan aktif |
+| `payer` | "Telah terima dari", wajib, maks 150 karakter (`t_kwitansi.telah_terima_dari`) |
+| `purpose` | "Untuk Pembayaran", wajib, maks 255 karakter; juga menjadi uraian transaksi |
+| `method` | `Tunai`, `Transfer`, atau `QRIS` (`ck_t_kwitansi_metode`); formulir menampilkan "Transfer Bank" untuk `Transfer` |
+| `amount` | Bilangan bulat Rupiah 1–999.999.999.999 |
+| `date` | Tanggal kalender `YYYY-MM-DD`; menjadi tanggal transaksi |
+
+Objek kwitansi: `{ "id", "number", "payer", "purpose", "method", "amount", "date", "status", "cancelledAt", "transactionId", "categoryId", "categoryLabel", "createdBy", "createdAt" }`. `status` = `Aktif` atau `Dibatalkan`; `transactionId`/`categoryId` bernilai `null` bila transaksi pemasukannya sudah dihapus.
+
+Skema mengikuti `docs/sql/2026-11-24-kwitansi-pembatalan.sql` (kolom `nominal`, `tanggal`, `dibatalkan_at` pada `t_kwitansi`; `transaksi_id` boleh NULL dengan FK `ON DELETE SET NULL`).
+
+- Satu permintaan mencatat `t_transaksi` (jenis `MASUK`, uraian = `purpose`) lalu `t_kwitansi` yang terhubung (`transaksi_id` unik); keduanya tersimpan atau dibatalkan bersama. Saldo kategori dan activity log diperbarui oleh trigger database. Nama pemberi tidak dimasukkan ke uraian transaksi agar tidak tampil di laporan publik.
+- **Nomor kwitansi memakai format sementara** `KW/<tahun>/<bulan>/<urut 4 digit>` (urutan diulang tiap bulan menurut tanggal kwitansi) sampai format resmi ditetapkan klien; ubah di `backend/src/utils/receiptNumber.js`. Penomoran dikunci dengan `pg_advisory_xact_lock`; bila tetap bentrok dengan `uq_t_kwitansi_nomor`, API mengembalikan `409`.
+- `PUT` memperbarui `t_transaksi` (kategori, uraian, nominal, tanggal) dan `t_kwitansi` (pemberi, keperluan, metode) dalam satu transaksi; **nomor kwitansi tidak berubah** walau tanggal dipindah ke bulan lain.
+- Kwitansi **tidak pernah dihapus**. `POST /:id/cancel` mengisi `dibatalkan_at` dan menyalin nominal/tanggal transaksi terkini ke `t_kwitansi`; dengan `withTransaction: true` transaksi pemasukannya ikut dihapus (FK `ON DELETE SET NULL` membuat `transaksi_id` NULL, baris kwitansi tetap ada). Bila saldo kategori sudah terpakai, trigger `fn_cek_saldo_tidak_negatif` menolak dan API mengembalikan `400`. Kwitansi yang sudah dibatalkan menghasilkan `409`; ID tidak ditemukan `404`.
+- Kwitansi aktif memakai nominal/tanggal transaksi terkini; kwitansi dibatalkan atau yang transaksinya dihapus dari Laporan memakai salinan di `t_kwitansi` dan berstatus `Dibatalkan`.
+- Karena semua baris (termasuk yang dibatalkan) ikut dihitung, nomor kwitansi tidak pernah dipakai ulang.
+- `t_kwitansi.file_path` tidak diisi; PNG dibuat di browser saat diunduh.

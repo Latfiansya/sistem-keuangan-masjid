@@ -1425,3 +1425,29 @@ Status: implementasi selesai pada branch `fitur/upload-berkas` (dibuat dari `fit
 - Tampilan belum diuji manual di browser terhadap API langsung.
 
 Usulan pesan commit: `feat: unggah foto, logo, dan qris ke database dan tampilkan di halaman publik`.
+
+## Simpan Kwitansi Jamaah (23 November 2026)
+
+Status: implementasi selesai pada branch `fitur/simpan-kwitansi` (dibuat dari `fitur/upload-berkas`); SQL `docs/sql/2026-11-24-kwitansi-pembatalan.sql` sudah dijalankan DBA; menunggu commit manual oleh pengguna.
+
+### Implementasi
+
+- **Backend**: `GET/POST /api/admin/receipts` serta `PUT /api/admin/receipts/:id` dan `POST /api/admin/receipts/:id/cancel` (controller/service/repository `receipt*`). Edit memperbarui kwitansi aktif dan transaksi pemasukannya tanpa mengubah nomor. Kwitansi tidak dihapus melainkan dibatalkan (tetap tersimpan) sehingga nomornya tidak dipakai ulang; pembatalan bisa sekaligus menghapus transaksi pemasukannya.
+- **Database (dijalankan manual oleh DBA)**: kolom `nominal`, `tanggal`, `dibatalkan_at` pada `t_kwitansi`, `transaksi_id` boleh NULL dengan FK `ON DELETE SET NULL`, serta `v_transaksi_lengkap` hanya menghitung kwitansi aktif. POST mencatat pemasukan dan kwitansi dalam satu transaksi database dengan nomor format sementara `KW/tahun/bulan/urut` dari `utils/receiptNumber.js` (dikunci `pg_advisory_xact_lock`). Helper validasi `adminFinanceService` diekspor dengan perubahan identik dengan branch `fitur/transfer-dana` agar tidak bentrok saat merge.
+- **Frontend**: `adminReceiptService.js` (pemetaan metode "Transfer Bank" ↔ `Transfer` dan tanggal dd/mm/yyyy ↔ ISO), pilihan Kategori Dana di formulir, nomor resmi di pratinjau dan nama berkas PNG, panel Riwayat Kwitansi dengan tombol Tampilkan/Edit/Batalkan, status Dibatalkan, dan dialog pembatalan, serta `reloadWorkspace` di `AdminLayout` (identik dengan branch transfer-dana) agar saldo dashboard ikut diperbarui. Batas "Untuk Pembayaran" diturunkan dari 500 ke 255 karakter mengikuti kolom database. Mode mock tetap berupa draft lokal.
+- **Test**: skrip `npm test` frontend kini memakai `--test-concurrency=4`; tanpa batas, server Vite yang berjalan paralel menghabiskan memori WebAssembly di mesin pengembang dan menggagalkan file test yang tidak berkaitan.
+
+### Verifikasi
+
+- Backend `npm run lint` dan `npm test`: **PASS** (59 test).
+- Frontend `npm run lint`: 0 error (1 peringatan lama). `npm test`: **PASS** (141 lulus, 11 suite browser dilewati). `npm run build`: **PASS**.
+- Query kwitansi dicek ke `db_keuangan_masjid_dev` dalam sesi read-only: pembacaan dan kunci penomoran berjalan, `INSERT` transaksi dan kwitansi serta `UPDATE`/`DELETE` untuk edit dan hapus lolos `EXPLAIN` tanpa dieksekusi; jumlah kwitansi (0) dan transaksi (374) tidak berubah. SQL pembatalan dicek sintaksnya dalam sesi read-only (semua perintah lolos parsing). Setelah SQL dijalankan: kolom `nominal`/`tanggal` NOT NULL, `dibatalkan_at`, `transaksi_id` nullable, FK `ON DELETE SET NULL`, `ck_t_kwitansi_nominal`, dan view terverifikasi; query buat, edit, batalkan, dan batalkan + hapus pemasukan lolos `EXPLAIN` tanpa dieksekusi (kwitansi 0, transaksi 374, activity log 74 tidak berubah).
+
+### Batasan
+
+- Nomor kwitansi masih format sementara; ganti fungsi di `backend/src/utils/receiptNumber.js` setelah format resmi diterima dari klien.
+- Pembatalan tidak dapat diurungkan; kwitansi baru perlu diterbitkan bila pembatalan keliru.
+- Bila transaksi dihapus dari Laporan, kwitansinya otomatis berstatus Dibatalkan (transaksi_id NULL) tetapi `dibatalkan_at` tidak terisi.
+- Tampilan belum diuji manual di browser terhadap API langsung.
+
+Usulan pesan commit: `feat: simpan, edit, dan batalkan kwitansi jamaah sekaligus catat pemasukan`.

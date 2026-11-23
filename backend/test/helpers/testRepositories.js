@@ -1,4 +1,6 @@
 import bcrypt from 'bcryptjs'
+import { buildReceiptNumber, getReceiptNumberPrefix, nextReceiptSequence } from '../../src/utils/receiptNumber.js'
+import { createHttpError } from '../../src/utils/httpError.js'
 
 const TEST_PASSWORD_HASH = bcrypt.hashSync('password123', 4)
 
@@ -168,6 +170,7 @@ export function createTestRepositories() {
   }
 
   const storedFiles = new Map()
+  const receipts = []
 
   let nextProfileContentSeq = 100
   const profileContent = {
@@ -490,6 +493,44 @@ export function createTestRepositories() {
       async saveWebsiteSettings(next) {
         websiteSettings = structuredClone(next)
         return structuredClone(websiteSettings)
+      },
+    },
+    // Meniru pencatatan pemasukan + kwitansi dalam satu transaksi, dengan penomoran sementara KW/tahun/bulan/urut.
+    receiptRepository: {
+      async findAll() {
+        return structuredClone([...receipts].reverse())
+      },
+      async createWithIncome({ categoryId, payer, purpose, method, amount, date }) {
+        const labels = { mosque: 'Kas Masjid', maintenance: 'Kotak Pembangunan & Pemeliharaan', friday: "Kotak Jum'at Berkah" }
+        if (!labels[categoryId]) throw createHttpError(400, 'BAD_REQUEST', 'Kategori dana tidak ditemukan atau tidak aktif.')
+        const prefix = getReceiptNumberPrefix(date)
+        const number = buildReceiptNumber(date, nextReceiptSequence(receipts.map((item) => item.number), prefix))
+        const id = String(receipts.length + 1)
+        const created = { id, number, payer, purpose, method, amount, date, status: 'Aktif', cancelledAt: null, transactionId: String(900 + receipts.length), categoryId, categoryLabel: labels[categoryId], createdBy: 'Super Admin', createdAt: `${date}T09:00:00` }
+        receipts.push(created)
+        return structuredClone(created)
+      },
+      async updateWithIncome(id, { categoryId, payer, purpose, method, amount, date }) {
+        const labels = { mosque: 'Kas Masjid', maintenance: 'Kotak Pembangunan & Pemeliharaan', friday: "Kotak Jum'at Berkah" }
+        const target = receipts.find((item) => item.id === String(id))
+        if (!target) return null
+        if (target.status !== 'Aktif') throw createHttpError(409, 'CONFLICT', 'Kwitansi sudah dibatalkan sehingga tidak dapat diubah.')
+        if (!labels[categoryId]) throw createHttpError(400, 'BAD_REQUEST', 'Kategori dana tidak ditemukan atau tidak aktif.')
+        Object.assign(target, { payer, purpose, method, amount, date, categoryId, categoryLabel: labels[categoryId] })
+        return structuredClone(target)
+      },
+      // Kwitansi tetap tersimpan (berstatus Dibatalkan) sehingga nomornya tidak dipakai ulang.
+      async cancelById(id, { withTransaction = false } = {}) {
+        const target = receipts.find((item) => item.id === String(id))
+        if (!target) return null
+        if (target.status !== 'Aktif') throw createHttpError(409, 'CONFLICT', 'Kwitansi sudah dibatalkan sehingga tidak dapat diubah.')
+        // Meniru trigger saldo: pemasukan bertanda "saldo-terpakai" tidak boleh dihapus.
+        if (withTransaction && target.purpose === 'saldo-terpakai') {
+          throw createHttpError(400, 'BAD_REQUEST', 'Saldo kategori dana "Kas Masjid" tidak mencukupi.')
+        }
+        const deletedTransactionId = withTransaction ? target.transactionId : null
+        Object.assign(target, { status: 'Dibatalkan', cancelledAt: `${target.date}T10:00:00` }, withTransaction ? { transactionId: null, categoryId: null, categoryLabel: '' } : {})
+        return { receipt: structuredClone(target), deletedTransactionId }
       },
     },
     // Meniru kolom *_path/*_isi/*_mime: satu gambar terkini per target.

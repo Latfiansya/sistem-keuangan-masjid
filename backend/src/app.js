@@ -8,6 +8,7 @@ import { createFileController } from './controllers/fileController.js'
 import { createHealthController } from './controllers/healthController.js'
 import { createProfileContentController } from './controllers/profileContentController.js'
 import { createPublicController } from './controllers/publicController.js'
+import { createReceiptController } from './controllers/receiptController.js'
 import { createReportController } from './controllers/reportController.js'
 import { createRateLimiter } from './middlewares/rateLimiter.js'
 import { createRequireAdminAuth } from './middlewares/requireAdminAuth.js'
@@ -20,6 +21,7 @@ import { createFileRepository } from './repositories/fileRepository.js'
 import { createFinanceReportRepository } from './repositories/financeReportRepository.js'
 import { createProfileContentRepository } from './repositories/profileContentRepository.js'
 import { createPublicContentRepository } from './repositories/publicContentRepository.js'
+import { createReceiptRepository } from './repositories/receiptRepository.js'
 import { createAdminRoutes } from './routes/adminRoutes.js'
 import { createHealthRoutes } from './routes/healthRoutes.js'
 import { createPublicRoutes } from './routes/publicRoutes.js'
@@ -30,6 +32,7 @@ import { createAgendaService } from './services/agendaService.js'
 import { createFileService } from './services/fileService.js'
 import { createProfileContentService } from './services/profileContentService.js'
 import { createPublicContentService } from './services/publicContentService.js'
+import { createReceiptService } from './services/receiptService.js'
 import { createReportService } from './services/reportService.js'
 
 export function createApp(overrides = {}) {
@@ -60,6 +63,7 @@ export function createApp(overrides = {}) {
   const adminManagementRepository = repos.adminManagementRepository ?? createAdminManagementRepository(dbPool)
   const profileContentRepository = repos.profileContentRepository ?? createProfileContentRepository(dbPool)
   const fileRepository = repos.fileRepository ?? createFileRepository(dbPool)
+  const receiptRepository = repos.receiptRepository ?? createReceiptRepository(dbPool)
 
   const app = express()
 
@@ -86,6 +90,7 @@ export function createApp(overrides = {}) {
   const adminSettingsController = createAdminSettingsController(adminSettingsService)
   const profileContentController = createProfileContentController(createProfileContentService(profileContentRepository))
   const fileController = createFileController(createFileService(fileRepository))
+  const receiptController = createReceiptController(createReceiptService(receiptRepository))
   const adminManagementService = createAdminManagementService(adminManagementRepository, {
     authSecret,
     authTokenTtlMs,
@@ -113,6 +118,7 @@ export function createApp(overrides = {}) {
       adminManagementController,
       profileContentController,
       fileController,
+      receiptController,
       loginRateLimiter,
       requireAdminAuth,
     })
