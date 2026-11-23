@@ -31,6 +31,17 @@ function mapTransferRow(row) {
   }
 }
 
+// Daftar transfer pada rentang tanggal inklusif, untuk catatan transfer internal di laporan.
+export async function findTransfersInRange(db, startDate, endDate) {
+  const { rows } = await db.query(
+    `${TRANSFER_SELECT}
+     WHERE t.tanggal >= $1::date AND t.tanggal <= $2::date
+     ORDER BY t.tanggal ASC, t.id ASC`,
+    [startDate, endDate]
+  )
+  return rows.map(mapTransferRow)
+}
+
 // Data access layer transfer dana antar kategori (keu_masjid.t_transfer_dana).
 // Saldo kategori diperbarui oleh trigger trg_t_transfer_dana_saldo dan dijaga tidak negatif oleh database.
 export function createTransferRepository(db = getDefaultDatabasePool()) {

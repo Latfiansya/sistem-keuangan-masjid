@@ -1,4 +1,4 @@
-import { formatReportDate, formatReportMonth, formatReportPeriod, formatReportNumber, formatRupiah } from '../utils/reportFormatters.js'
+import { formatReportDate, formatReportMonth, formatReportPeriod, formatReportNumber, formatRupiah, formatTransferNote } from '../utils/reportFormatters.js'
 import { adminCategoryColorStyle } from '../utils/adminCategoryColors.js'
 
 const balance = (amount) => amount === null ? 'Belum tersedia' : formatReportNumber(amount)
@@ -17,7 +17,7 @@ export default function AdminDownloadSheet({ document, page, pageCount, measurin
     <div className="admin-download-sheet-content">
       <div className={`admin-download-section-title admin-download-section-title--${page.sectionId}`}><h4>{page.title}</h4><span>{transactionCount} transaksi periode · seluruh kategori</span></div>
       <AdminDownloadTotals document={document} />
-      <p className="admin-download-sheet-note">SIMULASI / MOCK · Belum tersimpan ke server{document.sessionChangeCount > 0 ? ` · ${document.sessionChangeCount} perubahan sesi diperhitungkan` : ''}. {document.note}</p>
+      <p className="admin-download-sheet-note">SIMULASI / MOCK · Belum tersimpan ke server{document.sessionChangeCount > 0 ? ` · ${document.sessionChangeCount} perubahan sesi diperhitungkan` : ''}. {document.note}{formatTransferNote(document.transfers) ? ` ${formatTransferNote(document.transfers)}` : ''}</p>
       <table className={ledger ? 'admin-download-ledger' : 'admin-download-balances'}>
         <thead><tr>{headings.map((heading) => <th scope="col" key={heading}>{heading}</th>)}</tr></thead>
         <tbody>{page.rows.length ? page.rows.map((row) => {

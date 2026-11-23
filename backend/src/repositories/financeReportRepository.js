@@ -4,6 +4,7 @@ import {
   resolveCategoryColor,
   toRupiahInteger,
 } from '../utils/financeMapping.js'
+import { findTransfersInRange } from './transferRepository.js'
 
 const INDONESIAN_MONTHS = [
   'Januari',
@@ -93,11 +94,12 @@ export function createFinanceReportRepository(db = getDefaultDatabasePool()) {
         return {
           ...metadata,
           transactions: [],
+          transfers: [],
           priorMutationsByCategory: new Map(),
         }
       }
 
-      const [priorTrxRes, priorTransferInRes, priorTransferOutRes, rangeTrxRes] = await Promise.all([
+      const [priorTrxRes, priorTransferInRes, priorTransferOutRes, rangeTrxRes, transfers] = await Promise.all([
         db.query(
           `SELECT kategori_dana_id,
                   COALESCE(SUM(CASE WHEN jenis = 'MASUK' THEN nominal ELSE 0 END), 0) AS total_masuk,
@@ -131,6 +133,7 @@ export function createFinanceReportRepository(db = getDefaultDatabasePool()) {
            ORDER BY tanggal ASC, id ASC`,
           [startDate, endDate]
         ),
+        findTransfersInRange(db, startDate, endDate),
       ])
 
       const priorMutationsByCategory = new Map()
@@ -169,6 +172,7 @@ export function createFinanceReportRepository(db = getDefaultDatabasePool()) {
         ...metadata,
         priorMutationsByCategory,
         transactions,
+        transfers,
       }
     },
 

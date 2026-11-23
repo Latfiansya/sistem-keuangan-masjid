@@ -1,4 +1,4 @@
-import { buildAdminMonthlyRecap, filterAdminFinanceTransactions, summarizeAdminFinanceTransactions } from './adminFinanceReportService.js'
+import { buildAdminMonthlyRecap, dayBefore, filterAdminFinanceTransactions, filterTransfersInRange, sumCategoryTransfers, summarizeAdminFinanceTransactions } from './adminFinanceReportService.js'
 import { createReportSheetsExport } from './reportExportService.js'
 import { getAdminHistoricalTransactions } from './adminTransactionData.js'
 import { getMonthRange, validateReportRange } from '../utils/reportCalculations.js'
@@ -46,8 +46,9 @@ export function buildAdminDownloadDocument(report, range, types) {
     const source = report.transactions.filter((item) => item.categoryId === category.id)
     const prior = summarizeAdminFinanceTransactions(source.filter((item) => item.date < range.startDate))
     const current = summarizeAdminFinanceTransactions(transactions.filter((item) => item.categoryId === category.id))
-    const openingBalance = report.historyOpeningBalances[category.id] + prior.income - prior.expense
-    return { ...category, openingBalance, ...current, closingBalance: openingBalance + current.income - current.expense }
+    const openingBalance = report.historyOpeningBalances[category.id] + prior.income - prior.expense + sumCategoryTransfers(report.transfers, category.id, { to: dayBefore(range.startDate) })
+    const transferNet = sumCategoryTransfers(report.transfers, category.id, { from: range.startDate, to: range.endDate })
+    return { ...category, openingBalance, ...current, closingBalance: openingBalance + current.income - current.expense + transferNet }
   })
   const totals = sumBalances(categories)
   const historical = getAdminHistoricalTransactions(report)
@@ -69,6 +70,7 @@ export function buildAdminDownloadDocument(report, range, types) {
   })
   return {
     range: { ...range }, categories, transactions, totals, sections,
+    transfers: filterTransfersInRange(report.transfers, range),
     sessionChangeCount: report.sessionChangeCount,
     coverage: { ...report.coverage },
     note: beforeCoverage ? 'Awal periode mendahului cakupan mock; saldo awal/akhir tidak tersedia. Nominal hanya mencakup transaksi mock yang tersedia.' : 'Saldo simulasi dihitung dari saldo awal historis dan transaksi aktif. Data di luar cakupan mock belum tersedia; tanpa transaksi tambahan yang direkayasa.',

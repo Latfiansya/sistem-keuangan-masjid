@@ -243,3 +243,32 @@ test('isolasi hasil laporan dan validasi konfigurasi sandi environment', async (
   )
 })
 
+
+test('laporan publik memperhitungkan transfer internal di dalam periode pada saldo akhir per kategori', async () => {
+  const repos = createTestRepositories()
+  const original = repos.financeReportRepository.findFinanceReportForRange.bind(repos.financeReportRepository)
+  const transfer = {
+    id: '9', date: '2026-04-10', amount: 500000, note: '',
+    fromCategoryId: 'mosque', fromCategoryLabel: 'Kas Masjid',
+    toCategoryId: 'maintenance', toCategoryLabel: 'Kotak Pembangunan & Pemeliharaan',
+  }
+  repos.financeReportRepository.findFinanceReportForRange = async (range) => ({
+    ...(await original(range)),
+    transfers: transfer.date >= range.startDate && transfer.date <= range.endDate ? [transfer] : [],
+  })
+  const service = createReportService(repos.financeReportRepository)
+  const baseline = await createReportService(createTestRepositories().financeReportRepository).getFinanceReport()
+  const report = await service.getFinanceReport()
+
+  const row = (data, id) => data.summary.rows.find((item) => item.id === id)
+  assert.equal(row(report, 'mosque').closingBalance, row(baseline, 'mosque').closingBalance - 500000)
+  assert.equal(row(report, 'maintenance').closingBalance, row(baseline, 'maintenance').closingBalance + 500000)
+  assert.equal(row(report, 'mosque').income, row(baseline, 'mosque').income)
+  assert.equal(row(report, 'mosque').expense, row(baseline, 'mosque').expense)
+  assert.deepEqual(report.summary.totals, baseline.summary.totals)
+  assert.deepEqual(report.summary.transfers, [{
+    date: '2026-04-10', fromCategoryId: 'mosque', fromCategoryLabel: 'Kas Masjid',
+    toCategoryId: 'maintenance', toCategoryLabel: 'Kotak Pembangunan & Pemeliharaan', amount: 500000,
+  }])
+  assert.deepEqual(baseline.summary.transfers, [])
+})

@@ -3,6 +3,26 @@ import { dataSource } from '../utils/env.js'
 import { validateReportRange } from '../utils/reportCalculations.js'
 import { getActiveAdminTransactions, getAdminHistoricalTransactions } from './adminTransactionData.js'
 
+// Selisih bersih transfer untuk satu kategori pada rentang tanggal inklusif (batas kosong berarti tanpa batas).
+export function sumCategoryTransfers(transfers = [], categoryId, { from = '', to = '' } = {}) {
+  return transfers.reduce((net, item) => {
+    if ((from && item.date < from) || (to && item.date > to)) return net
+    if (item.toCategoryId === categoryId) net += item.amount
+    if (item.fromCategoryId === categoryId) net -= item.amount
+    return net
+  }, 0)
+}
+
+export function filterTransfersInRange(transfers = [], { startDate, endDate }) {
+  return transfers.filter((item) => item.date >= startDate && item.date <= endDate)
+}
+
+export const dayBefore = (date) => {
+  const value = new Date(`${date}T00:00:00Z`)
+  value.setUTCDate(value.getUTCDate() - 1)
+  return value.toISOString().slice(0, 10)
+}
+
 export async function getAdminFinanceReport({ signal } = {}) {
   signal?.throwIfAborted()
   if (dataSource === 'mock') throw new Error('Laporan admin API hanya tersedia pada mode API.')
@@ -23,8 +43,10 @@ export function buildAdminFinanceReport(dashboard) {
       startDate: [dashboard.updatedDate, ...dates].sort()[0],
       endDate: [dashboard.updatedDate, ...dates].sort().at(-1),
     }
+    const transfers = Array.isArray(dashboard.apiTransfers) ? dashboard.apiTransfers : []
+    // Saldo awal dashboard API sudah memasukkan seluruh transfer; dikeluarkan agar transfer dihitung sesuai tanggalnya.
     const historyOpeningBalances = Object.fromEntries(
-      dashboard.categories.map((category) => [category.id, category.openingBalance])
+      dashboard.categories.map((category) => [category.id, category.openingBalance - sumCategoryTransfers(transfers, category.id)])
     )
     return {
       ...dashboard,
@@ -32,6 +54,7 @@ export function buildAdminFinanceReport(dashboard) {
       range,
       coverage,
       transactions,
+      transfers,
       historyOpeningBalances,
       historicalTransactionCount: dashboard.historicalTransactionCount ?? transactions.length,
       sessionChangeCount: 0,
@@ -47,7 +70,7 @@ export function buildAdminFinanceReport(dashboard) {
   const dates = transactions.map((transaction) => transaction.date)
   const coverage = { startDate: ['2026-01-01', ...dates].sort()[0], endDate: [dashboard.updatedDate, ...dates].sort().at(-1) }
   const sessionChangeCount = (dashboard.sessionTransactions || []).length + Object.keys(dashboard.transactionChanges || {}).length + (dashboard.deletedTransactionIds || []).length
-  return { ...dashboard, month, range, coverage, transactions, historyOpeningBalances, historicalTransactionCount: historical.length, sessionChangeCount }
+  return { ...dashboard, month, range, coverage, transactions, transfers: [], historyOpeningBalances, historicalTransactionCount: historical.length, sessionChangeCount }
 }
 
 export function getAdminFinancePreset(preset, today = new Date()) {
@@ -88,11 +111,15 @@ export function buildAdminMonthlyRecap(report, range = report.coverage) {
       const rows = report.transactions.filter((transaction) => transaction.categoryId === category.id)
       const prior = summarizeAdminFinanceTransactions(rows.filter((transaction) => transaction.date < startDate))
       const current = summarizeAdminFinanceTransactions(rows.filter((transaction) => transaction.date >= startDate && transaction.date <= range.endDate && transaction.date.startsWith(month)))
-      const openingBalance = report.historyOpeningBalances[category.id] + prior.income - prior.expense
-      return { ...category, openingBalance, income: current.income, expense: current.expense, closingBalance: openingBalance + current.income - current.expense, count: current.count }
+      const monthEnd = [range.endDate, `${month}-31`].sort()[0]
+      const openingBalance = report.historyOpeningBalances[category.id] + prior.income - prior.expense + sumCategoryTransfers(report.transfers, category.id, { to: dayBefore(startDate) })
+      const transferNet = sumCategoryTransfers(report.transfers, category.id, { from: startDate, to: monthEnd })
+      return { ...category, openingBalance, income: current.income, expense: current.expense, closingBalance: openingBalance + current.income - current.expense + transferNet, count: current.count }
     })
     const totals = categories.reduce((sum, category) => Object.fromEntries(Object.keys(sum).map((key) => [key, sum[key] + category[key]])), { openingBalance: 0, income: 0, expense: 0, closingBalance: 0, count: 0 })
-    months.push({ month, categories, totals })
+    const monthStart = [range.startDate, report.coverage.startDate, `${month}-01`].sort().at(-1)
+    const transfers = filterTransfersInRange(report.transfers, { startDate: monthStart, endDate: [range.endDate, `${month}-31`].sort()[0] })
+    months.push({ month, categories, totals, transfers })
     const [year, number] = month.split('-').map(Number)
     month = number === 12 ? `${year + 1}-01` : `${year}-${String(number + 1).padStart(2, '0')}`
   }

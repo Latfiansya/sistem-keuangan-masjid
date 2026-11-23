@@ -246,3 +246,9 @@ Payload `POST /api/admin/transfers`:
 Objek transfer: `{ "id", "date", "fromCategoryId", "fromCategoryLabel", "toCategoryId", "toCategoryLabel", "amount", "note", "createdBy" }`.
 
 Backend tidak menghitung saldo sendiri. Trigger `trg_t_transfer_dana_saldo` memperbarui `saldo_terkini` kedua kategori melalui `fn_hitung_saldo`, dan `fn_cek_saldo_tidak_negatif` menolak transfer atau penghapusan yang membuat saldo negatif; pesan database tersebut diteruskan sebagai `400 BAD_REQUEST`. Setiap transfer tercatat di `t_activity_log` (modul `Keuangan`). Transfer tidak dihitung sebagai pemasukan atau pengeluaran. Edit transfer belum tersedia; koreksi dilakukan dengan menghapus lalu mencatat ulang.
+
+## Transfer internal pada laporan — fix/transfer-di-laporan
+
+`GET /api/public/finance/report` (status `ready`) kini mengembalikan `summary.transfers`: daftar transfer di dalam rentang laporan `{ "date", "fromCategoryId", "fromCategoryLabel", "toCategoryId", "toCategoryLabel", "amount" }` (array kosong bila tidak ada). `summary.rows[].closingBalance` = saldo awal + pemasukan − pengeluaran + transfer masuk − transfer keluar dalam periode; `income`/`expense` tidak berubah dan total seluruh kategori tidak terpengaruh. Saldo akhir per kategori kini cocok dengan view `v_rekap_bulanan_per_dana`.
+
+Laporan admin di frontend memakai `GET /api/admin/transfers` (dimuat bersama workspace admin) agar saldo awal/akhir per kategori pada rekap bulanan dan dokumen unduhan memperhitungkan transfer sesuai tanggalnya.

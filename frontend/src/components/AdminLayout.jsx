@@ -5,6 +5,7 @@ import { getAdminSession, logoutAdmin } from '../services/adminAuthService.js'
 import { deleteApiAdminCategory, deleteMockAdminCategory, saveApiAdminCategory, saveMockAdminCategory } from '../services/adminCategoryService.js'
 import { getAdminDashboard } from '../services/adminDashboardService.js'
 import { getAdminFinanceReport } from '../services/adminFinanceReportService.js'
+import { getAdminTransfers } from '../services/adminTransferService.js'
 import { addMockAdminTransaction, createApiAdminTransaction, deleteApiAdminTransaction, deleteMockAdminTransaction, editMockAdminTransaction, updateApiAdminTransaction } from '../services/adminTransactionService.js'
 import { dataSource } from '../utils/env.js'
 import AdminHeaderActions from './AdminHeaderActions.jsx'
@@ -58,10 +59,11 @@ export default function AdminLayout() {
     if (dataSource === 'mock') {
       return getAdminDashboard({ signal })
     }
-    const [summary, report, sessionUser] = await Promise.all([
+    const [summary, report, sessionUser, transfers] = await Promise.all([
       getAdminDashboard({ signal }),
       getAdminFinanceReport({ signal }),
       getAdminSession({ signal }),
+      getAdminTransfers({ signal }),
     ])
     const account = sessionUser
       ? { name: sessionUser.name, email: sessionUser.email, role: sessionUser.role, initials: buildInitials(sessionUser.name) }
@@ -70,6 +72,7 @@ export default function AdminLayout() {
       ...summary,
       account,
       apiTransactions: report.transactions,
+      apiTransfers: transfers,
       apiCoverage: report.coverage,
       historicalTransactionCount: report.historicalTransactionCount,
     }

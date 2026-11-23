@@ -4,7 +4,7 @@ import { ArrowDownCircle, ArrowDownRight, ArrowUpCircle, ArrowUpRight, CalendarD
 import { paginateAdminTransactions } from '../utils/adminPagination.js'
 import AdminBalanceSummary from '../components/AdminBalanceSummary.jsx'
 import { buildAdminFinanceReport, buildAdminMonthlyRecap, filterAdminFinanceTransactions, getAdminFinancePreset, summarizeAdminFinanceTransactions, validateAdminFinanceRange } from '../services/adminFinanceReportService.js'
-import { formatReportDate, formatReportMonth, formatReportNumber, formatRupiah } from '../utils/reportFormatters.js'
+import { formatReportDate, formatReportMonth, formatReportNumber, formatRupiah, formatTransferNote } from '../utils/reportFormatters.js'
 import { adminCategoryColorStyle } from '../utils/adminCategoryColors.js'
 import './AdminFinanceReportPage.css'
 
@@ -60,6 +60,7 @@ function LedgerTable({ transactions, categories, type, page, pageSize, setPage, 
 }
 
 function MonthlyRecap({ months }) {
+  const transferNote = formatTransferNote(months.flatMap((item) => item.transfers || []))
   return <div className="admin-panel admin-report-table-panel">
     <p className="admin-table-hint">Geser tabel untuk melihat seluruh kolom.</p>
     <div className="admin-table-scroll" role="region" aria-label="Rekap bulanan mock, dapat digeser" tabIndex={0}>
@@ -77,6 +78,7 @@ function MonthlyRecap({ months }) {
         </tbody>)}
       </table>
     </div>
+    {transferNote && <p className="admin-report-transfer-note">{transferNote}</p>}
   </div>
 }
 

@@ -498,3 +498,10 @@ Tidak ada frame Figma; atas keputusan pengguna (perancang UI proyek) tampilan me
 - Dialog memakai `AdminModalDialog.css`: Tanggal Transfer, Dari Kategori (beserta saldo), Ke Kategori (tanpa kategori asal), Nominal dengan `AdminRupiahInput`, Keterangan opsional, dan petunjuk saldo kategori asal.
 - Panel **Riwayat Transfer Dana** di bawah Transaksi Terbaru: ikon biru, rute "Asal → Tujuan", tanggal dan keterangan, nominal biru, serta tombol hapus merah 44 px dengan dialog konfirmasi.
 - Mode mock: transfer dicatat di memori sesi dan tidak mengubah snapshot saldo, konsisten dengan perilaku transaksi mock.
+
+## Catatan transfer internal pada laporan (tanpa frame Figma)
+
+Atas keputusan pengguna (opsi B), struktur tabel laporan tidak diubah. Bila periode memuat transfer antar kategori, muncul satu catatan di bawah tabel: "Saldo akhir sudah termasuk transfer internal antar kategori (bukan pemasukan/pengeluaran): Asal → Tujuan Rp … (tanggal)."
+
+- Publik: di bawah tabel Resume Saldo pada layar (13 px, #5b6676) dan pada lembar ekspor A4 (8 px, line-height 11 px). Kapasitas baris lembar A4 dikurangi sesuai tinggi catatan; tanpa transfer, lembar dan hasil ekspor identik dengan sebelumnya.
+- Admin: di bawah tabel Rekap Bulanan (13 px, #61768e) dan digabung ke catatan kaki lembar unduhan.

@@ -229,6 +229,7 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .financial-summary { margin-top: 32px; }
 .financial-summary h2 { font-size: clamp(26px, 2vw, 34px); line-height: 1.2; letter-spacing: -.7px; font-weight: 750; }
 .financial-summary > p { margin-top: 6px; color: #778090; font-size: 18px; line-height: 1.3; }
+.financial-summary-transfer-note { margin: 10px 0 0; color: #5b6676; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
 .financial-summary-scroll { overflow-x: auto; margin-top: 12px; border: 1px solid #b9c3ce; border-radius: 12px; }
 .financial-report .financial-table { box-shadow: 0 4px 14px #0f503512; }
 .financial-report .financial-summary-scroll { border-color: #c6d1dc; box-shadow: 0 3px 12px #1720330d; }
@@ -809,6 +810,7 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .report-sheet .financial-summary--sheet { position: relative; margin-top: var(--sheet-summaryGap); }
 .report-sheet .financial-summary--sheet h2 { height: var(--sheet-summaryHeading); font-size: 19px; line-height: 24px; letter-spacing: -.5px; }
 .report-sheet .financial-summary--sheet > p { position: absolute; top: 8px; right: 0; margin: 0; color: #778090; font-size: 8px; line-height: 1.2; }
+.report-sheet .financial-summary--sheet > .financial-summary-transfer-note { position: static; margin: 6px 0 0; color: #5b6676; font-size: 8px; line-height: 11px; }
 .report-sheet .financial-summary-scroll { overflow: visible; margin-top: var(--sheet-summaryTitleGap); border-radius: 6px; }
 .report-sheet .financial-summary-table { min-width: 0; font-size: 10px; line-height: 1.2; }
 .report-sheet .financial-summary-table thead { font-size: 8px; }
