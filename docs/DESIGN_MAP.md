@@ -516,3 +516,19 @@ Frame resmi Kwitansi tetap dipakai. Penyesuaian atas keputusan pengguna (peranca
 - Nomor kwitansi tampil pada baris "No" setelah tersimpan; label "Draft / Belum tersimpan ke server" hanya muncul untuk pratinjau mode mock. Berkas PNG dinamai `kwitansi-masjid-al-hidayah-<nomor>.png`.
 - Panel baru **Riwayat Kwitansi** di bawah tombol Unduh PNG (mode API): daftar nomor, pemberi, tanggal, kategori, nominal hijau, dan tombol "Tampilkan" untuk memuat kwitansi ke pratinjau dan mengunduh ulang, diikuti tombol ikon Edit (hijau) dan Batalkan (ikon Ban, merah) 40 px untuk kwitansi aktif. Kwitansi dibatalkan diberi badge merah "Dibatalkan", nomor dan nominal abu-abu dengan nominal dicoret, dan hanya tombol "Tampilkan". Baris terpilih berlatar hijau muda.
 - Edit memakai formulir Buat Kwitansi yang sama dengan judul "Edit Kwitansi <nomor>" dan tombol "Simpan Perubahan". Batalkan memakai dialog konfirmasi `AdminModalDialog.css` ("Batalkan Kwitansi?", tombol "Ya, Batalkan Kwitansi") dengan checkbox "Hapus juga transaksi pemasukannya" (bawaan tidak dicentang) dan keterangan dampaknya. Pratinjau kwitansi dibatalkan menampilkan label merah "Dibatalkan — kwitansi ini tidak berlaku" dan tombol Unduh PNG nonaktif.
+
+## Admin — Transfer Dana pada Kelola Dana (tanpa frame Figma)
+
+Tidak ada frame Figma; atas keputusan pengguna (perancang UI proyek) tampilan mengikuti gaya halaman admin yang sudah ada.
+
+- Panel Kelola Transaksi pada `/admin/kelola-dana` mendapat tombol ketiga **Transfer Dana** berwarna biru (#1f6fb2) dengan ikon ArrowRightLeft, sejajar tombol Pemasukan (hijau) dan Pengeluaran (merah). Tombol nonaktif bila kategori dana kurang dari dua.
+- Dialog memakai `AdminModalDialog.css`: Tanggal Transfer, Dari Kategori (beserta saldo), Ke Kategori (tanpa kategori asal), Nominal dengan `AdminRupiahInput`, Keterangan opsional, dan petunjuk saldo kategori asal.
+- Panel **Riwayat Transfer Dana** di bawah Transaksi Terbaru: ikon biru, rute "Asal → Tujuan", tanggal dan keterangan, nominal biru, serta tombol hapus merah 44 px dengan dialog konfirmasi.
+- Mode mock: transfer dicatat di memori sesi dan tidak mengubah snapshot saldo, konsisten dengan perilaku transaksi mock.
+
+## Catatan transfer internal pada laporan (tanpa frame Figma)
+
+Atas keputusan pengguna (opsi B), struktur tabel laporan tidak diubah. Bila periode memuat transfer antar kategori, muncul satu catatan di bawah tabel: "Saldo akhir sudah termasuk transfer internal antar kategori (bukan pemasukan/pengeluaran): Asal → Tujuan Rp … (tanggal)."
+
+- Publik: di bawah tabel Resume Saldo pada layar (13 px, #5b6676) dan pada lembar ekspor A4 (8 px, line-height 11 px). Kapasitas baris lembar A4 dikurangi sesuai tinggi catatan; tanpa transfer, lembar dan hasil ekspor identik dengan sebelumnya.
+- Admin: di bawah tabel Rekap Bulanan (13 px, #61768e) dan digabung ke catatan kaki lembar unduhan.

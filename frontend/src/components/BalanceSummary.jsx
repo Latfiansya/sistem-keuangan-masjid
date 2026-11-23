@@ -1,8 +1,9 @@
-import { formatReportNumber } from '../utils/reportFormatters.js'
+import { formatReportNumber, formatTransferNote } from '../utils/reportFormatters.js'
 
 export default function BalanceSummary({ summary, period, variant = 'screen' }) {
   const isSheet = variant === 'sheet'
   const headingId = isSheet ? 'report-sheet-summary-heading' : 'financial-summary-heading'
+  const transferNote = formatTransferNote(summary.transfers)
   return (
     <section className={`financial-summary${isSheet ? ' financial-summary--sheet' : ''}`} aria-labelledby={headingId}>
       <h2 id={headingId}>Resume Saldo {period}</h2>
@@ -18,6 +19,7 @@ export default function BalanceSummary({ summary, period, variant = 'screen' }) 
           <tfoot><tr><th scope="row">TOTAL</th><td>{formatReportNumber(summary.totals.openingBalance)}</td><td className="financial-amount-income">{formatReportNumber(summary.totals.income)}</td><td className="financial-amount-expense">{formatReportNumber(summary.totals.expense)}</td><td>{formatReportNumber(summary.totals.closingBalance)}</td></tr></tfoot>
         </table>
       </div>
+      {transferNote && <p className="financial-summary-transfer-note">{transferNote}</p>}
     </section>
   )
 }

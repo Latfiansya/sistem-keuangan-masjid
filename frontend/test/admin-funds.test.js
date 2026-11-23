@@ -44,14 +44,17 @@ test('route Kelola Dana menggunakan judul dan menu aktif yang sesuai tanpa layou
   }
 })
 
-test('Kelola Dana menangani loading/error dan menampilkan dua pemicu form dan Lihat Semua aktif', async () => {
+test('Kelola Dana menangani loading/error dan menampilkan pemicu Pemasukan, Pengeluaran, Transfer Dana, dan Lihat Semua aktif', async () => {
   assert.match(renderPage(FundsPage, { dashboard: null, error: '' }), /role="status".*Memuat data kelola dana/)
   assert.match(renderPage(FundsPage, { dashboard: null, error: 'Gagal memuat.' }), /role="alert".*Gagal memuat/)
   const html = renderPage(FundsPage, { dashboard: await getAdminDashboard(), error: '' })
   assert.match(html, /MANAJEMEN TRANSAKSI/)
   assert.match(html, /Kelola Transaksi/)
   assert.match(html, /Simulasi sesi admin/)
-  assert.equal((html.match(/<button\b/g) || []).length, 3)
+  assert.equal((html.match(/<button\b/g) || []).length, 4)
+  assert.match(html, /class="admin-funds-transfer"[^>]*>.*?Transfer Dana/)
+  assert.match(html, /Riwayat Transfer Dana/)
+  assert.match(html, /Memuat riwayat transfer/)
   assert.equal((html.match(/disabled=""/g) || []).length, 0)
   assert.equal((html.match(/<table\b/g) || []).length, 1)
   assert.equal((html.match(/data-transaction-id=/g) || []).length, 5)

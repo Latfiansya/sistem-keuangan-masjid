@@ -64,6 +64,9 @@ Prefix default `/api` dapat dikonfigurasi melalui `API_BASE_PATH` di environment
 | POST | `/api/admin/receipts` | Mencatat transaksi pemasukan dan menerbitkan kwitansi bernomor dalam satu transaksi database | Objek kwitansi baru (`201`) |
 | PUT | `/api/admin/receipts/:id` | Mengubah kwitansi aktif beserta transaksi pemasukannya (payload sama dengan POST); nomor kwitansi tetap; kwitansi dibatalkan menghasilkan `409` | Objek kwitansi yang diperbarui (`200`) |
 | POST | `/api/admin/receipts/:id/cancel` | Membatalkan kwitansi (baris tetap tersimpan); body `{ "withTransaction": true }` ikut menghapus transaksi pemasukannya | `{ "receipt", "deletedTransactionId" }` |
+| GET | `/api/admin/transfers` | Riwayat transfer dana antar kategori, terbaru lebih dulu | `{ "transfers", "totalCount" }` |
+| POST | `/api/admin/transfers` | Mencatat transfer dana antar kategori; saldo diperbarui trigger database dan ditolak bila saldo asal tidak mencukupi | Objek transfer baru (`201`) |
+| DELETE | `/api/admin/transfers/:id` | Menghapus transfer dana; ditolak database bila saldo kategori tujuan menjadi negatif | `{ "deletedId" }` |
 | GET | `/api/admin/transactions/:id` | Detail satu transaksi berdasarkan ID | Objek transaksi |
 | POST | `/api/admin/transactions` | Menambah transaksi pemasukan/pengeluaran baru dengan validasi sisi server | Objek transaksi baru (`201`) |
 | PUT | `/api/admin/transactions/:id` | Mengubah data transaksi berdasarkan ID | Objek transaksi yang diperbarui (`200`) |
@@ -284,3 +287,25 @@ Skema mengikuti `docs/sql/2026-11-24-kwitansi-pembatalan.sql` (kolom `nominal`, 
 - Kwitansi aktif memakai nominal/tanggal transaksi terkini; kwitansi dibatalkan atau yang transaksinya dihapus dari Laporan memakai salinan di `t_kwitansi` dan berstatus `Dibatalkan`.
 - Karena semua baris (termasuk yang dibatalkan) ikut dihitung, nomor kwitansi tidak pernah dipakai ulang.
 - `t_kwitansi.file_path` tidak diisi; PNG dibuat di browser saat diunduh.
+
+## Transfer dana antar kategori — fitur/transfer-dana
+
+Payload `POST /api/admin/transfers`:
+
+| Field | Aturan |
+| --- | --- |
+| `fromCategoryId` | ID API kategori asal (`mosque`, `maintenance`, `friday`, atau ID numerik), wajib dan aktif |
+| `toCategoryId` | ID API kategori tujuan, wajib, aktif, dan berbeda dari asal |
+| `amount` | Bilangan bulat Rupiah 1–999.999.999.999 |
+| `date` | Tanggal kalender `YYYY-MM-DD` |
+| `note` | Opsional, maksimal 255 karakter |
+
+Objek transfer: `{ "id", "date", "fromCategoryId", "fromCategoryLabel", "toCategoryId", "toCategoryLabel", "amount", "note", "createdBy" }`.
+
+Backend tidak menghitung saldo sendiri. Trigger `trg_t_transfer_dana_saldo` memperbarui `saldo_terkini` kedua kategori melalui `fn_hitung_saldo`, dan `fn_cek_saldo_tidak_negatif` menolak transfer atau penghapusan yang membuat saldo negatif; pesan database tersebut diteruskan sebagai `400 BAD_REQUEST`. Setiap transfer tercatat di `t_activity_log` (modul `Keuangan`). Transfer tidak dihitung sebagai pemasukan atau pengeluaran. Edit transfer belum tersedia; koreksi dilakukan dengan menghapus lalu mencatat ulang.
+
+## Transfer internal pada laporan — fix/transfer-di-laporan
+
+`GET /api/public/finance/report` (status `ready`) kini mengembalikan `summary.transfers`: daftar transfer di dalam rentang laporan `{ "date", "fromCategoryId", "fromCategoryLabel", "toCategoryId", "toCategoryLabel", "amount" }` (array kosong bila tidak ada). `summary.rows[].closingBalance` = saldo awal + pemasukan − pengeluaran + transfer masuk − transfer keluar dalam periode; `income`/`expense` tidak berubah dan total seluruh kategori tidak terpengaruh. Saldo akhir per kategori kini cocok dengan view `v_rekap_bulanan_per_dana`.
+
+Laporan admin di frontend memakai `GET /api/admin/transfers` (dimuat bersama workspace admin) agar saldo awal/akhir per kategori pada rekap bulanan dan dokumen unduhan memperhitungkan transfer sesuai tanggalnya.

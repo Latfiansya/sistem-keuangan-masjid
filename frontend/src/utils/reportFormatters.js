@@ -3,6 +3,13 @@ const dateFormat = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'lo
 const monthFormat = new Intl.DateTimeFormat('id-ID', { month: 'long', year: 'numeric', timeZone: 'UTC' })
 
 export const formatReportNumber = (amount) => numberFormat.format(amount)
+
+// Catatan transfer internal pada laporan; kosong bila periode tidak memuat transfer.
+export function formatTransferNote(transfers = []) {
+  if (!transfers.length) return ''
+  const items = transfers.map((item) => `${item.fromCategoryLabel} → ${item.toCategoryLabel} Rp ${numberFormat.format(item.amount)} (${dateFormat.format(new Date(`${item.date}T00:00:00Z`))})`)
+  return `Saldo akhir sudah termasuk transfer internal antar kategori (bukan pemasukan/pengeluaran): ${items.join('; ')}.`
+}
 export const formatRupiah = (amount) => `Rp ${formatReportNumber(amount)}`
 export const formatReportDate = (date) => dateFormat.format(new Date(`${date}T00:00:00Z`))
 export const formatReportMonth = (month) => monthFormat.format(new Date(`${month}-01T00:00:00Z`))

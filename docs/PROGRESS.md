@@ -1451,3 +1451,52 @@ Status: implementasi selesai pada branch `fitur/simpan-kwitansi` (dibuat dari `f
 - Tampilan belum diuji manual di browser terhadap API langsung.
 
 Usulan pesan commit: `feat: simpan, edit, dan batalkan kwitansi jamaah sekaligus catat pemasukan`.
+
+## Transfer Dana antar Kategori (23 November 2026)
+
+Status: implementasi selesai dan tervalidasi pada branch `fitur/transfer-dana` (dibuat dari `main`, terpisah dari `fitur/konten-profil-admin`); menunggu peninjauan dan commit manual oleh pengguna. Skema database tidak diubah dan tidak ada data yang ditulis ke database tim.
+
+### Implementasi
+
+- **Backend**: endpoint `GET/POST /api/admin/transfers` dan `DELETE /api/admin/transfers/:id` (controller/service/repository `transfer*`). Helper `parseIsoCalendarDate`, `parseTransactionAmount`, dan `hasControlChars` di `adminFinanceService.js` diekspor untuk dipakai ulang. Perhitungan saldo dan penolakan saldo negatif mengandalkan trigger/function database yang sudah dibuat tim DB.
+- **Frontend**: tombol dan dialog Transfer Dana serta panel Riwayat Transfer Dana di halaman Kelola Dana (`components/AdminTransfer.jsx`), service `adminTransferService.js` (mode mock di memori dan mode API), serta `reloadWorkspace` di `AdminLayout` agar saldo Dashboard diperbarui setelah transfer.
+
+### Verifikasi
+
+- Backend `npm run lint` dan `npm test`: **PASS** (47 test).
+- Frontend `npm run lint`: 0 error (1 peringatan lama di `admin-report-download.browser.test.js`). `npm test`: **PASS** (129 lulus, 11 suite browser dilewati). `npm run build`: **PASS**.
+- SQL transfer dicek ke `db_keuangan_masjid_dev` dalam sesi read-only: pembacaan dijalankan langsung, `INSERT`/`DELETE` hanya divalidasi dengan `EXPLAIN` lalu di-ROLLBACK. Jumlah transfer tetap 1 dan `t_activity_log` tetap 69.
+
+### Batasan
+
+- Perhitungan transfer di laporan diperbaiki terpisah pada branch `fix/transfer-di-laporan` (lihat bagian berikutnya).
+- Edit transfer belum tersedia; koreksi dengan hapus lalu catat ulang.
+- Tampilan belum diuji manual di browser terhadap API langsung.
+
+Usulan pesan commit: `feat: tambah transfer dana antar kategori di kelola dana`.
+
+## Perbaikan Transfer Internal pada Laporan (23 November 2026)
+
+Status: implementasi selesai dan tervalidasi pada branch `fix/transfer-di-laporan` (dibuat dari `fitur/transfer-dana`); menunggu peninjauan dan commit manual oleh pengguna. Skema database tidak diubah.
+
+### Masalah
+
+- Laporan publik menghitung saldo akhir per kategori tanpa transfer di dalam periode. Contoh Februari 2026: Kas Masjid tampil 9.160.000 (seharusnya 8.407.000) dan Kotak Pembangunan −753.000 (seharusnya 0).
+- Laporan admin menganggap seluruh transfer sudah terjadi sejak saldo awal, sehingga saldo bulan sebelum dan saat transfer meleset (misalnya saldo awal Januari Kotak Pembangunan 1.926.000, seharusnya 1.173.000).
+
+### Implementasi
+
+- **Backend**: helper `findTransfersInRange` di `transferRepository.js`; `financeReportRepository` mengambil transfer dalam periode; `reportService` menyertakan transfer pada saldo akhir per kategori dan mengirim `summary.transfers`.
+- **Frontend**: `AdminLayout` memuat `/api/admin/transfers` bersama workspace API; `adminFinanceReportService` dan `adminReportDownloadService` menghitung transfer sesuai tanggal (`sumCategoryTransfers`, `filterTransfersInRange`, `dayBefore`); catatan transfer (`formatTransferNote`) tampil di `BalanceSummary`, Rekap Bulanan admin, dan lembar unduhan admin; kapasitas lembar A4 publik memperhitungkan tinggi catatan.
+
+### Verifikasi
+
+- Backend `npm run lint` dan `npm test`: **PASS** (48 test).
+- Frontend `npm run lint`: 0 error (1 peringatan lama). `npm test`: **PASS** (134 lulus, 11 suite browser dilewati). `npm run build`: **PASS**.
+- Resume laporan publik dibandingkan langsung (hanya SELECT) dengan view `v_rekap_bulanan_per_dana` untuk Januari, Februari, dan Januari–Oktober 2026: seluruh saldo akhir per kategori cocok.
+
+### Batasan
+
+- Tampilan catatan dan lembar ekspor belum diuji manual di browser; suite browser QA (termasuk pembanding PNG) tidak dijalankan.
+
+Usulan pesan commit: `fix: perhitungkan transfer internal pada saldo per kategori di laporan`.

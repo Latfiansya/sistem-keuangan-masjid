@@ -140,6 +140,15 @@ export function createReportService(repository = defaultFinanceReportRepository)
       }
 
       const transactions = data.transactions.map((item) => ({ ...item }))
+      // Transfer internal di dalam periode memindahkan saldo antar kategori tanpa dihitung sebagai pemasukan/pengeluaran.
+      const transfers = (data.transfers ?? []).map((item) => ({
+        date: item.date,
+        fromCategoryId: item.fromCategoryId,
+        fromCategoryLabel: item.fromCategoryLabel,
+        toCategoryId: item.toCategoryId,
+        toCategoryLabel: item.toCategoryLabel,
+        amount: item.amount,
+      }))
 
       const rows = data.categories.map((category) => {
         if (!Number.isSafeInteger(category.openingBalance)) {
@@ -150,6 +159,11 @@ export function createReportService(repository = defaultFinanceReportRepository)
         const openingBalance = category.openingBalance + priorMutation
         let income = 0
         let expense = 0
+        let transferNet = 0
+        for (const transfer of transfers) {
+          if (transfer.toCategoryId === category.id) transferNet += transfer.amount
+          if (transfer.fromCategoryId === category.id) transferNet -= transfer.amount
+        }
 
         for (const item of transactions) {
           if (item.categoryId !== category.id) continue
@@ -164,7 +178,7 @@ export function createReportService(repository = defaultFinanceReportRepository)
           openingBalance,
           income,
           expense,
-          closingBalance: openingBalance + income - expense,
+          closingBalance: openingBalance + income - expense + transferNet,
         }
       })
 
@@ -182,7 +196,7 @@ export function createReportService(repository = defaultFinanceReportRepository)
         ...baseInfo,
         status: 'ready',
         transactions,
-        summary: { rows, totals },
+        summary: { rows, totals, transfers },
       }
     },
   }

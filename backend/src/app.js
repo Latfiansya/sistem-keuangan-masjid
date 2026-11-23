@@ -10,6 +10,7 @@ import { createProfileContentController } from './controllers/profileContentCont
 import { createPublicController } from './controllers/publicController.js'
 import { createReceiptController } from './controllers/receiptController.js'
 import { createReportController } from './controllers/reportController.js'
+import { createTransferController } from './controllers/transferController.js'
 import { createRateLimiter } from './middlewares/rateLimiter.js'
 import { createRequireAdminAuth } from './middlewares/requireAdminAuth.js'
 import { createSecurityMiddleware } from './middlewares/securityHeaders.js'
@@ -22,6 +23,7 @@ import { createFinanceReportRepository } from './repositories/financeReportRepos
 import { createProfileContentRepository } from './repositories/profileContentRepository.js'
 import { createPublicContentRepository } from './repositories/publicContentRepository.js'
 import { createReceiptRepository } from './repositories/receiptRepository.js'
+import { createTransferRepository } from './repositories/transferRepository.js'
 import { createAdminRoutes } from './routes/adminRoutes.js'
 import { createHealthRoutes } from './routes/healthRoutes.js'
 import { createPublicRoutes } from './routes/publicRoutes.js'
@@ -34,6 +36,7 @@ import { createProfileContentService } from './services/profileContentService.js
 import { createPublicContentService } from './services/publicContentService.js'
 import { createReceiptService } from './services/receiptService.js'
 import { createReportService } from './services/reportService.js'
+import { createTransferService } from './services/transferService.js'
 
 export function createApp(overrides = {}) {
   const config = loadEnv()
@@ -64,6 +67,7 @@ export function createApp(overrides = {}) {
   const profileContentRepository = repos.profileContentRepository ?? createProfileContentRepository(dbPool)
   const fileRepository = repos.fileRepository ?? createFileRepository(dbPool)
   const receiptRepository = repos.receiptRepository ?? createReceiptRepository(dbPool)
+  const transferRepository = repos.transferRepository ?? createTransferRepository(dbPool)
 
   const app = express()
 
@@ -86,6 +90,7 @@ export function createApp(overrides = {}) {
 
   const adminFinanceService = createAdminFinanceService(adminFinanceRepository)
   const adminFinanceController = createAdminFinanceController(adminFinanceService)
+  const transferController = createTransferController(createTransferService(transferRepository))
   const adminSettingsService = createAdminSettingsService(adminSettingsRepository)
   const adminSettingsController = createAdminSettingsController(adminSettingsService)
   const profileContentController = createProfileContentController(createProfileContentService(profileContentRepository))
@@ -114,6 +119,7 @@ export function createApp(overrides = {}) {
     `${apiBasePath}/admin`,
     createAdminRoutes({
       adminFinanceController,
+      transferController,
       adminSettingsController,
       adminManagementController,
       profileContentController,

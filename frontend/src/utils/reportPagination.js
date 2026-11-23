@@ -1,14 +1,25 @@
+import { formatTransferNote } from './reportFormatters.js'
+
 // Ukuran piksel CSS pada 96 dpi, sebanding dengan A4 lanskap 297 × 210 mm.
 export const REPORT_SHEET_LAYOUT = Object.freeze({
   width: 1122.52, height: 793.7, padding: 22, header: 40, gap: 10,
   columnHeader: 44, columnLabels: 18, row: 28, footer: 18, footerGap: 12,
   summaryGap: 16, summaryHeading: 24, summaryTitleGap: 8, summaryHeader: 24, summaryRow: 26,
+  transferNoteGap: 6, transferNoteLine: 11, transferNoteCharsPerLine: 200,
 })
 
-export function getSheetCapacity(categoryCount) {
+// Tinggi catatan transfer internal di bawah resume saldo (0 bila tidak ada transfer pada periode).
+export function getTransferNoteHeight(transfers = []) {
+  const note = formatTransferNote(transfers)
+  if (!note) return 0
+  const layout = REPORT_SHEET_LAYOUT
+  return layout.transferNoteGap + Math.ceil(note.length / layout.transferNoteCharsPerLine) * layout.transferNoteLine
+}
+
+export function getSheetCapacity(categoryCount, summaryExtra = 0) {
   const layout = REPORT_SHEET_LAYOUT
   const tableSpace = layout.height - 2 * layout.padding - layout.header - layout.gap - layout.columnHeader - layout.columnLabels - layout.footer - layout.footerGap
-  const summaryHeight = layout.summaryHeading + layout.summaryTitleGap + layout.summaryHeader + (categoryCount + 1) * layout.summaryRow
+  const summaryHeight = layout.summaryHeading + layout.summaryTitleGap + layout.summaryHeader + (categoryCount + 1) * layout.summaryRow + summaryExtra
   const regular = Math.floor(tableSpace / layout.row)
   const final = Math.floor((tableSpace - layout.summaryGap - summaryHeight) / layout.row)
   if (regular < 1 || final < 0) throw new Error('Ringkasan terlalu panjang untuk satu lembar laporan.')
@@ -19,7 +30,7 @@ export function paginateReport(report) {
   if (report?.status !== 'ready' || !report.summary) return []
   const income = report.transactions.filter((item) => item.type === 'income')
   const expense = report.transactions.filter((item) => item.type === 'expense')
-  const capacity = getSheetCapacity(report.summary.rows.length)
+  const capacity = getSheetCapacity(report.summary.rows.length, getTransferNoteHeight(report.summary.transfers))
   const longest = Math.max(income.length, expense.length)
   const count = longest <= capacity.final ? 1 : Math.ceil((longest - capacity.final) / capacity.regular) + 1
   let offset = 0
