@@ -52,3 +52,13 @@
   .admin-profile-banner img { aspect-ratio: 1.6; object-position: 65% bottom; }
   .admin-profile-contact input { max-width: none; }
 }
+.admin-profile-logo > p { margin: 0 0 6px; color: #34465f; font-size: 14px; font-weight: 600; line-height: 1.5; }
+.admin-profile-logo-row { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; padding: 12px 16px; border: 1px solid #e1e9f4; border-radius: 14px; background: #f7f9fc; }
+.admin-profile-logo-row img { display: block; width: auto; max-width: 240px; height: 56px; object-fit: contain; }
+.admin-profile-logo-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.admin-profile-logo-picker { position: relative; display: inline-flex; align-items: center; gap: 8px; overflow: hidden; cursor: pointer; }
+.admin-profile-logo-picker input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.admin-profile-logo-picker:focus-within { outline: 3px solid #d58b00; outline-offset: 3px; }
+@media (max-width: 479px) {
+  .admin-profile-logo-actions { width: 100%; margin-left: 0; }
+}

@@ -4,17 +4,26 @@ import { dataSource } from '../utils/env.js'
 
 export const adminProfilePhotoAccept = '.jpg,.jpeg,.png,.webp'
 export const adminProfilePhotoMaxBytes = 5 * 1024 * 1024
+export const adminProfileLogoMaxBytes = 2 * 1024 * 1024
 
-// Pemeriksaan awal untuk preview lokal; validasi dan penyimpanan upload tetap tanggung jawab API backend.
-export function validateAdminProfilePhoto(files) {
-  if (files.length !== 1) return 'Pilih tepat satu foto masjid.'
+// Pemeriksaan awal sebelum unggah; backend tetap memeriksa ulang isi, tipe, dan ukuran berkas.
+function validateImageFile(files, { noun, maxBytes }) {
+  if (files.length !== 1) return `Pilih tepat satu ${noun} masjid.`
   const file = files[0]
   const types = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' }
   const extension = file.name.match(/\.(jpe?g|png|webp)$/i)?.[1].toLowerCase()
-  if (!Object.hasOwn(types, extension) || file.type !== types[extension]) return 'Format foto harus JPG, PNG atau WebP dengan tipe berkas yang sesuai.'
-  if (!file.size) return 'Berkas foto kosong. Pilih gambar lain.'
-  if (file.size > adminProfilePhotoMaxBytes) return 'Ukuran foto maksimal 5 MB.'
+  if (!Object.hasOwn(types, extension) || file.type !== types[extension]) return `Format ${noun} harus JPG, PNG atau WebP dengan tipe berkas yang sesuai.`
+  if (!file.size) return `Berkas ${noun} kosong. Pilih gambar lain.`
+  if (file.size > maxBytes) return `Ukuran ${noun} maksimal ${maxBytes / (1024 * 1024)} MB.`
   return ''
+}
+
+export function validateAdminProfilePhoto(files) {
+  return validateImageFile(files, { noun: 'foto', maxBytes: adminProfilePhotoMaxBytes })
+}
+
+export function validateAdminProfileLogo(files) {
+  return validateImageFile(files, { noun: 'logo', maxBytes: adminProfileLogoMaxBytes })
 }
 
 export async function getAdminProfile({ signal } = {}) {

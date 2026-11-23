@@ -1,7 +1,8 @@
-import { Router } from 'express'
+import express, { Router } from 'express'
 import { createAdminFinanceController } from '../controllers/adminFinanceController.js'
 import { createAdminManagementController } from '../controllers/adminManagementController.js'
 import { createAdminSettingsController } from '../controllers/adminSettingsController.js'
+import { createFileController } from '../controllers/fileController.js'
 import { createProfileContentController } from '../controllers/profileContentController.js'
 import { createRateLimiter } from '../middlewares/rateLimiter.js'
 import { createRequireAdminAuth } from '../middlewares/requireAdminAuth.js'
@@ -11,6 +12,7 @@ export function createAdminRoutes({
   adminSettingsController = createAdminSettingsController(),
   adminManagementController = createAdminManagementController(),
   profileContentController = createProfileContentController(),
+  fileController = createFileController(),
   loginRateLimiter = createRateLimiter(),
   requireAdminAuth = createRequireAdminAuth(),
 } = {}) {
@@ -38,6 +40,11 @@ export function createAdminRoutes({
 
   router.get('/profile', adminSettingsController.getProfile)
   router.put('/profile', adminSettingsController.updateProfile)
+
+  // Unggah berkas dikirim sebagai body biner; batas 5 MB, batas per jenis diperiksa di service.
+  const rawImageBody = express.raw({ type: ['image/png', 'image/jpeg', 'image/webp'], limit: '5mb' })
+  router.put('/files/:target', rawImageBody, fileController.upload)
+  router.delete('/files/:target', fileController.remove)
 
   router.get('/profile-content', profileContentController.list)
   router.post('/profile-content/:section', profileContentController.create)

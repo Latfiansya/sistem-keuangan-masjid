@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router'
 import Button from '../components/Button.jsx'
 import VisionMission from '../components/VisionMission.jsx'
 import AgendaSummary from '../components/AgendaSummary.jsx'
+import { isDefaultMasjidPhoto, resolveUploadedImage } from '../utils/uploadedImage.js'
 
 const icons = { calendar: CalendarDays, expand: Expand, users: Users, heart: Heart, health: HeartPulse, economy: Coins }
 
@@ -10,14 +11,17 @@ export default function HomePage() {
   const { content, error, openReportAccess } = useOutletContext()
   if (error) return <p role="alert" className="page-container content-status">{error}</p>
   if (!content) return <p role="status" className="page-container content-status">Memuat konten Beranda…</p>
+  // Overlay gedung dibuat khusus untuk foto bawaan, sehingga disembunyikan bila foto masjid diganti.
+  const uploadedPhoto = resolveUploadedImage(content.photoPath)
+  const showBuildingOverlay = isDefaultMasjidPhoto(content)
 
   return (
     <>
       <section className="hero" aria-labelledby="hero-heading">
-        <img className="hero-image" src="/assets/masjid-background.webp" width="1928" height="1089" alt="Masjid Al-Hidayah Sorolaten" fetchPriority="high" />
-        <div className="hero-building-layer" aria-hidden="true">
+        <img className="hero-image" src={uploadedPhoto || '/assets/masjid-background.webp'} width="1928" height="1089" alt="Masjid Al-Hidayah Sorolaten" fetchPriority="high" />
+        {showBuildingOverlay && <div className="hero-building-layer" aria-hidden="true">
           <img className="hero-building-overlay" src="/assets/masjid-hero-overlay.webp" width="3456" height="2232" alt="" />
-        </div>
+        </div>}
         <div className="hero-copy">
           <h1 id="hero-heading">MASJID<br />AL-HIDAYAH</h1>
           <p>{content.heroDescription}</p>

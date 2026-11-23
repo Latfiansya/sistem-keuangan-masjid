@@ -167,6 +167,8 @@ export function createTestRepositories() {
     publicReportEnabled: true,
   }
 
+  const storedFiles = new Map()
+
   let nextProfileContentSeq = 100
   const profileContent = {
     missions: [
@@ -488,6 +490,21 @@ export function createTestRepositories() {
       async saveWebsiteSettings(next) {
         websiteSettings = structuredClone(next)
         return structuredClone(websiteSettings)
+      },
+    },
+    // Meniru kolom *_path/*_isi/*_mime: satu gambar terkini per target.
+    fileRepository: {
+      async findByTargetAndHash(target, sha256) {
+        const file = storedFiles.get(target)
+        return file && file.sha256 === sha256 ? { ...file, content: Buffer.from(file.content) } : null
+      },
+      async saveForTarget(target, { mimeType, content, sha256 }) {
+        storedFiles.set(target, { mimeType, size: content.length, sha256, content: Buffer.from(content) })
+        return { path: `/api/public/files/${target}/${sha256}`, mimeType, size: content.length }
+      },
+      async removeForTarget(target) {
+        storedFiles.delete(target)
+        return { path: null }
       },
     },
     profileContentRepository: {

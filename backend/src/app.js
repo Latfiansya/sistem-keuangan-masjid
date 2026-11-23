@@ -4,6 +4,7 @@ import { loadEnv, normalizeBasePath } from './config/env.js'
 import { createAdminFinanceController } from './controllers/adminFinanceController.js'
 import { createAdminManagementController } from './controllers/adminManagementController.js'
 import { createAdminSettingsController } from './controllers/adminSettingsController.js'
+import { createFileController } from './controllers/fileController.js'
 import { createHealthController } from './controllers/healthController.js'
 import { createProfileContentController } from './controllers/profileContentController.js'
 import { createPublicController } from './controllers/publicController.js'
@@ -15,6 +16,7 @@ import { createAdminFinanceRepository } from './repositories/adminFinanceReposit
 import { createAdminManagementRepository } from './repositories/adminManagementRepository.js'
 import { createAdminSettingsRepository } from './repositories/adminSettingsRepository.js'
 import { createAgendaRepository } from './repositories/agendaRepository.js'
+import { createFileRepository } from './repositories/fileRepository.js'
 import { createFinanceReportRepository } from './repositories/financeReportRepository.js'
 import { createProfileContentRepository } from './repositories/profileContentRepository.js'
 import { createPublicContentRepository } from './repositories/publicContentRepository.js'
@@ -25,6 +27,7 @@ import { createAdminFinanceService } from './services/adminFinanceService.js'
 import { createAdminManagementService } from './services/adminManagementService.js'
 import { createAdminSettingsService } from './services/adminSettingsService.js'
 import { createAgendaService } from './services/agendaService.js'
+import { createFileService } from './services/fileService.js'
 import { createProfileContentService } from './services/profileContentService.js'
 import { createPublicContentService } from './services/publicContentService.js'
 import { createReportService } from './services/reportService.js'
@@ -56,6 +59,7 @@ export function createApp(overrides = {}) {
   const adminSettingsRepository = repos.adminSettingsRepository ?? createAdminSettingsRepository(dbPool)
   const adminManagementRepository = repos.adminManagementRepository ?? createAdminManagementRepository(dbPool)
   const profileContentRepository = repos.profileContentRepository ?? createProfileContentRepository(dbPool)
+  const fileRepository = repos.fileRepository ?? createFileRepository(dbPool)
 
   const app = express()
 
@@ -81,6 +85,7 @@ export function createApp(overrides = {}) {
   const adminSettingsService = createAdminSettingsService(adminSettingsRepository)
   const adminSettingsController = createAdminSettingsController(adminSettingsService)
   const profileContentController = createProfileContentController(createProfileContentService(profileContentRepository))
+  const fileController = createFileController(createFileService(fileRepository))
   const adminManagementService = createAdminManagementService(adminManagementRepository, {
     authSecret,
     authTokenTtlMs,
@@ -98,7 +103,7 @@ export function createApp(overrides = {}) {
   app.use(apiBasePath || '/', createHealthRoutes(healthController))
   app.use(
     `${apiBasePath}/public`,
-    createPublicRoutes({ publicController, reportController, passwordRateLimiter })
+    createPublicRoutes({ publicController, reportController, passwordRateLimiter, fileController })
   )
   app.use(
     `${apiBasePath}/admin`,
@@ -107,6 +112,7 @@ export function createApp(overrides = {}) {
       adminSettingsController,
       adminManagementController,
       profileContentController,
+      fileController,
       loginRateLimiter,
       requireAdminAuth,
     })
