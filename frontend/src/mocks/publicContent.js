@@ -17,6 +17,7 @@ export const mockPublicContent = {
     donation: {
       qris: { verified: false, imageSrc: null },
       bank: { verified: false, name: null, number: null, recipient: null },
+      bank2: { verified: false, name: null, number: null, recipient: null },
     },
   },
   heroDescription: `Pusat ibadah, pembinaan umat, dan pemberdayaan masyarakat Dusun Sorolaten sejak ${foundingYear}.`,

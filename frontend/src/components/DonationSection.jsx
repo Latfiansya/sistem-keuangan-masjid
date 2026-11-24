@@ -1,11 +1,46 @@
 import { Info, ScanLine } from 'lucide-react'
 import { resolveUploadedImage } from '../utils/uploadedImage.js'
 
+function isVerifiedBankAccount(account) {
+  return Boolean(
+    account?.verified === true &&
+    account?.name?.trim() &&
+    account?.number?.trim() &&
+    account?.recipient?.trim()
+  )
+}
+
+function getVerifiedBankAccounts(donation) {
+  if (!donation) return []
+  const candidates = Array.isArray(donation.banks) && donation.banks.length
+    ? donation.banks
+    : [donation.bank, donation.bank2]
+  return candidates.filter(isVerifiedBankAccount).slice(0, 2)
+}
+
+function BankAccountDetails({ account, confirmed, keyPrefix }) {
+  return (
+    <dl className="contact-bank">
+      {[
+        ['Nama bank', account?.name],
+        ['Nomor rekening', account?.number],
+        ['Atas nama', account?.recipient],
+      ].map(([label, value]) => (
+        <div key={`${keyPrefix}-${label}`}>
+          <dt>{label}</dt>
+          <dd>{confirmed ? value.trim() : 'Data belum dikonfirmasi'}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
 export default function DonationSection({ donation }) {
-  const { qris, bank } = donation ?? {}
+  const { qris } = donation ?? {}
   const qrisSrc = resolveUploadedImage(qris?.imageSrc)
   const hasQris = qris?.verified === true && Boolean(qrisSrc)
-  const hasBank = bank?.verified === true && Boolean(bank.name && bank.number && bank.recipient)
+  const verifiedBanks = getVerifiedBankAccounts(donation)
+  const hasBank = verifiedBanks.length > 0
 
   return (
     <section className="contact-donation" aria-labelledby="donation-heading">
@@ -20,15 +55,21 @@ export default function DonationSection({ donation }) {
           </figure>
         </article>
         <article className="contact-donation-card">
-          <div className="contact-donation-heading"><h3>Transfer Bank</h3><span className="contact-chip">{hasBank ? 'Terkonfirmasi' : 'Belum dikonfirmasi'}</span></div>
+          <div className="contact-donation-heading"><h3>Transfer Bank</h3></div>
           <p className="contact-donation-description">Informasi rekening untuk donasi Anda.</p>
-          <dl className="contact-bank">
-            {[
-              ['Nama bank', bank?.name],
-              ['Nomor rekening', bank?.number],
-              ['Atas nama', bank?.recipient],
-            ].map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{hasBank ? value : 'Data belum dikonfirmasi'}</dd></div>)}
-          </dl>
+          {verifiedBanks.length === 2 ? (
+            <div className="contact-bank-list">
+              <BankAccountDetails account={verifiedBanks[0]} confirmed keyPrefix="bank-1" />
+              <span className="contact-bank-divider" aria-hidden="true" />
+              <BankAccountDetails account={verifiedBanks[1]} confirmed keyPrefix="bank-2" />
+            </div>
+          ) : (
+            <BankAccountDetails
+              account={verifiedBanks[0] ?? null}
+              confirmed={hasBank}
+              keyPrefix={hasBank ? 'bank-1' : 'bank-empty'}
+            />
+          )}
           <p className="contact-donation-note"><Info aria-hidden="true" />{hasBank ? 'Periksa nama penerima sebelum transfer dan simpan bukti donasi.' : 'Informasi donasi menunggu konfirmasi pengurus masjid.'}</p>
         </article>
       </div>
