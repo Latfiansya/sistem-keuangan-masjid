@@ -61,7 +61,7 @@ test('Donasi: draf, QRIS, kelengkapan, preview dan Kontak publik pada Chrome QA'
         await open('/admin/dashboard','.admin-dashboard');await navigate('donasi');await waitFor('!!document.querySelector(".admin-donation-footer")')
         assert.equal(await evaluate('document.querySelector(".admin-topbar h1").textContent'),'Donasi')
         assert.equal(await evaluate('document.querySelector(".admin-nav-link[aria-current=page]").getAttribute("href")'),'/admin/donasi')
-        assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-donation input:not([type=file])")].filter(e=>e.type!=="checkbox").map(e=>e.value)'),['','','',''])
+        assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-donation input:not([type=file])")].filter(e=>e.type!=="checkbox").map(e=>e.value)'),['','','','','','',''])
         assert.equal(await evaluate('document.querySelectorAll(".admin-donation [role=switch]:disabled").length'),3)
         assert.match(await evaluate('document.querySelector(".admin-donation-readiness header").textContent'),/0 dari 2 siap/)
         await noOverflow();await evaluate('window.scrollTo(0,0)');await screenshot(`donasi-${width}-awal`);await screenshot(`donasi-${width}-penuh`,true)

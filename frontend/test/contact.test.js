@@ -41,6 +41,43 @@ test('Kontak langsung tersedia dengan menu aktif dan placeholder tanpa tujuan tr
   assert.equal((html.match(/<img\b/g) || []).length, 1)
 })
 
+test('card Transfer Bank tidak menampilkan badge Terkonfirmasi serta mendukung 1 atau 2 rekening dengan sekat tengah', async () => {
+  const base = await getPublicContent()
+
+  const oneBank = structuredClone(base)
+  oneBank.contact.donation.bank = { verified: true, name: 'Bank Syariah Indonesia', number: '7123456789', recipient: 'Takmir Masjid Al-Hidayah' }
+  oneBank.contact.donation.bank2 = { verified: false, name: 'Bank Tersembunyi', number: '9999999999', recipient: 'Tidak Aktif' }
+  const htmlOne = renderPage({ content: oneBank, error: '' })
+  assert.doesNotMatch(htmlOne, /Terkonfirmasi/)
+  assert.equal((htmlOne.match(/class="contact-chip"/g) || []).length, 1)
+  assert.equal((htmlOne.match(/class="contact-bank"/g) || []).length, 1)
+  assert.doesNotMatch(htmlOne, /contact-bank-list|contact-bank-divider|Bank Tersembunyi/)
+  assert.ok(htmlOne.includes('Bank Syariah Indonesia'))
+  assert.ok(htmlOne.includes('7123456789'))
+
+  const twoBanks = structuredClone(base)
+  twoBanks.contact.donation.bank = { verified: true, name: 'Bank Syariah Indonesia', number: '7123456789', recipient: 'Masjid Al-Hidayah' }
+  twoBanks.contact.donation.bank2 = { verified: true, name: 'Bank BPD DIY Syariah', number: '8001122334', recipient: 'Panitia Pembangunan' }
+  const htmlTwo = renderPage({ content: twoBanks, error: '' })
+  assert.doesNotMatch(htmlTwo, /Terkonfirmasi/)
+  assert.equal((htmlTwo.match(/class="contact-chip"/g) || []).length, 1)
+  assert.equal((htmlTwo.match(/class="contact-bank-list"/g) || []).length, 1)
+  assert.equal((htmlTwo.match(/class="contact-bank-divider"/g) || []).length, 1)
+  assert.equal((htmlTwo.match(/class="contact-bank"/g) || []).length, 2)
+  for (const text of ['Bank Syariah Indonesia', '7123456789', 'Bank BPD DIY Syariah', '8001122334', 'Panitia Pembangunan']) {
+    assert.ok(htmlTwo.includes(text))
+  }
+
+  const viaArray = structuredClone(base)
+  viaArray.contact.donation.banks = [
+    { verified: true, name: 'Bank Muamalat', number: '1112223334', recipient: 'Kas Masjid' },
+    { verified: true, name: 'BRI Syariah', number: '5556667778', recipient: 'Infaq Masjid' },
+  ]
+  const htmlArray = renderPage({ content: viaArray, error: '' })
+  assert.equal((htmlArray.match(/class="contact-bank-divider"/g) || []).length, 1)
+  assert.ok(htmlArray.includes('Bank Muamalat') && htmlArray.includes('BRI Syariah'))
+})
+
 test('nilai QRIS, rekening dan kontak yang belum dikonfirmasi tidak ditampilkan', async () => {
   const content = await getPublicContent()
   content.contact.donation.qris.imageSrc = '/aset-uji-belum-disetujui.jpg'

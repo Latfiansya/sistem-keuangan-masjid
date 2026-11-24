@@ -5,6 +5,20 @@ import { dataSource } from '../utils/env.js'
 export const adminDonationQrisAccept = '.png,.jpg,.jpeg'
 export const adminDonationQrisMaxBytes = 2 * 1024 * 1024
 
+function normalizeAdminDonationValues(data) {
+  const firstBank = Array.isArray(data.bankAccounts) ? data.bankAccounts[0] : null
+  const secondBank = Array.isArray(data.bankAccounts) ? data.bankAccounts[1] : null
+  return {
+    ...data,
+    bankName: String(data.bankName ?? firstBank?.bankName ?? firstBank?.name ?? ''),
+    accountNumber: String(data.accountNumber ?? firstBank?.accountNumber ?? firstBank?.number ?? ''),
+    accountName: String(data.accountName ?? firstBank?.accountName ?? firstBank?.recipient ?? ''),
+    bankName2: String(data.bankName2 ?? secondBank?.bankName ?? secondBank?.name ?? ''),
+    accountNumber2: String(data.accountNumber2 ?? secondBank?.accountNumber ?? secondBank?.number ?? ''),
+    accountName2: String(data.accountName2 ?? secondBank?.accountName ?? secondBank?.recipient ?? ''),
+  }
+}
+
 export async function getAdminDonationSettings({ signal } = {}) {
   signal?.throwIfAborted()
   if (dataSource !== 'mock') {
@@ -12,14 +26,20 @@ export async function getAdminDonationSettings({ signal } = {}) {
     if (!data || typeof data !== 'object') {
       throw new Error('Format pengaturan donasi API tidak sesuai kontrak.')
     }
-    return data
+    return normalizeAdminDonationValues(data)
   }
-  const bank = mockPublicContent.contact.donation.bank
+  const donation = mockPublicContent.contact.donation
+  const bank1 = donation.banks?.[0] ?? donation.bank
+  const bank2 = donation.banks?.[1] ?? donation.bank2
   return {
     qrisFile: null, qrisEnabled: false,
-    bankName: bank.verified ? bank.name || '' : '',
-    accountNumber: bank.verified ? bank.number || '' : '',
-    accountName: bank.verified ? bank.recipient || '' : '', bankEnabled: false,
+    bankName: bank1?.verified ? bank1.name || '' : '',
+    accountNumber: bank1?.verified ? bank1.number || '' : '',
+    accountName: bank1?.verified ? bank1.recipient || '' : '',
+    bankName2: bank2?.verified ? bank2.name || '' : '',
+    accountNumber2: bank2?.verified ? bank2.number || '' : '',
+    accountName2: bank2?.verified ? bank2.recipient || '' : '',
+    bankEnabled: false,
     whatsappNumber: '', whatsappEnabled: false,
     messageTemplate: 'Assalamu’alaikum Takmir Masjid Al-Hidayah, saya ingin mengonfirmasi donasi.\nNama: [Nama donatur];\nNomor WhatsApp: [Nomor WhatsApp];\nTanggal donasi: [Tanggal];\nNominal: [Nominal];\nMetode pembayaran: [Metode pembayaran];\nTerima kasih.',
     donationNote: 'Periksa nama penerima sebelum transfer dan simpan bukti donasi.',
@@ -28,12 +48,15 @@ export async function getAdminDonationSettings({ signal } = {}) {
 
 export async function saveAdminDonationSettings(values, { signal } = {}) {
   if (dataSource === 'mock') return normalizeAdminDonationSettings(values)
-  return apiRequest('/admin/donation-settings', {
+  const saved = await apiRequest('/admin/donation-settings', {
     method: 'PUT',
     body: {
       bankName: values.bankName || '',
       accountNumber: values.accountNumber || '',
       accountName: values.accountName || '',
+      bankName2: values.bankName2 || '',
+      accountNumber2: values.accountNumber2 || '',
+      accountName2: values.accountName2 || '',
       qrisEnabled: values.qrisEnabled === true,
       bankEnabled: values.bankEnabled === true,
       whatsappNumber: values.whatsappNumber || '',
@@ -43,6 +66,22 @@ export async function saveAdminDonationSettings(values, { signal } = {}) {
     },
     signal,
   })
+  const bank2SupportedByBackend =
+    Boolean(saved && typeof saved === 'object' && ('bankName2' in saved || Array.isArray(saved.bankAccounts)))
+  const merged = normalizeAdminDonationValues({
+    ...saved,
+    ...(bank2SupportedByBackend
+      ? {}
+      : {
+          bankName2: values.bankName2 || '',
+          accountNumber2: values.accountNumber2 || '',
+          accountName2: values.accountName2 || '',
+        }),
+  })
+  return {
+    ...normalizeAdminDonationSettings(merged),
+    bank2BackendSupported: bank2SupportedByBackend,
+  }
 }
 
 export function validateAdminDonationQris(files) {
@@ -77,27 +116,92 @@ export async function readAdminDonationQris(files) {
 
 export function validateAdminDonationSettings(values) {
   const errors = {}
-  for (const [key, label, limit] of [['bankName', 'Nama bank', 100], ['accountName', 'Atas nama', 160], ['messageTemplate', 'Template pesan', 2000], ['donationNote', 'Catatan donasi', 1000]]) {
-    const value = values[key]
+  for (const [key, label, limit] of [
+    ['bankName', 'Nama bank', 100],
+    ['accountName', 'Atas nama', 160],
+    ['bankName2', 'Nama bank rekening 2', 100],
+    ['accountName2', 'Atas nama rekening 2', 160],
+    ['messageTemplate', 'Template pesan', 2000],
+    ['donationNote', 'Catatan donasi', 1000],
+  ]) {
+    const value = String(values?.[key] ?? '')
     if (value.length > limit || [...value].some((character) => {
       const code = character.codePointAt(0)
       return code === 127 || (code < 32 && !(['messageTemplate', 'donationNote'].includes(key) && [9, 10, 13].includes(code)))
     })) errors[key] = `${label} tidak valid atau melebihi ${limit} karakter.`
   }
-  if (values.accountNumber.trim() && !/^\d{1,40}$/.test(values.accountNumber.trim())) errors.accountNumber = 'Nomor rekening harus berisi 1–40 digit, tanpa spasi atau tanda baca.'
-  if (values.whatsappNumber.trim() && !/^[1-9]\d{7,14}$/.test(values.whatsappNumber.trim())) errors.whatsappNumber = 'Gunakan nomor internasional 8–15 digit, tanpa +, spasi atau tanda baca; misalnya berawalan 628.'
+  const accountNumber = String(values?.accountNumber ?? '').trim()
+  if (accountNumber && !/^\d{1,40}$/.test(accountNumber)) {
+    errors.accountNumber = 'Nomor rekening harus berisi 1–40 digit, tanpa spasi atau tanda baca.'
+  }
+  const accountNumber2 = String(values?.accountNumber2 ?? '').trim()
+  if (accountNumber2 && !/^\d{1,40}$/.test(accountNumber2)) {
+    errors.accountNumber2 = 'Nomor rekening harus berisi 1–40 digit, tanpa spasi atau tanda baca.'
+  }
+  const bank2Name = String(values?.bankName2 ?? '').trim()
+  const bank2Recipient = String(values?.accountName2 ?? '').trim()
+  if (bank2Name || accountNumber2 || bank2Recipient) {
+    if (!bank2Name && !errors.bankName2) errors.bankName2 = 'Nama bank rekening 2 wajib diisi jika rekening 2 digunakan.'
+    if (!accountNumber2 && !errors.accountNumber2) errors.accountNumber2 = 'Nomor rekening 2 wajib diisi jika rekening 2 digunakan.'
+    if (!bank2Recipient && !errors.accountName2) errors.accountName2 = 'Atas nama rekening 2 wajib diisi jika rekening 2 digunakan.'
+  }
+  const whatsappNumber = String(values?.whatsappNumber ?? '').trim()
+  if (whatsappNumber && !/^[1-9]\d{7,14}$/.test(whatsappNumber)) {
+    errors.whatsappNumber = 'Gunakan nomor internasional 8–15 digit, tanpa +, spasi atau tanda baca; misalnya berawalan 628.'
+  }
   return errors
 }
 
 export function getAdminDonationReadiness(values) {
   const errors = validateAdminDonationSettings(values)
-  const qrisComplete = Boolean(values.qrisFile)
-  const bankComplete = Boolean(values.bankName.trim() && values.accountNumber.trim() && values.accountName.trim() && !errors.bankName && !errors.accountNumber && !errors.accountName)
-  const whatsappComplete = Boolean(values.whatsappNumber.trim() && values.messageTemplate.trim() && !errors.whatsappNumber && !errors.messageTemplate)
-  const method = (complete, enabled, missing) => ({ complete, enabled: complete && enabled === true, reason: !complete ? missing : enabled ? 'Siap ditampilkan dalam pratinjau simulasi.' : 'Data lengkap. Aktifkan toggle untuk menampilkannya dalam pratinjau.' })
-  const qris = method(qrisComplete, values.qrisEnabled, 'Gambar QRIS belum tersedia. Unggah gambar valid, lalu aktifkan visibilitas QRIS.')
-  const bank = method(bankComplete, values.bankEnabled, 'Lengkapi Nama Bank, Nomor Rekening yang valid, dan Atas Nama sebelum mengaktifkan transfer bank.')
-  const whatsapp = method(whatsappComplete, values.whatsappEnabled, 'Lengkapi nomor WhatsApp internasional yang valid dan template pesan konfirmasi.')
+  const qrisComplete = Boolean(values?.qrisFile)
+  const bank1Name = String(values?.bankName ?? '').trim()
+  const bank1Number = String(values?.accountNumber ?? '').trim()
+  const bank1Recipient = String(values?.accountName ?? '').trim()
+  const bank1Complete = Boolean(bank1Name && bank1Number && bank1Recipient && !errors.bankName && !errors.accountNumber && !errors.accountName)
+
+  const bank2Name = String(values?.bankName2 ?? '').trim()
+  const bank2Number = String(values?.accountNumber2 ?? '').trim()
+  const bank2Recipient = String(values?.accountName2 ?? '').trim()
+  const bank2Empty = !bank2Name && !bank2Number && !bank2Recipient
+  const bank2Complete = Boolean(bank2Name && bank2Number && bank2Recipient && !errors.bankName2 && !errors.accountNumber2 && !errors.accountName2)
+  const bank2Partial = !bank2Empty && !bank2Complete
+
+  const bankComplete = bank1Complete && (bank2Empty || bank2Complete)
+  const accounts = bankComplete
+    ? [
+        { name: bank1Name, number: bank1Number, recipient: bank1Recipient },
+        ...(bank2Complete ? [{ name: bank2Name, number: bank2Number, recipient: bank2Recipient }] : []),
+      ]
+    : []
+
+  const whatsappComplete = Boolean(String(values?.whatsappNumber ?? '').trim() && String(values?.messageTemplate ?? '').trim() && !errors.whatsappNumber && !errors.messageTemplate)
+  const method = (complete, enabled, missing, readyReason, draftReason) => ({
+    complete,
+    enabled: complete && enabled === true,
+    reason: !complete
+      ? missing
+      : enabled
+        ? (readyReason || 'Siap ditampilkan dalam pratinjau simulasi.')
+        : (draftReason || 'Data lengkap. Aktifkan toggle untuk menampilkannya dalam pratinjau.'),
+  })
+  const qris = method(qrisComplete, values?.qrisEnabled, 'Gambar QRIS belum tersedia. Unggah gambar valid, lalu aktifkan visibilitas QRIS.')
+  const bankMissing = bank1Complete && bank2Partial
+    ? 'Rekening 2 baru diisi sebagian. Lengkapi ketiga kolom Rekening 2 atau kosongkan seluruhnya.'
+    : 'Lengkapi Nama Bank, Nomor Rekening yang valid, dan Atas Nama pada Rekening 1 sebelum mengaktifkan transfer bank.'
+  const bankReady = accounts.length === 2
+    ? '2 rekening siap ditampilkan dalam pratinjau simulasi.'
+    : '1 rekening siap ditampilkan dalam pratinjau simulasi.'
+  const bankDraft = accounts.length === 2
+    ? '2 rekening lengkap. Aktifkan toggle untuk menampilkannya dalam pratinjau.'
+    : 'Data lengkap. Aktifkan toggle untuk menampilkannya dalam pratinjau.'
+  const bank = {
+    ...method(bankComplete, values?.bankEnabled, bankMissing, bankReady, bankDraft),
+    accounts,
+    accountCount: accounts.length,
+    bank2Partial,
+  }
+  const whatsapp = method(whatsappComplete, values?.whatsappEnabled, 'Lengkapi nomor WhatsApp internasional yang valid dan template pesan konfirmasi.')
   return { qris, bank, whatsapp, paymentReadyCount: Number(qris.enabled) + Number(bank.enabled) }
 }
 

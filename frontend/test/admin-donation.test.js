@@ -67,6 +67,54 @@ test('gambar harus satu PNG/JPG sesuai MIME, tidak kosong dan maksimal dua MB; b
   assert.equal(service.validateAdminDonationQris([make('q.JPEG','image/jpeg')]),'')
 })
 
+test('dukungan dua rekening: 1 rekening lengkap, 2 rekening lengkap, dan validasi rekening 2 parsial', async () => {
+  const initial = await service.getAdminDonationSettings()
+  assert.equal(initial.bankName2 + initial.accountNumber2 + initial.accountName2, '')
+
+  const oneAccount = {
+    ...initial,
+    bankName: 'BSI',
+    accountNumber: '7123456789',
+    accountName: 'Masjid Al-Hidayah',
+    bankEnabled: true,
+  }
+  assert.deepEqual(service.validateAdminDonationSettings(oneAccount), {})
+  const oneReadiness = service.getAdminDonationReadiness(oneAccount)
+  assert.equal(oneReadiness.bank.complete, true)
+  assert.equal(oneReadiness.bank.enabled, true)
+  assert.equal(oneReadiness.bank.accountCount, 1)
+  assert.equal(oneReadiness.bank.accounts.length, 1)
+
+  const partialTwo = { ...oneAccount, bankName2: 'BPD DIY Syariah' }
+  const partialErrors = service.validateAdminDonationSettings(partialTwo)
+  assert.equal(partialErrors.bankName2, undefined)
+  assert.ok(partialErrors.accountNumber2)
+  assert.ok(partialErrors.accountName2)
+  const partialReadiness = service.getAdminDonationReadiness(partialTwo)
+  assert.equal(partialReadiness.bank.complete, false)
+  assert.equal(partialReadiness.bank.bank2Partial, true)
+  assert.equal(service.normalizeAdminDonationSettings(partialTwo).bankEnabled, false)
+
+  const invalidNumberTwo = { ...oneAccount, bankName2: 'BPD DIY', accountNumber2: '123-abc', accountName2: 'Takmir' }
+  assert.ok(service.validateAdminDonationSettings(invalidNumberTwo).accountNumber2)
+
+  const twoAccounts = {
+    ...oneAccount,
+    bankName2: 'BPD DIY Syariah',
+    accountNumber2: '8001122334',
+    accountName2: 'Panitia Pembangunan',
+  }
+  assert.deepEqual(service.validateAdminDonationSettings(twoAccounts), {})
+  const twoReadiness = service.getAdminDonationReadiness(twoAccounts)
+  assert.equal(twoReadiness.bank.complete, true)
+  assert.equal(twoReadiness.bank.enabled, true)
+  assert.equal(twoReadiness.bank.accountCount, 2)
+  assert.deepEqual(twoReadiness.bank.accounts, [
+    { name: 'BSI', number: '7123456789', recipient: 'Masjid Al-Hidayah' },
+    { name: 'BPD DIY Syariah', number: '8001122334', recipient: 'Panitia Pembangunan' },
+  ])
+})
+
 test('mode API memanggil /api/admin/donation-settings tanpa fallback mock; route Donasi memakai AdminLayout', async () => {
   for (const route of ['/admin/donasi', '/admin/donasi/']) {
     const html = renderToStaticMarkup(h(MemoryRouter, { initialEntries: [route] }, h(App)))
@@ -88,5 +136,8 @@ test('mode API memanggil /api/admin/donation-settings tanpa fallback mock; route
     const settings = await adapter.getAdminDonationSettings()
     assert.equal(settings.qrisFile, '/images/qris-donasi.png')
     assert.equal(settings.bankName, 'BSI')
+    assert.equal(settings.bankName2, '')
+    assert.equal(settings.accountNumber2, '')
+    assert.equal(settings.accountName2, '')
   } finally { globalThis.fetch = originalFetch; await api.close() }
 })
