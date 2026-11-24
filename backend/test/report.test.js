@@ -272,3 +272,34 @@ test('laporan publik memperhitungkan transfer internal di dalam periode pada sal
   }])
   assert.deepEqual(baseline.summary.transfers, [])
 })
+
+test('laporan publik dan gate sandi menolak akses (403) ketika laporan_publik_aktif bernilai false', async () => {
+  const repos = createTestRepositories()
+  repos.financeReportRepository.findPublicReportEnabled = async () => false
+
+  const disabledApp = createApp({
+    reportPasswordHash: TEST_PASSWORD_HASH,
+    repositories: repos,
+  })
+  const disabledServer = disabledApp.listen(0, '127.0.0.1')
+  await new Promise((resolve) => disabledServer.once('listening', resolve))
+
+  try {
+    const url = `http://127.0.0.1:${disabledServer.address().port}/api/public`
+    const gateRes = await fetch(`${url}/report/check-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: TEST_PASSWORD }),
+    })
+    assert.equal(gateRes.status, 403)
+    assert.equal((await gateRes.json()).error.code, 'FORBIDDEN')
+
+    const reportRes = await fetch(`${url}/finance/report`)
+    assert.equal(reportRes.status, 403)
+    assert.equal((await reportRes.json()).error.code, 'FORBIDDEN')
+  } finally {
+    await new Promise((resolve, reject) => {
+      disabledServer.close((err) => (err ? reject(err) : resolve()))
+    })
+  }
+})

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, test } from 'node:test'
 import { createApp } from '../src/app.js'
+import { createPublicContentRepository } from '../src/repositories/publicContentRepository.js'
 import { createAgendaService } from '../src/services/agendaService.js'
 import { createPublicContentService } from '../src/services/publicContentService.js'
 import { createTestRepositories } from './helpers/testRepositories.js'
@@ -132,4 +133,51 @@ test('salinan data sumber terisolasi dari mutasi pemanggil', async () => {
 
   assert.equal(agendaBody.data.groups[0].items.length, 5)
   assert.equal(contentBody.data.profile.members.length, 7)
+})
+
+test('createPublicContentRepository memakai 1 koneksi client secara berurutan tanpa pool burst', async () => {
+  let connectCount = 0
+  let releaseCount = 0
+  let directPoolQueryCount = 0
+  const queriedSql = []
+
+  const spyPool = {
+    async query() {
+      directPoolQueryCount += 1
+      return { rows: [] }
+    },
+    async connect() {
+      connectCount += 1
+      return {
+        async query(sql) {
+          queriedSql.push(sql)
+          if (sql.includes('m_profil_masjid')) {
+            return {
+              rows: [
+                {
+                  nama_masjid: 'Masjid Al-Hidayah',
+                  tagline: 'Tagline Beranda',
+                  deskripsi: 'Deskripsi Lengkap Profil',
+                },
+              ],
+            }
+          }
+          return { rows: [] }
+        },
+        release() {
+          releaseCount += 1
+        },
+      }
+    },
+  }
+
+  const repo = createPublicContentRepository(spyPool)
+  const content = await repo.findPublicContent()
+
+  assert.equal(connectCount, 1)
+  assert.equal(releaseCount, 1)
+  assert.equal(directPoolQueryCount, 0)
+  assert.equal(queriedSql.length, 6)
+  assert.equal(content.heroDescription, 'Tagline Beranda')
+  assert.equal(content.profile.introduction, 'Deskripsi Lengkap Profil')
 })

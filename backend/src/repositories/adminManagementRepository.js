@@ -1,4 +1,4 @@
-import { getDefaultDatabasePool, withDatabaseTransaction } from '../config/database.js'
+import { getDefaultDatabasePool, withDatabaseClient, withDatabaseTransaction } from '../config/database.js'
 import { mapPgErrorToHttpError, resolveAuditPenggunaId } from '../utils/financeMapping.js'
 import { createHttpError } from '../utils/httpError.js'
 
@@ -266,8 +266,8 @@ export function createAdminManagementRepository(db = getDefaultDatabasePool()) {
       const whereSql = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : ''
       params.push(limit)
 
-      const [logsRes, totalRes] = await Promise.all([
-        db.query(
+      const { logsRes, totalRes } = await withDatabaseClient(db, async (client) => {
+        const logsResult = await client.query(
           `SELECT l.id,
                   to_char(l.waktu AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD') AS date,
                   to_char(l.waktu AT TIME ZONE 'Asia/Jakarta', 'HH24:MI') AS time,
@@ -281,9 +281,12 @@ export function createAdminManagementRepository(db = getDefaultDatabasePool()) {
            ORDER BY l.waktu DESC, l.id DESC
            LIMIT $${params.length}`,
           params
-        ),
-        db.query(`SELECT COUNT(*)::int AS total_count FROM keu_masjid.t_activity_log`),
-      ])
+        )
+        const totalResult = await client.query(
+          `SELECT COUNT(*)::int AS total_count FROM keu_masjid.t_activity_log`
+        )
+        return { logsRes: logsResult, totalRes: totalResult }
+      })
 
       const activities = logsRes.rows.map((row) => {
         const mappedType = LOG_TYPE_LABELS[row.db_type] ?? {

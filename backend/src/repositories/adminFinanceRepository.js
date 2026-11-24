@@ -1,4 +1,4 @@
-import { getDefaultDatabasePool, withDatabaseTransaction } from '../config/database.js'
+import { getDefaultDatabasePool, withDatabaseClient, withDatabaseTransaction } from '../config/database.js'
 import { createHttpError } from '../utils/httpError.js'
 import {
   ALLOWED_CATEGORY_COLORS,
@@ -50,33 +50,39 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
     },
 
     async getDashboardData() {
-      const [userRes, saldoRes, recentRes, latestDateRes] = await Promise.all([
-        db.query(
+      const { userRes, saldoRes, recentRes, latestDateRes } = await withDatabaseClient(db, async (client) => {
+        const userResult = await client.query(
           `SELECT id, nama, email
            FROM keu_masjid.m_pengguna
            WHERE status = 'Aktif'
            ORDER BY id ASC
            LIMIT 1`
-        ),
-        db.query(
+        )
+        const saldoResult = await client.query(
           `SELECT kategori_dana_id, nama_kategori, aktif, saldo_awal,
                   total_masuk, total_keluar, transfer_masuk, transfer_keluar, saldo_terkini
            FROM keu_masjid.v_saldo_kategori_dana
            WHERE aktif = true
            ORDER BY kategori_dana_id ASC`
-        ),
-        db.query(
+        )
+        const recentResult = await client.query(
           `SELECT id, to_char(tanggal, 'YYYY-MM-DD') AS tanggal, jenis,
                   kategori_dana_id, uraian, nominal
            FROM keu_masjid.v_transaksi_lengkap
            ORDER BY tanggal DESC, id DESC
            LIMIT 5`
-        ),
-        db.query(
+        )
+        const latestDateResult = await client.query(
           `SELECT to_char(MAX(tanggal), 'YYYY-MM-DD') AS updated_date
            FROM keu_masjid.t_transaksi`
-        ),
-      ])
+        )
+        return {
+          userRes: userResult,
+          saldoRes: saldoResult,
+          recentRes: recentResult,
+          latestDateRes: latestDateResult,
+        }
+      })
 
       const activeUser = userRes.rows[0]
       const account = activeUser
@@ -246,22 +252,33 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
     },
 
     async getReportMetadata() {
-      const [userRes, categories, coverageRes] = await Promise.all([
-        db.query(
+      const { userRes, categories, coverageRes } = await withDatabaseClient(db, async (client) => {
+        const userResult = await client.query(
           `SELECT id, nama, email
            FROM keu_masjid.m_pengguna
            WHERE status = 'Aktif'
            ORDER BY id ASC
            LIMIT 1`
-        ),
-        this.findCategories(),
-        db.query(
+        )
+        const catResult = await client.query(
+          `SELECT kategori_dana_id, nama_kategori, aktif, saldo_awal,
+                  total_masuk, total_keluar, transfer_masuk, transfer_keluar, saldo_terkini
+           FROM keu_masjid.v_saldo_kategori_dana
+           WHERE aktif = true
+           ORDER BY kategori_dana_id ASC`
+        )
+        const coverageResult = await client.query(
           `SELECT to_char(MIN(tanggal), 'YYYY-MM-DD') AS min_date,
                   to_char(MAX(tanggal), 'YYYY-MM-DD') AS max_date,
                   COUNT(*)::int AS total_count
            FROM keu_masjid.t_transaksi`
-        ),
-      ])
+        )
+        return {
+          userRes: userResult,
+          categories: catResult.rows.map(mapCategoryRow),
+          coverageRes: coverageResult,
+        }
+      })
 
       const activeUser = userRes.rows[0]
       const account = activeUser

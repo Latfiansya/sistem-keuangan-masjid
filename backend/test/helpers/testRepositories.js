@@ -271,6 +271,9 @@ export function createTestRepositories() {
           ),
         }
       },
+      async findPublicReportEnabled() {
+        return websiteSettings.publicReportEnabled !== false
+      },
       async findReportAccessPasswordHash() {
         return reportAccessState.codeHash
       },

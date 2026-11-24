@@ -48,6 +48,19 @@ export function verifyReportPassword(body, expectedPasswordHash) {
 
 // Business logic layer untuk laporan keuangan publik berbasis data PostgreSQL.
 export function createReportService(repository = defaultFinanceReportRepository) {
+  async function assertPublicReportEnabled() {
+    if (typeof repository.findPublicReportEnabled === 'function') {
+      const enabled = await repository.findPublicReportEnabled()
+      if (!enabled) {
+        throw createHttpError(
+          403,
+          'FORBIDDEN',
+          'Laporan keuangan publik saat ini sedang dinonaktifkan oleh pengurus.'
+        )
+      }
+    }
+  }
+
   async function validateAndResolveReportRange(query = {}, metadata) {
     const { startDate, endDate } = query
 
@@ -79,6 +92,7 @@ export function createReportService(repository = defaultFinanceReportRepository)
 
     async checkPassword(body, fallbackPasswordHash) {
       const password = extractValidPasswordInput(body)
+      await assertPublicReportEnabled()
       const dbHash =
         typeof repository.findReportAccessPasswordHash === 'function'
           ? await repository.findReportAccessPasswordHash()
@@ -94,6 +108,7 @@ export function createReportService(repository = defaultFinanceReportRepository)
     },
 
     async getFinanceReport(query = {}) {
+      await assertPublicReportEnabled()
       const metadata = await repository.findFinanceReportMetadata()
       const range = await validateAndResolveReportRange(query, metadata)
 

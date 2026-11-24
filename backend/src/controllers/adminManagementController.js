@@ -7,7 +7,7 @@ function assertSuperAdminIfAuthenticated(req) {
     throw createHttpError(
       403,
       'FORBIDDEN',
-      'Hanya Super Admin yang dapat mengelola akun pengurus atau kode akses laporan.'
+      'Hanya Super Admin yang dapat mengelola akun pengurus.'
     )
   }
 }
@@ -58,6 +58,7 @@ export function createAdminManagementController(
 
     async listAccounts(req, res, next) {
       try {
+        assertSuperAdminIfAuthenticated(req)
         const data = await service.listAccounts(req.query)
         res.status(200).json({ success: true, data })
       } catch (error) {
@@ -116,7 +117,6 @@ export function createAdminManagementController(
 
     async updateReportAccess(req, res, next) {
       try {
-        assertSuperAdminIfAuthenticated(req)
         const data = await service.updateReportAccess(req.body, req.adminUser?.id ?? null)
         res.status(200).json({ success: true, data })
       } catch (error) {

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createApp } from '../src/app.js'
+import { createDatabasePool, withDatabaseClient } from '../src/config/database.js'
 import { loadEnv } from '../src/config/env.js'
 import {
   mapCategoryApiId,
@@ -95,5 +96,47 @@ test('GET /api/health/db melaporkan status koneksi pool PostgreSQL secara aman',
   } finally {
     await new Promise((resolve) => failServer.close(resolve))
   }
+})
+
+test('createDatabasePool memakai timeout 15s + keepAlive dan withDatabaseClient selalu release koneksi', async () => {
+  const pool = createDatabasePool(
+    loadEnv({
+      DATABASE_URL: 'postgresql://user_db:pass_rahasia@10.0.0.5:54329/db_keuangan_masjid_dev',
+    }).db
+  )
+  try {
+    assert.match(pool.options.options, /-c search_path=keu_masjid,public/)
+    assert.equal(pool.options.connectionTimeoutMillis, 15_000)
+    assert.equal(pool.options.statement_timeout, 15_000)
+    assert.equal(pool.options.keepAlive, true)
+  } finally {
+    await pool.end()
+  }
+
+  let connectCalls = 0
+  let releaseCalls = 0
+  const fakePool = {
+    async connect() {
+      connectCalls += 1
+      return {
+        async query(sql) {
+          return { rows: [{ sql }] }
+        },
+        release() {
+          releaseCalls += 1
+        },
+      }
+    },
+  }
+
+  await assert.rejects(
+    withDatabaseClient(fakePool, async (client) => {
+      await client.query('SELECT 1')
+      throw new Error('simulasi gagal')
+    }),
+    /simulasi gagal/
+  )
+  assert.equal(connectCalls, 1)
+  assert.equal(releaseCalls, 1)
 })
 

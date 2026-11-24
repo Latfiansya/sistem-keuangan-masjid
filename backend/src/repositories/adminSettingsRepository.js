@@ -1,4 +1,4 @@
-import { getDefaultDatabasePool, withDatabaseTransaction } from '../config/database.js'
+import { getDefaultDatabasePool, withDatabaseClient, withDatabaseTransaction } from '../config/database.js'
 import { mapPgErrorToHttpError, resolveAuditPenggunaId } from '../utils/financeMapping.js'
 import { createAgendaRepository } from './agendaRepository.js'
 
@@ -52,20 +52,21 @@ export function createAdminSettingsRepository(db = getDefaultDatabasePool()) {
 
   return {
     async getProfile() {
-      const [profilRes, settingsRes] = await Promise.all([
-        db.query(
+      const { profilRes, settingsRes } = await withDatabaseClient(db, async (client) => {
+        const profilResult = await client.query(
           `SELECT ${PROFILE_COLUMNS}
            FROM keu_masjid.m_profil_masjid
            WHERE id = 1
            LIMIT 1`
-        ),
-        db.query(
+        )
+        const settingsResult = await client.query(
           `SELECT alamat_lengkap, telepon
            FROM keu_masjid.m_pengaturan_website
            WHERE id = 1
            LIMIT 1`
-        ),
-      ])
+        )
+        return { profilRes: profilResult, settingsRes: settingsResult }
+      })
 
       return formatProfile(profilRes.rows[0], settingsRes.rows[0])
     },

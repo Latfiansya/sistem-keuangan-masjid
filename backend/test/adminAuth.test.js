@@ -118,7 +118,7 @@ describe('Keamanan HTTP, CORS, dan autentikasi sesi admin (/api/admin)', () => {
     assert.deepEqual(capturedAuditIds, ['2'])
   })
 
-  it('membatasi pengelolaan akun & kode akses hanya untuk Super Admin serta mencegah nonaktifkan diri sendiri', async () => {
+  it('membatasi pengelolaan akun hanya untuk Super Admin, mengizinkan Admin mengatur kode akses laporan, serta mencegah nonaktifkan diri sendiri', async () => {
     // Login sebagai Admin biasa (ahmad@masjid.id, role: 'Admin')
     const adminLoginRes = await fetch(`${baseUrl}/admin/auth/login`, {
       method: 'POST',
@@ -128,6 +128,19 @@ describe('Keamanan HTTP, CORS, dan autentikasi sesi admin (/api/admin)', () => {
     assert.equal(adminLoginRes.status, 200)
     const adminToken = (await adminLoginRes.json()).data.token
 
+    const adminDashboardRes = await fetch(`${baseUrl}/admin/dashboard`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    })
+    assert.equal(adminDashboardRes.status, 200)
+    const adminDashboardBody = await adminDashboardRes.json()
+    assert.equal(adminDashboardBody.data.account.role, 'Admin')
+    assert.equal(adminDashboardBody.data.account.email, 'ahmad@masjid.id')
+
+    const forbiddenListAccountsRes = await fetch(`${baseUrl}/admin/accounts`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    })
+    assert.equal(forbiddenListAccountsRes.status, 403)
+
     const forbiddenAccountRes = await fetch(`${baseUrl}/admin/accounts`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
@@ -135,12 +148,17 @@ describe('Keamanan HTTP, CORS, dan autentikasi sesi admin (/api/admin)', () => {
     })
     assert.equal(forbiddenAccountRes.status, 403)
 
-    const forbiddenReportAccessRes = await fetch(`${baseUrl}/admin/report-access`, {
+    const adminGetReportAccessRes = await fetch(`${baseUrl}/admin/report-access`, {
+      headers: { Authorization: `Bearer ${adminToken}` },
+    })
+    assert.equal(adminGetReportAccessRes.status, 200)
+
+    const adminUpdateReportAccessRes = await fetch(`${baseUrl}/admin/report-access`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${adminToken}` },
-      body: JSON.stringify({ code: 'kode-ditolak-123' }),
+      body: JSON.stringify({ code: 'kode-admin-123' }),
     })
-    assert.equal(forbiddenReportAccessRes.status, 403)
+    assert.equal(adminUpdateReportAccessRes.status, 200)
 
     // Login sebagai Super Admin (superadmin@masjid.id)
     const superLoginRes = await fetch(`${baseUrl}/admin/auth/login`, {

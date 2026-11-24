@@ -1,4 +1,4 @@
-import { getDefaultDatabasePool } from '../config/database.js'
+import { getDefaultDatabasePool, withDatabaseClient } from '../config/database.js'
 
 const PROGRAM_ICONS = ['heart', 'health', 'economy']
 
@@ -25,17 +25,17 @@ function buildInitials(name = '') {
 export function createPublicContentRepository(db = getDefaultDatabasePool()) {
   return {
     async findPublicContent() {
-      const [profilRes, settingsRes, misiRes, programRes, sejarahRes, pengurusRes] =
-        await Promise.all([
-          db.query(
+      const { profilRes, settingsRes, misiRes, programRes, sejarahRes, pengurusRes } =
+        await withDatabaseClient(db, async (client) => {
+          const profilResult = await client.query(
             `SELECT id, nama_masjid, deskripsi, foto_path, lokasi, tagline,
                     tahun_berdiri, luas_bangunan_m2, keterangan_luas,
                     kapasitas_jamaah, keterangan_kapasitas, visi, periode_pengurus, logo_path
              FROM keu_masjid.m_profil_masjid
              WHERE id = 1
              LIMIT 1`
-          ),
-          db.query(
+          )
+          const settingsResult = await client.query(
             `SELECT id, laporan_publik_aktif, nomor_whatsapp, email_pengurus,
                     alamat_lengkap, link_gmaps, jam_operasional,
                     telepon, keterangan_telepon, latitude, longitude, label_peta,
@@ -43,30 +43,38 @@ export function createPublicContentRepository(db = getDefaultDatabasePool()) {
              FROM keu_masjid.m_pengaturan_website
              WHERE id = 1
              LIMIT 1`
-          ),
-          db.query(
+          )
+          const misiResult = await client.query(
             `SELECT id, isi, urutan
              FROM keu_masjid.m_misi_masjid
              ORDER BY urutan ASC, id ASC`
-          ),
-          db.query(
+          )
+          const programResult = await client.query(
             `SELECT id, judul, deskripsi, urutan
              FROM keu_masjid.m_program_masjid
              WHERE aktif = true
              ORDER BY urutan ASC, id ASC`
-          ),
-          db.query(
+          )
+          const sejarahResult = await client.query(
             `SELECT id, tahun, label_era, nama_tempat, judul, deskripsi, urutan
              FROM keu_masjid.m_sejarah_masjid
              ORDER BY urutan ASC, id ASC`
-          ),
-          db.query(
+          )
+          const pengurusResult = await client.query(
             `SELECT id, nama, jabatan, keterangan, foto_path, urutan
              FROM keu_masjid.m_pengurus
              WHERE aktif = true
              ORDER BY urutan ASC, id ASC`
-          ),
-        ])
+          )
+          return {
+            profilRes: profilResult,
+            settingsRes: settingsResult,
+            misiRes: misiResult,
+            programRes: programResult,
+            sejarahRes: sejarahResult,
+            pengurusRes: pengurusResult,
+          }
+        })
 
       const profil = profilRes.rows[0] ?? null
       const settings = settingsRes.rows[0] ?? null

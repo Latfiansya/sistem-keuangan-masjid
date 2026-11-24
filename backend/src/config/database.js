@@ -30,7 +30,10 @@ export function createDatabasePool(dbConfig = loadEnv().db) {
     options: `-c search_path=${searchPath}`,
     max: 10,
     idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 5_000,
+    connectionTimeoutMillis: 15_000,
+    statement_timeout: 15_000,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10_000,
   })
 
   pool.on('error', (error) => {
@@ -52,6 +55,19 @@ export function getDefaultDatabasePool() {
 export async function checkDatabaseConnection(pool = getDefaultDatabasePool()) {
   const result = await pool.query('SELECT current_database() AS database_name, current_schema() AS schema_name')
   return result.rows[0]
+}
+
+// Menjalankan beberapa query baca pada satu koneksi pool agar tidak membuka banyak koneksi paralel ke DB remote.
+export async function withDatabaseClient(db, work) {
+  if (typeof db?.connect !== 'function') {
+    return work(db)
+  }
+  const client = await db.connect()
+  try {
+    return await work(client)
+  } finally {
+    client.release()
+  }
 }
 
 // Menjalankan beberapa query tulis dalam satu transaksi PostgreSQL (opsional set app.user_id untuk trigger audit).

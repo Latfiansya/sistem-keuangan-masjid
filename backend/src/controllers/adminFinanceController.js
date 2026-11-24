@@ -1,11 +1,27 @@
 import { defaultAdminFinanceService } from '../services/adminFinanceService.js'
 
+function buildInitials(name = '') {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean)
+  if (!parts.length) return 'AD'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+}
+
 // Presentation layer untuk dashboard, kategori dana, laporan keuangan, dan transaksi pengurus.
 export function createAdminFinanceController(service = defaultAdminFinanceService) {
   return {
-    async getDashboard(_req, res, next) {
+    async getDashboard(req, res, next) {
       try {
         const data = await service.getDashboardSummary()
+        if (req.adminUser) {
+          data.account = {
+            id: req.adminUser.id,
+            name: req.adminUser.name,
+            email: req.adminUser.email,
+            role: req.adminUser.role,
+            initials: buildInitials(req.adminUser.name),
+          }
+        }
         res.status(200).json({ success: true, data })
       } catch (error) {
         next(error)

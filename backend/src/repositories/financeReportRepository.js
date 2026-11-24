@@ -1,4 +1,4 @@
-import { getDefaultDatabasePool } from '../config/database.js'
+import { getDefaultDatabasePool, withDatabaseClient } from '../config/database.js'
 import {
   mapCategoryApiId,
   resolveCategoryColor,
@@ -41,26 +41,34 @@ function getMonthCalendarRange(monthKey) {
 export function createFinanceReportRepository(db = getDefaultDatabasePool()) {
   return {
     async findFinanceReportMetadata() {
-      const [profilRes, rangeRes, monthsRes, categoriesRes] = await Promise.all([
-        db.query(`SELECT nama_masjid FROM keu_masjid.m_profil_masjid WHERE id = 1 LIMIT 1`),
-        db.query(
+      const { profilRes, rangeRes, monthsRes, categoriesRes } = await withDatabaseClient(db, async (client) => {
+        const profilResult = await client.query(
+          `SELECT nama_masjid FROM keu_masjid.m_profil_masjid WHERE id = 1 LIMIT 1`
+        )
+        const rangeResult = await client.query(
           `SELECT to_char(date_trunc('month', MIN(tanggal)), 'YYYY-MM-DD') AS coverage_start,
                   to_char((date_trunc('month', MAX(tanggal)) + interval '1 month - 1 day')::date, 'YYYY-MM-DD') AS coverage_end,
                   to_char(MAX(tanggal), 'YYYY-MM') AS latest_month
            FROM keu_masjid.t_transaksi`
-        ),
-        db.query(
+        )
+        const monthsResult = await client.query(
           `SELECT DISTINCT to_char(tanggal, 'YYYY-MM') AS month_key
            FROM keu_masjid.t_transaksi
            ORDER BY month_key ASC`
-        ),
-        db.query(
+        )
+        const categoriesResult = await client.query(
           `SELECT id, nama_kategori, saldo_awal
            FROM keu_masjid.m_kategori_dana
            WHERE aktif = true
            ORDER BY id ASC`
-        ),
-      ])
+        )
+        return {
+          profilRes: profilResult,
+          rangeRes: rangeResult,
+          monthsRes: monthsResult,
+          categoriesRes: categoriesResult,
+        }
+      })
 
       const coverageStart = rangeRes.rows[0]?.coverage_start || null
       const coverageEnd = rangeRes.rows[0]?.coverage_end || null
@@ -99,42 +107,50 @@ export function createFinanceReportRepository(db = getDefaultDatabasePool()) {
         }
       }
 
-      const [priorTrxRes, priorTransferInRes, priorTransferOutRes, rangeTrxRes, transfers] = await Promise.all([
-        db.query(
-          `SELECT kategori_dana_id,
-                  COALESCE(SUM(CASE WHEN jenis = 'MASUK' THEN nominal ELSE 0 END), 0) AS total_masuk,
-                  COALESCE(SUM(CASE WHEN jenis = 'KELUAR' THEN nominal ELSE 0 END), 0) AS total_keluar
-           FROM keu_masjid.t_transaksi
-           WHERE tanggal < $1::date
-           GROUP BY kategori_dana_id`,
-          [startDate]
-        ),
-        db.query(
-          `SELECT kategori_dana_tujuan_id AS kategori_dana_id,
-                  COALESCE(SUM(nominal), 0) AS total_transfer_masuk
-           FROM keu_masjid.t_transfer_dana
-           WHERE tanggal < $1::date
-           GROUP BY kategori_dana_tujuan_id`,
-          [startDate]
-        ),
-        db.query(
-          `SELECT kategori_dana_asal_id AS kategori_dana_id,
-                  COALESCE(SUM(nominal), 0) AS total_transfer_keluar
-           FROM keu_masjid.t_transfer_dana
-           WHERE tanggal < $1::date
-           GROUP BY kategori_dana_asal_id`,
-          [startDate]
-        ),
-        db.query(
-          `SELECT id, kategori_dana_id, jenis, uraian, nominal,
-                  to_char(tanggal, 'YYYY-MM-DD') AS tanggal
-           FROM keu_masjid.t_transaksi
-           WHERE tanggal >= $1::date AND tanggal <= $2::date
-           ORDER BY tanggal ASC, id ASC`,
-          [startDate, endDate]
-        ),
-        findTransfersInRange(db, startDate, endDate),
-      ])
+      const { priorTrxRes, priorTransferInRes, priorTransferOutRes, rangeTrxRes, transfers } =
+        await withDatabaseClient(db, async (client) => {
+          const priorTrxResult = await client.query(
+            `SELECT kategori_dana_id,
+                    COALESCE(SUM(CASE WHEN jenis = 'MASUK' THEN nominal ELSE 0 END), 0) AS total_masuk,
+                    COALESCE(SUM(CASE WHEN jenis = 'KELUAR' THEN nominal ELSE 0 END), 0) AS total_keluar
+             FROM keu_masjid.t_transaksi
+             WHERE tanggal < $1::date
+             GROUP BY kategori_dana_id`,
+            [startDate]
+          )
+          const priorTransferInResult = await client.query(
+            `SELECT kategori_dana_tujuan_id AS kategori_dana_id,
+                    COALESCE(SUM(nominal), 0) AS total_transfer_masuk
+             FROM keu_masjid.t_transfer_dana
+             WHERE tanggal < $1::date
+             GROUP BY kategori_dana_tujuan_id`,
+            [startDate]
+          )
+          const priorTransferOutResult = await client.query(
+            `SELECT kategori_dana_asal_id AS kategori_dana_id,
+                    COALESCE(SUM(nominal), 0) AS total_transfer_keluar
+             FROM keu_masjid.t_transfer_dana
+             WHERE tanggal < $1::date
+             GROUP BY kategori_dana_asal_id`,
+            [startDate]
+          )
+          const rangeTrxResult = await client.query(
+            `SELECT id, kategori_dana_id, jenis, uraian, nominal,
+                    to_char(tanggal, 'YYYY-MM-DD') AS tanggal
+             FROM keu_masjid.t_transaksi
+             WHERE tanggal >= $1::date AND tanggal <= $2::date
+             ORDER BY tanggal ASC, id ASC`,
+            [startDate, endDate]
+          )
+          const transferRows = await findTransfersInRange(client, startDate, endDate)
+          return {
+            priorTrxRes: priorTrxResult,
+            priorTransferInRes: priorTransferInResult,
+            priorTransferOutRes: priorTransferOutResult,
+            rangeTrxRes: rangeTrxResult,
+            transfers: transferRows,
+          }
+        })
 
       const priorMutationsByCategory = new Map()
       const ensurePrior = (dbId) => {
@@ -174,6 +190,19 @@ export function createFinanceReportRepository(db = getDefaultDatabasePool()) {
         transactions,
         transfers,
       }
+    },
+
+    async findPublicReportEnabled() {
+      const { rows } = await db.query(
+        `SELECT laporan_publik_aktif
+         FROM keu_masjid.m_pengaturan_website
+         WHERE id = 1
+         LIMIT 1`
+      )
+      if (!rows.length || rows[0].laporan_publik_aktif === null || rows[0].laporan_publik_aktif === undefined) {
+        return true
+      }
+      return rows[0].laporan_publik_aktif === true
     },
 
     async findReportAccessPasswordHash() {
