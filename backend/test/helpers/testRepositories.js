@@ -504,7 +504,7 @@ export function createTestRepositories() {
         return structuredClone(websiteSettings)
       },
     },
-    // Meniru pencatatan pemasukan + kwitansi dalam satu transaksi, dengan penomoran sementara KW/tahun/bulan/urut.
+    // Meniru pencatatan pemasukan + kwitansi dalam satu transaksi, dengan penomoran urut resmi (1, 2, 3, ...).
     receiptRepository: {
       async findAll() {
         return structuredClone([...receipts].reverse())

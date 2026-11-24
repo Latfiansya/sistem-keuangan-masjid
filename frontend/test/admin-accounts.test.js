@@ -14,10 +14,12 @@ const createTestServer = (mode) => createServer({
 let server
 let getAdminAccounts
 let filterAdminAccounts
+let getVisibleAdminNavigation
 let App
 before(async () => {
   server = await createTestServer('mock')
   ;({ getAdminAccounts, filterAdminAccounts } = await server.ssrLoadModule('/src/services/adminAccountsService.js'))
+  ;({ getVisibleAdminNavigation } = await server.ssrLoadModule('/src/utils/adminNavigation.js'))
   ;({ default: App } = await server.ssrLoadModule('/src/App.jsx'))
 })
 after(async () => { await server?.close() })
@@ -89,4 +91,12 @@ test('route akun langsung/trailing slash memakai menu aktif dan label visual tan
     assert.match(html, /role="search"/)
     assert.doesNotMatch(html, /public-layout|public-footer|admin-login-form|type="password"|<dialog/)
   }
+})
+
+test('menu Kelola Akun disembunyikan untuk role Admin di mode API dan tampil untuk Super Admin', () => {
+  const settingsItems = (groups) => groups.find((group) => group.label === 'Pengaturan')?.items.map((item) => item.to) ?? []
+  assert.deepEqual(settingsItems(getVisibleAdminNavigation('Admin', 'api')), ['/admin/kode-akses-laporan'])
+  assert.deepEqual(settingsItems(getVisibleAdminNavigation(undefined, 'api')), ['/admin/kode-akses-laporan'])
+  assert.deepEqual(settingsItems(getVisibleAdminNavigation('Super Admin', 'api')), ['/admin/kelola-akun', '/admin/kode-akses-laporan'])
+  assert.deepEqual(settingsItems(getVisibleAdminNavigation(undefined, 'mock')), ['/admin/kelola-akun', '/admin/kode-akses-laporan'])
 })

@@ -90,10 +90,14 @@ export function createReceiptRepository(db = getDefaultDatabasePool()) {
           // Kwitansi dibatalkan tetap ikut dihitung sehingga nomornya tidak pernah dipakai ulang.
           await client.query(`SELECT pg_advisory_xact_lock(hashtext('keu_masjid.t_kwitansi.no_kwitansi'))`)
           const prefix = getReceiptNumberPrefix(date)
-          const existing = await client.query(
-            `SELECT no_kwitansi FROM keu_masjid.t_kwitansi WHERE no_kwitansi LIKE $1`,
-            [`${prefix}%`]
-          )
+          const existing = prefix
+            ? await client.query(
+                `SELECT no_kwitansi FROM keu_masjid.t_kwitansi WHERE no_kwitansi LIKE $1`,
+                [`${prefix}%`]
+              )
+            : await client.query(
+                `SELECT no_kwitansi FROM keu_masjid.t_kwitansi WHERE no_kwitansi ~ '^[0-9]+$'`
+              )
           const number = buildReceiptNumber(date, nextReceiptSequence(existing.rows.map((row) => row.no_kwitansi), prefix))
 
           const transaction = await client.query(

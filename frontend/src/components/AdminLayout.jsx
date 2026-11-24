@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
-import { ArrowRightLeft, Building2, CalendarDays, ClipboardList, Contact, FileText, Folder, HandHeart, KeyRound, LayoutDashboard, LayoutList, LogOut, Menu, Receipt, Users, X } from 'lucide-react'
+import { Menu, LogOut, X } from 'lucide-react'
 import { getAdminSession, logoutAdmin } from '../services/adminAuthService.js'
 import { deleteApiAdminCategory, deleteMockAdminCategory, saveApiAdminCategory, saveMockAdminCategory } from '../services/adminCategoryService.js'
 import { getAdminDashboard } from '../services/adminDashboardService.js'
 import { getAdminFinanceReport } from '../services/adminFinanceReportService.js'
 import { getAdminTransfers } from '../services/adminTransferService.js'
 import { addMockAdminTransaction, createApiAdminTransaction, deleteApiAdminTransaction, deleteMockAdminTransaction, editMockAdminTransaction, updateApiAdminTransaction } from '../services/adminTransactionService.js'
+import { adminNavigation, getVisibleAdminNavigation } from '../utils/adminNavigation.js'
 import { dataSource } from '../utils/env.js'
 import AdminHeaderActions from './AdminHeaderActions.jsx'
 import './AdminLayout.css'
@@ -18,34 +19,12 @@ const buildInitials = (name = '') => {
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
 }
 
-const navigation = [
-  { label: 'Keuangan', items: [
-    { label: 'Dashboard Keuangan', icon: LayoutDashboard, to: '/admin/dashboard' },
-    { label: 'Kelola Dana', title: 'Kelola Dana Keuangan', icon: ArrowRightLeft, to: '/admin/kelola-dana' },
-    { label: 'Kategori Dana', icon: Folder, to: '/admin/kategori-dana' },
-    { label: 'Laporan', title: 'Laporan Keuangan', icon: FileText, to: '/admin/laporan' },
-    { label: 'Kwitansi', icon: Receipt, to: '/admin/kwitansi' },
-    { label: 'Activity Log', icon: ClipboardList, to: '/admin/activity-log' },
-  ] },
-  { label: 'Konten Website', items: [
-    { label: 'Profil Masjid', icon: Building2, to: '/admin/profil-masjid' },
-    { label: 'Konten Profil', title: 'Konten Profil Masjid', icon: LayoutList, to: '/admin/konten-profil' },
-    { label: 'Agenda', icon: CalendarDays, to: '/admin/agenda' },
-    { label: 'Kontak & Pengaturan', title: 'Kontak & Pengaturan Website', icon: Contact, to: '/admin/kontak-pengaturan' },
-    { label: 'Donasi', icon: HandHeart, to: '/admin/donasi' },
-  ] },
-  { label: 'Pengaturan', items: [
-    { label: 'Kelola Akun', icon: Users, to: '/admin/kelola-akun' },
-    { label: 'Kode Akses Laporan', icon: KeyRound, to: '/admin/kode-akses-laporan' },
-  ] },
-]
-
 export default function AdminLayout() {
   const navigate = useNavigate()
   const { pathname } = useLocation()
   const transactionPage = pathname.startsWith('/admin/laporan/transaksi/')
   const downloadPage = pathname.startsWith('/admin/laporan/unduh')
-  const currentPage = navigation.flatMap((group) => group.items).find((item) => item.to === (transactionPage || downloadPage ? '/admin/laporan' : pathname.replace(/\/$/, '')))
+  const currentPage = adminNavigation.flatMap((group) => group.items).find((item) => item.to === (transactionPage || downloadPage ? '/admin/laporan' : pathname.replace(/\/$/, '')))
   const title = transactionPage ? 'Transaksi' : downloadPage ? (pathname.includes('/pratinjau') ? 'Pratinjau & Unduh Laporan' : 'Pengaturan Unduhan') : currentPage?.title || currentPage?.label || 'Dashboard Keuangan'
   const [dashboard, setDashboard] = useState(null)
   const [error, setError] = useState('')
@@ -175,6 +154,8 @@ export default function AdminLayout() {
   }
 
   const account = dashboard?.account
+  const visibleNavigation = getVisibleAdminNavigation(account?.role)
+
   return (
     <div className="admin-shell">
       <a className="admin-skip-link" href="#admin-content">Lewati navigasi</a>
@@ -182,7 +163,7 @@ export default function AdminLayout() {
       <aside id="admin-navigation" ref={navigationPanel} className={`admin-sidebar${menuOpen ? ' admin-sidebar--open' : ''}`} onBlur={(event) => { if (!event.currentTarget.contains(event.relatedTarget) && event.relatedTarget !== menuButton.current) setMenuOpen(false) }}>
         <div className="admin-sidebar-brand"><img src={`${import.meta.env.BASE_URL}assets/masjid-logo.webp`} alt="Masjid Al-Hidayah" width="640" height="191" /></div>
         <nav className="admin-navigation" aria-label="Navigasi admin">
-          {navigation.map((group) => <div className="admin-nav-group" key={group.label}>
+          {visibleNavigation.map((group) => <div className="admin-nav-group" key={group.label}>
             <p>{group.label}</p>
             {group.items.map(({ label, icon: Icon, to }) => to
               ? <NavLink className="admin-nav-link" key={label} to={to} onClick={() => setMenuOpen(false)}><Icon size={18} aria-hidden="true" />{label}</NavLink>

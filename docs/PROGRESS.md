@@ -1523,3 +1523,28 @@ Status: migrasi database sudah dijalankan DBA; perbaikan kode pada branch `fix/z
 
 - `ALTER DATABASE … SET timezone TO 'Asia/Jakarta'` tidak diaktifkan; sesi aplikasi tetap UTC sehingga setiap tampilan waktu harus memakai `AT TIME ZONE 'Asia/Jakarta'`.
 - Data yang diisi lewat DB Manager setelah migrasi otomatis benar karena `timestamptz` menyimpan zona waktu sesi.
+
+## Nomor Kwitansi Resmi & Penyesuaian UI Admin/Laporan (24 November 2026)
+
+Status: implementasi dan validasi lokal selesai; menunggu staging, pembuatan branch fitur/perbaikan, commit, merge ke `main`, dan push manual oleh pengguna.
+
+### Perubahan
+
+- **Nomor Kwitansi Resmi** (`backend/src/utils/receiptNumber.js`, `receiptRepository.js`, `docs/API_CONTRACT.md`): format nomor kwitansi diubah dari format sementara `KW/<tahun>/<bulan>/<urut>` menjadi angka urut polos (`1`, `2`, `3`, ...) sesuai format mitra, dimulai baru dari `1` dan berlanjut lintas bulan/tahun (kwitansi dibatalkan tetap dihitung agar nomor tidak dipakai ulang).
+- **Laporan Keuangan Publik** (`FinancialReportPage.jsx`, `reportCalculations.js`): pemuatan awal mode API mengambil rentang default backend (bulan terbaru di database) tanpa memaksa April `DEFAULT_REPORT_RANGE`, input Rentang Kustom dibiarkan kosong di awal serta direset saat memilih preset/bulan, dan preset `1w`/`1m`/`3m` mengikuti tanggal akhir cakupan data aktual.
+- **Laporan Keuangan Admin** (`AdminFinanceReportPage.jsx`, `AdminFinanceReportPage.css`): mengaktifkan tombol Edit (menuju `/admin/laporan/transaksi/:id/edit`) dan Hapus (membuka `AdminTransactionDeleteDialog`) pada panel ringkasan Pemasukan & Pengeluaran.
+- **Role & Akses Menu Pengurus** (`utils/adminNavigation.js`, `AdminLayout.jsx`, `AdminAccountsPage.jsx`, `AdminReportAccessPage.jsx`): menyembunyikan menu Kelola Akun di sidebar untuk role `Admin` dan melarang akses langsung `/admin/kelola-akun` di sisi UI pada mode API (hanya tampil untuk `Super Admin`), serta menghapus label `Super Admin Only` pada halaman Kode Akses Laporan karena dapat dikelola Admin dan Super Admin.
+
+### Verifikasi
+
+- `npm run lint`: **PASS** (`0` error; `1` peringatan lama pada `frontend/test/admin-report-download.browser.test.js`).
+- `npm test --workspace frontend`: **PASS** (152 lulus, 0 gagal, 11 suite browser QA dilewati).
+- `npm test --workspace backend`: **PASS** (67 lulus, 0 gagal).
+- `npm run build`: **PASS** (bundle produksi Vite ke `dist/`).
+
+### Batasan
+
+- Suite browser QA terpisah (`11` test yang membutuhkan Chrome DevTools & server QA) belum dijalankan pada perubahan ini.
+- Apabila di tabel `t_kwitansi` database dev masih terdapat kwitansi uji coba berformat lama `KW/...`, baris tersebut diabaikan oleh penomoran baru dan opsional dibersihkan oleh tim DB bila ingin daftar riwayat tampil bersih dari `1`.
+
+Usulan pesan commit: `feat: pakai nomor kwitansi resmi mulai 1 dan perbaiki akses serta rentang laporan`.

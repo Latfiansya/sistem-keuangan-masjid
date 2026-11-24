@@ -24,11 +24,11 @@ describe('Kwitansi jamaah (/api/admin/receipts)', () => {
     })
   })
 
-  it('format nomor sementara KW/tahun/bulan/urut dan urutan berlanjut per bulan', () => {
-    assert.equal(getReceiptNumberPrefix('2026-11-23'), 'KW/2026/11/')
-    assert.equal(buildReceiptNumber('2026-11-23', 7), 'KW/2026/11/0007')
-    assert.equal(nextReceiptSequence([], 'KW/2026/11/'), 1)
-    assert.equal(nextReceiptSequence(['KW/2026/11/0001', 'KW/2026/11/0003', 'KW/2026/10/0009', 'lain'], 'KW/2026/11/'), 4)
+  it('format nomor resmi angka urut mulai 1 berlanjut lintas bulan', () => {
+    assert.equal(getReceiptNumberPrefix('2026-11-23'), '')
+    assert.equal(buildReceiptNumber('2026-11-23', 7), '7')
+    assert.equal(nextReceiptSequence([], ''), 1)
+    assert.equal(nextReceiptSequence(['1', '3', 'KW/2026/10/0009', 'lain'], ''), 4)
     assert.ok(buildReceiptNumber('2026-11-23', 9999).length <= 50)
   })
 
@@ -36,20 +36,20 @@ describe('Kwitansi jamaah (/api/admin/receipts)', () => {
     const first = await post(valid)
     assert.equal(first.status, 201)
     const receipt = (await first.json()).data
-    assert.equal(receipt.number, 'KW/2026/11/0001')
+    assert.equal(receipt.number, '1')
     assert.equal(receipt.payer, 'Bapak Ahmad')
     assert.equal(receipt.purpose, 'Infaq pembangunan')
     assert.equal(receipt.amount, 250000)
     assert.ok(receipt.transactionId)
 
     const second = (await (await post({ ...valid, method: 'QRIS', date: '2026-11-24' })).json()).data
-    assert.equal(second.number, 'KW/2026/11/0002')
+    assert.equal(second.number, '2')
     const nextMonth = (await (await post({ ...valid, method: 'Transfer', date: '2026-12-01' })).json()).data
-    assert.equal(nextMonth.number, 'KW/2026/12/0001')
+    assert.equal(nextMonth.number, '3')
 
     const list = (await (await fetch(baseUrl)).json()).data
     assert.equal(list.totalCount, 3)
-    assert.deepEqual(list.receipts.map((item) => item.number), ['KW/2026/12/0001', 'KW/2026/11/0002', 'KW/2026/11/0001'])
+    assert.deepEqual(list.receipts.map((item) => item.number), ['3', '2', '1'])
   })
 
   it('memvalidasi kategori, metode, tanggal, nominal, dan panjang teks sesuai kolom database', async () => {
@@ -126,10 +126,10 @@ describe('Edit dan batalkan kwitansi (/api/admin/receipts/:id)', () => {
 
   it('nomor kwitansi yang dibatalkan tidak dipakai ulang dan penolakan saldo diteruskan', async () => {
     const last = (await (await send('', 'POST', { ...valid, date: '2027-01-10' })).json()).data
-    assert.equal(last.number, 'KW/2027/01/0001')
+    assert.equal(last.number, '4')
     await send(`/${last.id}/cancel`, 'POST', {})
     const next = (await (await send('', 'POST', { ...valid, date: '2027-01-11' })).json()).data
-    assert.equal(next.number, 'KW/2027/01/0002')
+    assert.equal(next.number, '5')
 
     const blocked = (await (await send('', 'POST', { ...valid, purpose: 'saldo-terpakai' })).json()).data
     const rejected = await send(`/${blocked.id}/cancel`, 'POST', { withTransaction: true })

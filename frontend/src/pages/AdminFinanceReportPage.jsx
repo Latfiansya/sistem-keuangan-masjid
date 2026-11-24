@@ -3,16 +3,19 @@ import { Link, useLocation, useNavigate, useOutletContext } from 'react-router'
 import { ArrowDownCircle, ArrowDownRight, ArrowUpCircle, ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, Download, FileText, Landmark, Pencil, Search, ShieldCheck, Trash2, Wallet } from 'lucide-react'
 import { paginateAdminTransactions } from '../utils/adminPagination.js'
 import AdminBalanceSummary from '../components/AdminBalanceSummary.jsx'
+import AdminTransactionDeleteDialog from '../components/AdminTransactionDeleteDialog.jsx'
 import { buildAdminFinanceReport, buildAdminMonthlyRecap, filterAdminFinanceTransactions, getAdminFinancePreset, summarizeAdminFinanceTransactions, validateAdminFinanceRange } from '../services/adminFinanceReportService.js'
 import { formatReportDate, formatReportMonth, formatReportNumber, formatRupiah, formatTransferNote } from '../utils/reportFormatters.js'
 import { adminCategoryColorStyle } from '../utils/adminCategoryColors.js'
+import { dataSource } from '../utils/env.js'
+import './AdminTransactionPage.css'
 import './AdminFinanceReportPage.css'
 
-function TransactionActions({ transaction }) {
-  return <span className="admin-report-actions"><button type="button" disabled title="Fitur edit transaksi belum tersedia" aria-label={`Edit ${transaction.description} (belum tersedia)`}><Pencil size={14} aria-hidden="true" /></button><button type="button" disabled title="Fitur hapus transaksi belum tersedia" aria-label={`Hapus ${transaction.description} (belum tersedia)`}><Trash2 size={14} aria-hidden="true" /></button></span>
+function TransactionActions({ transaction, onEdit, onDelete }) {
+  return <span className="admin-report-actions"><button type="button" title="Edit transaksi" aria-label={`Edit ${transaction.description}`} onClick={() => onEdit(transaction)}><Pencil size={14} aria-hidden="true" /></button><button type="button" title="Hapus transaksi" aria-label={`Hapus ${transaction.description}`} onClick={(event) => onDelete(transaction, event.currentTarget)}><Trash2 size={14} aria-hidden="true" /></button></span>
 }
 
-function TransactionPanel({ type, transactions, categories }) {
+function TransactionPanel({ type, transactions, categories, onEdit, onDelete }) {
   const items = transactions.filter((transaction) => transaction.type === type)
   const total = summarizeAdminFinanceTransactions(items)[type]
   const Icon = type === 'income' ? ArrowUpRight : ArrowDownRight
@@ -22,7 +25,7 @@ function TransactionPanel({ type, transactions, categories }) {
     <div className="admin-report-column-labels" aria-hidden="true"><span>Tanggal</span><span>Kategori</span><span>Uraian</span><span>Jumlah</span></div>
     {items.length ? <ul>{items.map((transaction) => {
       const category = categories.find((item) => item.id === transaction.categoryId)
-      return <li key={transaction.id} data-transaction-id={transaction.id}><div><h4>{transaction.description}</h4><p><time dateTime={transaction.date}>{formatReportDate(transaction.date)}</time><span style={adminCategoryColorStyle(category.color)} className={`admin-report-category-label admin-report-category--${category.color}`}>• {category.label}</span></p></div><strong>{formatRupiah(transaction.amount)}</strong><TransactionActions transaction={transaction} /></li>
+      return <li key={transaction.id} data-transaction-id={transaction.id}><div><h4>{transaction.description}</h4><p><time dateTime={transaction.date}>{formatReportDate(transaction.date)}</time><span style={adminCategoryColorStyle(category.color)} className={`admin-report-category-label admin-report-category--${category.color}`}>• {category.label}</span></p></div><strong>{formatRupiah(transaction.amount)}</strong><TransactionActions transaction={transaction} onEdit={onEdit} onDelete={onDelete} /></li>
     })}</ul> : <p className="admin-report-empty">Tidak ada transaksi mock {title.toLowerCase()} pada rentang ini.</p>}
   </section>
 }
@@ -82,7 +85,7 @@ function MonthlyRecap({ months }) {
   </div>
 }
 
-function AdminFinanceReportContent({ report }) {
+function AdminFinanceReportContent({ report, deleteTransaction }) {
   const { hash, key, state } = useLocation()
   const { reportView, setReportView } = useOutletContext()
   const [range, setRange] = useState(() => reportView?.range ?? report.range)
@@ -94,6 +97,9 @@ function AdminFinanceReportContent({ report }) {
   const [query, setQuery] = useState(() => reportView?.query ?? '')
   const [page, setPage] = useState(() => reportView?.page || 1)
   const [pageSize, setPageSize] = useState(() => reportView?.pageSize || 20)
+  const [deletingTransaction, setDeletingTransaction] = useState(null)
+  const [actionMessage, setActionMessage] = useState('')
+  const deleteReturnFocus = useRef(null)
   const tabPanel = useRef(null)
   const reportNavigation = useRef(null)
   const navigate = useNavigate()
@@ -127,6 +133,27 @@ function AdminFinanceReportContent({ report }) {
 
   function rememberView() { setReportView?.({ range, draftRange, historyRange, tabId, query, page: paginateAdminTransactions(ledgerTransactions, page, pageSize).page, pageSize, activePreset }) }
 
+  function editTransactionItem(transaction) {
+    rememberView()
+    navigate(`/admin/laporan/transaksi/${encodeURIComponent(transaction.id)}/edit`)
+  }
+
+  function requestDeleteTransaction(transaction, triggerElement) {
+    deleteReturnFocus.current = triggerElement
+    setDeletingTransaction(transaction)
+  }
+
+  async function confirmDeleteTransaction() {
+    if (!deletingTransaction || typeof deleteTransaction !== 'function') return
+    await deleteTransaction(deletingTransaction.id)
+    setDeletingTransaction(null)
+    setActionMessage(
+      dataSource === 'mock'
+        ? 'Transaksi dihapus dari simulasi sesi. Data asli dan snapshot tetap utuh.'
+        : 'Transaksi berhasil dihapus dari database.'
+    )
+  }
+
   function applyRange(event) {
     event.preventDefault()
     try { validateAdminFinanceRange(report, draftRange); setRange({ ...draftRange }); setHistoryRange({ ...draftRange }); setRangeError(''); setActivePreset(null); setPage(1) }
@@ -152,8 +179,10 @@ function AdminFinanceReportContent({ report }) {
     event.currentTarget.parentElement.children[next].focus()
   }
 
+  const noticeMessage = actionMessage || state?.message
+
   return <div className="admin-report">
-    {state?.message && <p className="admin-report-notice" role="status">{state.message}</p>}
+    {noticeMessage && <p className="admin-report-notice" role="status">{noticeMessage}</p>}
     <header className="admin-report-hero"><span><Landmark size={14} aria-hidden="true" />MASJID AL-HIDAYAH</span><h2>LAPORAN<br />KEUANGAN</h2><p>Ringkasan pemasukan, pengeluaran, dan saldo<br className="admin-desktop-break" /> dana masjid dalam satu tampilan.</p><div><button type="button" onClick={() => navigate('/admin/kelola-dana', { state: { openTransaction: 'income' } })}><ArrowDownCircle size={16} aria-hidden="true" />Tambah Pemasukan</button><button type="button" onClick={() => navigate('/admin/kelola-dana', { state: { openTransaction: 'expense' } })}><ArrowUpCircle size={16} aria-hidden="true" />Tambah Pengeluaran</button></div></header>
     <section className="admin-report-balance" aria-label="Total saldo seluruh dana"><p>TOTAL SALDO SELURUH DANA</p><span><i aria-hidden="true" />{periodLabel} · snapshot {snapshotLabel}</span><h2>{formatRupiah(report.totals.closingBalance)}</h2><dl>{[['openingBalance', 'Saldo Awal'], ['income', 'Pemasukan'], ['expense', 'Pengeluaran']].map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{formatRupiah(report.totals[key])}</dd></div>)}</dl></section>
     <div className="admin-report-category-cards">{report.categories.map((category) => <button key={category.id} type="button" style={adminCategoryColorStyle(category.color)} className={`admin-report-category-card admin-report-category--${category.color}`} onClick={() => { selectTab('monthly'); tabPanel.current?.scrollIntoView({ block: 'start' }) }} aria-label={`Lihat rincian ${category.label}`}><span><Wallet size={21} aria-hidden="true" /></span><small>{category.label}</small><strong>{formatRupiah(category.closingBalance)}</strong></button>)}</div>
@@ -161,7 +190,7 @@ function AdminFinanceReportContent({ report }) {
       <form className="admin-report-filters" noValidate onSubmit={applyRange} aria-label="Filter tanggal transaksi mock"><span><CalendarDays size={16} aria-hidden="true" />Rentang transaksi:</span>{[['startDate', 'Dari tanggal'], ['endDate', 'Sampai tanggal']].map(([key, label]) => <label key={key}><span>{label}</span><input name={key} type="date" required value={draftRange[key]} onChange={(event) => { setDraftRange((previous) => ({ ...previous, [key]: event.target.value })); setRangeError(''); setActivePreset(null); setPage(1) }} aria-invalid={Boolean(rangeError)} aria-describedby={rangeError ? 'admin-report-range-error' : undefined} /></label>)}<button type="submit">Terapkan</button><p>{transactions.length} dari {report.transactions.length} transaksi mock</p></form>
       {rangeError && <p className="admin-report-error" id="admin-report-range-error" role="alert">{rangeError}</p>}
       <aside className="admin-report-notice"><ShieldCheck size={18} aria-hidden="true" /><p>Data mock khusus review · {report.historicalTransactionCount} transaksi historis mock, {report.transactions.length} transaksi aktif; bukan riwayat resmi. Ringkasan saldo tetap snapshot {snapshotLabel}. Filter tanggal juga membatasi ketiga tampilan laporan di bawah.{report.sessionChangeCount > 0 && <> Ada perubahan sesi: tabel, total filter, dan rekap memakai data aktif. Saldo snapshot tetap memakai baseline; ekspor dokumen menggunakan transaksi aktif.</>}</p></aside>
-      <div className="admin-report-transaction-panels"><TransactionPanel type="income" transactions={transactions} categories={report.categories} /><TransactionPanel type="expense" transactions={transactions} categories={report.categories} /></div>
+      <div className="admin-report-transaction-panels"><TransactionPanel type="income" transactions={transactions} categories={report.categories} onEdit={editTransactionItem} onDelete={requestDeleteTransaction} /><TransactionPanel type="expense" transactions={transactions} categories={report.categories} onEdit={editTransactionItem} onDelete={requestDeleteTransaction} /></div>
     </section>
     <AdminBalanceSummary categories={report.categories} totals={report.totals} updatedDate={report.updatedDate} title={`Resume Saldo Bulan ${monthLabel}`} titleId="admin-report-balance-title" />
     <section className="admin-report-download"><div><h2>Unduh Laporan Keuangan</h2><p>Pilih periode dan jenis laporan, lalu pratinjau PDF atau PNG.</p></div><button type="button" onClick={() => { rememberView(); navigate('/admin/laporan/unduh') }}><Download size={16} aria-hidden="true" />Unduh Laporan</button></section>
@@ -175,12 +204,13 @@ function AdminFinanceReportContent({ report }) {
         <p className="sr-only" role="status">{ledgerTransactions.length} transaksi mock {selectedTab.label}.</p>
       </>}
     </section>
+    {deletingTransaction && <AdminTransactionDeleteDialog transaction={deletingTransaction} category={report.categories.find((item) => item.id === deletingTransaction.categoryId)} onClose={() => setDeletingTransaction(null)} onDelete={confirmDeleteTransaction} returnFocusRef={deleteReturnFocus} />}
   </div>
 }
 
 export default function AdminFinanceReportPage() {
-  const { dashboard, error } = useOutletContext()
+  const { dashboard, error, deleteTransaction } = useOutletContext()
   if (error) return <p className="admin-dashboard-state" role="alert">{error}</p>
   if (!dashboard) return <p className="admin-dashboard-state" role="status">Memuat laporan keuangan admin…</p>
-  return <AdminFinanceReportContent report={buildAdminFinanceReport(dashboard)} />
+  return <AdminFinanceReportContent report={buildAdminFinanceReport(dashboard)} deleteTransaction={deleteTransaction} />
 }
