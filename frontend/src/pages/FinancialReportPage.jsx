@@ -6,16 +6,19 @@ import BalanceSummary from '../components/BalanceSummary.jsx'
 import ReportFormatPicker from '../components/ReportFormatPicker.jsx'
 import ReportPreview from '../components/ReportPreview.jsx'
 import { getReport } from '../services/reportService.js'
+import { dataSource } from '../utils/env.js'
 import { DEFAULT_REPORT_RANGE, getMonthRange, getPresetRange, validateReportRange } from '../utils/reportCalculations.js'
 import { formatReportMonth, formatReportPeriod, formatReportYear } from '../utils/reportFormatters.js'
 import { paginateReport } from '../utils/reportPagination.js'
 
+const isMockSource = dataSource === 'mock'
+
 export default function FinancialReportPage() {
   const [view, setView] = useState('report')
   const [format, setFormat] = useState('pdf')
-  const [range, setRange] = useState({ ...DEFAULT_REPORT_RANGE })
-  const [draft, setDraft] = useState({ ...DEFAULT_REPORT_RANGE })
-  const [activePreset, setActivePreset] = useState('custom')
+  const [range, setRange] = useState(() => (isMockSource ? { ...DEFAULT_REPORT_RANGE } : undefined))
+  const [draft, setDraft] = useState({ startDate: '', endDate: '' })
+  const [activePreset, setActivePreset] = useState('1m')
   const [showCustomRange, setShowCustomRange] = useState(true)
   const [filterError, setFilterError] = useState('')
   const [reportState, setReportState] = useState({ report: null, loading: true, error: '' })
@@ -27,8 +30,11 @@ export default function FinancialReportPage() {
 
   useEffect(() => {
     const controller = new AbortController()
-    getReport({ ...range, signal: controller.signal })
-      .then((report) => { if (!controller.signal.aborted) setReportState({ report, loading: false, error: '' }) })
+    const params = range ? { ...range, signal: controller.signal } : { signal: controller.signal }
+    getReport(params)
+      .then((report) => {
+        if (!controller.signal.aborted) setReportState({ report, loading: false, error: '' })
+      })
       .catch((cause) => { if (!controller.signal.aborted) setReportState({ report: null, loading: false, error: cause.message }) })
     return () => controller.abort()
   }, [range])
@@ -38,7 +44,7 @@ export default function FinancialReportPage() {
       validateReportRange(nextRange)
       setReportState((previous) => ({ ...previous, loading: true, error: '' }))
       setRange(nextRange)
-      setDraft(nextRange)
+      setDraft(preset === 'custom' ? nextRange : { startDate: '', endDate: '' })
       setActivePreset(preset)
       setShowCustomRange(showCustom)
       setFilterError('')
@@ -46,10 +52,13 @@ export default function FinancialReportPage() {
   }
 
   const { report, loading, error } = reportState
+  const activeRange = range ?? report?.range ?? null
   const pages = useMemo(() => paginateReport(report), [report])
   const canPreview = !loading && !error && pages.length > 0
-  const period = formatReportPeriod(range)
-  const year = formatReportYear(range)
+  const period = activeRange ? formatReportPeriod(activeRange) : 'Periode Terbaru'
+  const year = activeRange ? formatReportYear(activeRange) : ''
+  const presetAnchorEnd = report?.coverage?.endDate ?? activeRange?.endDate ?? (isMockSource ? DEFAULT_REPORT_RANGE.endDate : '')
+  const availableMonths = report?.months ?? (isMockSource ? ['2026-04'] : [])
 
   if (canPreview && view !== 'report') {
     return <main className="report-page report-page--opened">{view === 'format' ? <ReportFormatPicker report={report} pages={pages} format={format} onFormatChange={setFormat} onBack={() => setView('report')} onNext={() => setView('preview')} headingRef={heading} /> : <ReportPreview report={report} pages={pages} format={format} onFormatChange={setFormat} onBack={() => setView('format')} headingRef={heading} />}</main>
@@ -60,13 +69,13 @@ export default function FinancialReportPage() {
       <div className="financial-report">
         <header className="financial-header">
           <Link to="/" className="financial-navigation"><ArrowLeft aria-hidden="true" />Beranda</Link>
-          <div className="financial-header-identity"><h1 ref={heading} tabIndex={-1}>Laporan Keuangan {year}</h1><p>{report?.name ?? 'Masjid Al-Hidayah'}</p><small>Data contoh pengembangan · bukan laporan produksi</small></div>
+          <div className="financial-header-identity"><h1 ref={heading} tabIndex={-1}>Laporan Keuangan{year ? ` ${year}` : ''}</h1><p>{report?.name ?? 'Masjid Al-Hidayah'}</p><small>Data contoh pengembangan · bukan laporan produksi</small></div>
           <div className="financial-export"><button type="button" className="financial-navigation" disabled={!canPreview} onClick={() => { if (canPreview) setView('format') }} aria-describedby="financial-export-status"><Download aria-hidden="true" />Unduh</button><small id="financial-export-status">{canPreview ? 'Pilih format laporan.' : 'Pratinjau belum tersedia.'}</small></div>
         </header>
 
         <section className="financial-filters" aria-labelledby="financial-detail-heading">
           <div className="financial-filters-top"><div><h2 id="financial-detail-heading">Detail {period}</h2><p>Rincian pemasukan, pengeluaran, dan resume saldo bulan berjalan</p></div><div className="financial-presets" aria-label="Pilihan periode">
-            {[['1w', '1 minggu terakhir'], ['1m', '1 bulan terakhir'], ['3m', '3 bulan terakhir']].map(([id, label]) => <button key={id} type="button" className={activePreset === id ? 'is-active' : ''} aria-pressed={activePreset === id} onClick={() => applyRange(getPresetRange(id), id, false)}>{label}</button>)}
+            {[['1w', '1 minggu terakhir'], ['1m', '1 bulan terakhir'], ['3m', '3 bulan terakhir']].map(([id, label]) => <button key={id} type="button" className={activePreset === id ? 'is-active' : ''} aria-pressed={activePreset === id} disabled={!presetAnchorEnd} onClick={() => applyRange(getPresetRange(id, presetAnchorEnd), id, false)}>{label}</button>)}
             <button type="button" className={activePreset === 'custom' ? 'is-active' : ''} aria-pressed={activePreset === 'custom'} onClick={() => { setActivePreset('custom'); setShowCustomRange(true) }}><CalendarDays aria-hidden="true" />Pilih Tanggal</button>
           </div></div>
           <div className="financial-filters-bottom">
@@ -76,7 +85,7 @@ export default function FinancialReportPage() {
                 <label className="financial-date-control"><CalendarDays aria-hidden="true" /><span><small>Tanggal Akhir</small><input type="date" aria-label="Tanggal akhir" value={draft.endDate} onChange={(event) => setDraft((previous) => ({ ...previous, endDate: event.target.value }))} /></span></label>
                 <button type="submit" className="financial-apply">Terapkan</button></>}
             </form>
-            <label className="financial-month">Pilih Bulan:<select aria-label="Pilih bulan laporan" value={range.endDate.slice(0, 7)} onChange={(event) => applyRange(getMonthRange(event.target.value), 'month', false)}>{(report?.months ?? ['2026-04']).map((month) => <option key={month} value={month}>{formatReportMonth(month)}</option>)}</select></label>
+            <label className="financial-month">Pilih Bulan:<select aria-label="Pilih bulan laporan" disabled={!availableMonths.length} value={activeRange?.endDate?.slice(0, 7) ?? ''} onChange={(event) => event.target.value && applyRange(getMonthRange(event.target.value), 'month', false)}>{availableMonths.map((month) => <option key={month} value={month}>{formatReportMonth(month)}</option>)}</select></label>
           </div>
           {filterError && <p role="alert" className="financial-filter-error">{filterError}</p>}
         </section>

@@ -128,7 +128,9 @@ test('route/menu benar, loading/error, tiga jenis laporan saja dan aksi mutasi n
   assert.match(html, /Rekap Bulanan/)
   assert.doesNotMatch(html, /Laporan Bulanan|admin-report-tab-mosque|admin-report-tab-friday|<dialog/)
   assert.match(html, /bukan riwayat resmi.*Ringkasan saldo tetap snapshot/)
-  assert.equal((html.match(/aria-label="Edit .*?\(belum tersedia\)"/g) || []).length, 13)
+  assert.equal((html.match(/aria-label="Edit [^"]+"/g) || []).length, 13)
+  assert.equal((html.match(/aria-label="Hapus [^"]+"/g) || []).length, 13)
+  assert.equal(html.includes('(belum tersedia)'), false)
 })
 
 test('tabel resume laporan identik dengan Dashboard dan ID heading tidak ganda', async () => {

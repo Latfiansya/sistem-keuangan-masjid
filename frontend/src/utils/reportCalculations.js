@@ -16,10 +16,16 @@ export function getMonthRange(month) {
   return { startDate: `${month}-01`, endDate: new Date(Date.UTC(year, number, 0)).toISOString().slice(0, 10) }
 }
 
-export function getPresetRange(preset) {
-  const endDate = DEFAULT_REPORT_RANGE.endDate
-  if (preset === '1m') return { ...DEFAULT_REPORT_RANGE }
-  if (preset === '3m') return { startDate: '2026-02-01', endDate }
+export function getPresetRange(preset, anchorEndDate = DEFAULT_REPORT_RANGE.endDate) {
+  const endDate = /^\d{4}-\d{2}-\d{2}$/.test(anchorEndDate || '')
+    ? anchorEndDate
+    : DEFAULT_REPORT_RANGE.endDate
+  if (preset === '1m') return { startDate: `${endDate.slice(0, 7)}-01`, endDate }
+  if (preset === '3m') {
+    const [year, month] = endDate.slice(0, 7).split('-').map(Number)
+    const start = new Date(Date.UTC(year, month - 3, 1))
+    return { startDate: start.toISOString().slice(0, 10), endDate }
+  }
   if (preset !== '1w') throw new Error('Pilihan periode tidak valid.')
   const start = new Date(`${endDate}T00:00:00Z`)
   start.setUTCDate(start.getUTCDate() - 6)

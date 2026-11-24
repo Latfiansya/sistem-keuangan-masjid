@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Check, ChevronRight, Eye, EyeOff, Info, KeyRound, Shield, X } from 'lucide-react'
+import { Check, ChevronRight, Eye, EyeOff, Info, KeyRound, X } from 'lucide-react'
 import { getAdminReportAccessStatus, updateAdminReportAccess } from '../services/adminReportAccessService.js'
 import { dataSource } from '../utils/env.js'
 import { formatReportDate } from '../utils/reportFormatters.js'
@@ -106,7 +106,6 @@ export default function AdminReportAccessPage() {
   return (
     <div className="admin-report-access">
       <header className="admin-report-access-intro">
-        <div className="admin-report-access-restriction"><Shield size={18} aria-hidden="true" /><span>Super Admin Only</span></div>
         <div className="admin-report-access-heading"><h2>Kode Akses Laporan Publik</h2><p>Kelola kode akses untuk laporan keuangan publik</p></div>
       </header>
       {feedback && <p className="admin-crud-feedback" role="status">{feedback}</p>}
@@ -125,10 +124,10 @@ export default function AdminReportAccessPage() {
           <li><ChevronRight size={16} aria-hidden="true" /><span>Setelah integrasi, sistem memeriksa kode yang dimasukkan pengunjung.</span></li>
           <li><ChevronRight size={16} aria-hidden="true" /><span>Jika kode sesuai, gate ditutup dan pengunjung menuju <code>/laporan-keuangan</code>.</span></li>
           <li><ChevronRight size={16} aria-hidden="true" /><span>Akses langsung dan refresh <code>/laporan-keuangan</code> tetap tanpa gate; kode bukan autentikasi atau otorisasi laporan.</span></li>
-          <li><ChevronRight size={16} aria-hidden="true" /><span>Ubah Kode Akses nantinya mengganti kode gate. Autentikasi Super Admin untuk mengelolanya terpisah.</span></li>
+          <li><ChevronRight size={16} aria-hidden="true" /><span>Ubah Kode Akses mengganti kode gate dan dikelola oleh pengurus terautentikasi (Admin dan Super Admin).</span></li>
         </ul>
       </section>
-      <p className="admin-report-access-note">{apiEnabled ? 'Terhubung ke database · Kode akses disimpan sebagai hash aman di PostgreSQL dan disinkronkan ke gate publik.' : 'Status, tanggal dan pengubah adalah data contoh, belum terhubung backend. Super Admin Only hanya label visual; otorisasi pengelola belum diterapkan.'}</p>
+      <p className="admin-report-access-note">{apiEnabled ? 'Terhubung ke database · Kode akses disimpan sebagai hash aman di PostgreSQL dan disinkronkan ke gate publik.' : 'Status, tanggal dan pengubah adalah data contoh, belum terhubung backend.'}</p>
       {apiEnabled && editing && status && (
         <ReportAccessDialog
           currentStatus={status}

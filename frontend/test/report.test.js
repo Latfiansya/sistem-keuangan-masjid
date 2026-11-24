@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { createServer } from 'vite'
 import { createElement as h } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { MemoryRouter } from 'react-router'
 import { calculateReport, DEFAULT_REPORT_RANGE, getMonthRange, getPresetRange } from '../src/utils/reportCalculations.js'
 import { formatReportPeriod, formatRupiah } from '../src/utils/reportFormatters.js'
 import { mockReport } from '../src/mocks/report.js'
@@ -13,11 +14,13 @@ let server
 let getReport
 let FinancialTable
 let BalanceSummary
+let FinancialReportPage
 before(async () => {
   server = await createServer({ root, server: { middlewareMode: true, ws: false, hmr: false }, appType: 'custom', define: { 'import.meta.env.VITE_DATA_SOURCE': JSON.stringify('mock') } })
   ;({ getReport } = await server.ssrLoadModule('/src/services/reportService.js'))
   ;({ default: FinancialTable } = await server.ssrLoadModule('/src/components/FinancialTable.jsx'))
   ;({ default: BalanceSummary } = await server.ssrLoadModule('/src/components/BalanceSummary.jsx'))
+  ;({ default: FinancialReportPage } = await server.ssrLoadModule('/src/pages/FinancialReportPage.jsx'))
 })
 after(async () => { await server?.close() })
 
@@ -59,6 +62,9 @@ test('tanggal kosong, tidak valid dan terbalik ditolak tanpa menormalkan tanggal
 test('preset berpatokan akhir April dan periode tidak lengkap tidak menghasilkan saldo nol', () => {
   assert.deepEqual(getPresetRange('1w'), { startDate: '2026-04-24', endDate: '2026-04-30' })
   assert.deepEqual(getPresetRange('1m'), DEFAULT_REPORT_RANGE)
+  assert.deepEqual(getPresetRange('1w', '2026-10-31'), { startDate: '2026-10-25', endDate: '2026-10-31' })
+  assert.deepEqual(getPresetRange('1m', '2026-10-31'), { startDate: '2026-10-01', endDate: '2026-10-31' })
+  assert.deepEqual(getPresetRange('3m', '2026-10-31'), { startDate: '2026-08-01', endDate: '2026-10-31' })
   assert.deepEqual(getMonthRange('2026-03'), { startDate: '2026-03-01', endDate: '2026-03-31' })
   for (const range of [getPresetRange('3m'), getMonthRange('2026-03'), { startDate: '2026-04-01', endDate: '2026-05-01' }]) {
     const report = calculateReport(mockReport, range)
@@ -146,4 +152,10 @@ test('API laporan memanggil /api/public/finance/report, menormalisasi months dan
     assert.equal(calls[0], '/api/public/finance/report?startDate=2026-04-01&endDate=2026-04-30')
     assert.deepEqual(report.months, ['2026-04'])
   } finally { globalThis.fetch = originalFetch; await apiServer.close() }
+})
+
+test('input rentang kustom pada FinancialReportPage awalnya kosong', () => {
+  const html = renderToStaticMarkup(h(MemoryRouter, null, h(FinancialReportPage)))
+  assert.match(html, /aria-label="Tanggal awal"[^>]*value=""/)
+  assert.match(html, /aria-label="Tanggal akhir"[^>]*value=""/)
 })

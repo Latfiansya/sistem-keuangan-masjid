@@ -126,7 +126,7 @@ test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan pengaturan un
         assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-report-transactions li")].map(e=>e.dataset.transactionId).sort()'), october.map((item) => item.id).sort())
         assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-report-transactions header > strong")].map(e=>e.textContent)'), ['Rp 1.791.500', 'Rp 1.427.500'])
         assert.match(await evaluate('document.querySelector(".admin-report-notice").textContent'), /transaksi historis.*bukan riwayat resmi/)
-        assert.equal(await evaluate('document.querySelectorAll(".admin-report-actions button:not(:disabled),.admin-report dialog").length'), 0)
+        assert.equal(await evaluate('document.querySelectorAll(".admin-report-actions button:disabled,.admin-report dialog").length'), 0)
         if (width >= 640) assert.equal(await evaluate('new Set([...document.querySelectorAll(".admin-report-tabs button")].map(e=>Math.round(e.getBoundingClientRect().width))).size'), 1)
         await noOverflow(); await evaluate('document.querySelector(".admin-report-filters").scrollIntoView({block:"center"})'); await screenshot(`laporan-${width}-filter`); await evaluate('window.scrollTo(0,0)'); await screenshot(`laporan-${width}-top`); await screenshot(`laporan-${width}-full`, true)
         const activeColors = []

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useOutletContext } from 'react-router'
 import { Check, CircleX, Eye, EyeOff, Pencil, Plus, RotateCcw, Search, Shield, Trash2, TriangleAlert, X } from 'lucide-react'
 import { createAdminAccount, deleteAdminAccount, filterAdminAccounts, getAdminAccounts, setAdminAccountStatus, updateAdminAccount, validateAdminAccountForm } from '../services/adminAccountsService.js'
 import { dataSource } from '../utils/env.js'
@@ -134,7 +135,10 @@ function AccountDialog({ mode, account, onDone, onClose, returnFocusRef, fallbac
 }
 
 export default function AdminAccountsPage() {
+  const outletContext = useOutletContext()
+  const accountRole = outletContext?.dashboard?.account?.role
   const apiEnabled = dataSource !== 'mock'
+  const isRoleBlocked = apiEnabled && Boolean(accountRole) && accountRole !== 'Super Admin'
   const [accounts, setAccounts] = useState(null)
   const [error, setError] = useState('')
   const [feedback, setFeedback] = useState(null)
@@ -151,12 +155,21 @@ export default function AdminAccountsPage() {
   }, [])
 
   useEffect(() => {
+    if (isRoleBlocked) return
     const controller = new AbortController()
     getAdminAccounts({ signal: controller.signal })
       .then((list) => { if (!controller.signal.aborted) setAccounts(list) })
       .catch((cause) => { if (!controller.signal.aborted) setError(cause.message) })
     return () => controller.abort()
-  }, [])
+  }, [isRoleBlocked])
+
+  if (isRoleBlocked) {
+    return (
+      <div className="admin-accounts">
+        <p className="admin-dashboard-state" role="alert">Halaman Kelola Akun hanya tersedia untuk Super Admin.</p>
+      </div>
+    )
+  }
 
   function openDialog(mode, account, event) {
     if (!apiEnabled) return

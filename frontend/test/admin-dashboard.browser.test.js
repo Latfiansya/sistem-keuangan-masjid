@@ -714,7 +714,7 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
         assert.match(explanation, /Setelah integrasi, sistem memeriksa kode yang dimasukkan pengunjung/)
         assert.match(explanation, /Akses langsung dan refresh \/laporan-keuangan tetap tanpa gate/)
         assert.match(explanation, /bukan autentikasi atau otorisasi laporan/)
-        assert.match(explanation, /Autentikasi Super Admin untuk mengelolanya terpisah/)
+        assert.match(explanation, /dikelola oleh pengurus terautentikasi \(Admin dan Super Admin\)/)
         assert.doesNotMatch(explanation, /\/laporan(?!-keuangan)|realtime|Terenkripsi/)
         const before = await evaluate('document.querySelector(".admin-report-access-status").innerHTML')
         await evaluate('document.querySelector(".admin-report-access-status button").click()')
