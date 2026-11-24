@@ -13,8 +13,8 @@ import { buildReceiptNumber, getReceiptNumberPrefix, nextReceiptSequence } from 
 // Skema mengikuti docs/sql/2026-11-24-kwitansi-pembatalan.sql.
 const RECEIPT_SELECT = `
   SELECT k.id, k.no_kwitansi, k.telah_terima_dari, k.untuk_pembayaran, k.metode_pembayaran,
-         k.created_by_nama, to_char(k.created_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS created_at,
-         to_char(k.dibatalkan_at, 'YYYY-MM-DD"T"HH24:MI:SS') AS dibatalkan_at,
+         k.created_by_nama, to_char(k.created_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD"T"HH24:MI:SS') AS created_at,
+         to_char(k.dibatalkan_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD"T"HH24:MI:SS') AS dibatalkan_at,
          k.transaksi_id, to_char(COALESCE(t.tanggal, k.tanggal), 'YYYY-MM-DD') AS tanggal,
          COALESCE(t.nominal, k.nominal) AS nominal, t.kategori_dana_id, kd.nama_kategori
   FROM keu_masjid.t_kwitansi k

@@ -1500,3 +1500,26 @@ Status: implementasi selesai dan tervalidasi pada branch `fix/transfer-di-lapora
 - Tampilan catatan dan lembar ekspor belum diuji manual di browser; suite browser QA (termasuk pembanding PNG) tidak dijalankan.
 
 Usulan pesan commit: `fix: perhitungkan transfer internal pada saldo per kategori di laporan`.
+
+## Zona Waktu Kolom Timestamp (24 November 2026)
+
+Status: migrasi database sudah dijalankan DBA; perbaikan kode pada branch `fix/zona-waktu`, menunggu commit manual oleh pengguna.
+
+### Masalah
+
+- Kolom `timestamp without time zone` berisi data campuran: aplikasi menulis UTC (zona server `Etc/UTC`), sedangkan DB Manager menulis WIB (sesi `Asia/Jakarta`). Activity Log dan Kelola Admin menampilkan waktu aplikasi 14 jam meleset karena `AT TIME ZONE 'Asia/Jakarta'` pada kolom tanpa zona waktu justru mengurangi 7 jam.
+
+### Implementasi
+
+- **Database** (`docs/sql/2026-11-24-timestamptz.sql`, dijalankan DBA): 26 kolom di 14 tabel diubah ke `timestamptz`. Nilai sebelum 2026-11-21 dan jendela 2026-11-21 13:38–13:40 (activity log id 44–46) dikonversi sebagai WIB, sisanya sebagai UTC. View `v_transaksi_lengkap` dibuat ulang tanpa perubahan isi.
+- **Backend**: `receiptRepository.js` mengonversi `created_at` dan `dibatalkan_at` kwitansi ke WIB. Query `adminManagementRepository.js` tidak berubah dan kini menghasilkan WIB yang benar.
+
+### Verifikasi
+
+- Pemeriksaan read-only setelah migrasi: 26 kolom bertipe `timestamptz`, urutan waktu activity log naik mengikuti id (0 selisih negatif), view dan komentarnya ada, tidak ada sesi transaksi menggantung.
+- Backend `npm run lint` dan `npm test`: **PASS** (64 test).
+
+### Batasan
+
+- `ALTER DATABASE … SET timezone TO 'Asia/Jakarta'` tidak diaktifkan; sesi aplikasi tetap UTC sehingga setiap tampilan waktu harus memakai `AT TIME ZONE 'Asia/Jakarta'`.
+- Data yang diisi lewat DB Manager setelah migrasi otomatis benar karena `timestamptz` menyimpan zona waktu sesi.
