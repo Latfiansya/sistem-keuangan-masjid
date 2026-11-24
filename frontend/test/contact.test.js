@@ -76,6 +76,20 @@ test('card Transfer Bank tidak menampilkan badge Terkonfirmasi serta mendukung 1
   const htmlArray = renderPage({ content: viaArray, error: '' })
   assert.equal((htmlArray.match(/class="contact-bank-divider"/g) || []).length, 1)
   assert.ok(htmlArray.includes('Bank Muamalat') && htmlArray.includes('BRI Syariah'))
+
+  const fourBanks = structuredClone(base)
+  fourBanks.contact.donation.banks = [
+    { verified: true, name: 'BPD DIY', number: '065221001019', recipient: 'Masjid Al-Hidayah' },
+    { verified: true, name: 'BSI', number: '007123456789', recipient: 'Takmir Masjid Al-Hidayah' },
+    { verified: true, name: 'Bank Muamalat', number: '511000223344', recipient: 'Lazis Masjid' },
+    { verified: true, name: 'BRI', number: '002901001234', recipient: 'Operasional Masjid' },
+  ]
+  const htmlFour = renderPage({ content: fourBanks, error: '' })
+  assert.equal((htmlFour.match(/class="contact-bank-grid"/g) || []).length, 1)
+  assert.equal((htmlFour.match(/class="contact-bank"/g) || []).length, 4)
+  for (const text of ['BPD DIY', '065221001019', 'BSI', 'Bank Muamalat', 'BRI']) {
+    assert.ok(htmlFour.includes(text))
+  }
 })
 
 test('nilai QRIS, rekening dan kontak yang belum dikonfirmasi tidak ditampilkan', async () => {

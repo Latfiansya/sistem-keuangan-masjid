@@ -366,6 +366,9 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .contact-bank-list { display: grid; grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr); gap: clamp(18px, 2vw, 32px); align-items: stretch; margin-block: 34px; }
 .contact-bank-list .contact-bank { margin-block: 0; align-content: start; min-width: 0; }
 .contact-bank-divider { display: block; width: 1px; align-self: stretch; background: #cfe5d6; }
+.contact-bank-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(14px, 1.5vw, 22px); margin-block: 34px; }
+.contact-bank-item { min-width: 0; padding: 16px; border: 1px solid #cfe5d6; border-radius: 16px; background: #f8fcfa; }
+.contact-bank-item .contact-bank { margin-block: 0; gap: 14px; }
 .contact-donation-note { display: flex; align-items: center; gap: 12px; margin-top: auto; padding: 16px; background: #edf6f1; border-radius: 16px; font-size: 14px; line-height: 1.45; }
 .contact-donation-note svg { width: 20px; height: 20px; flex-shrink: 0; }
 .contact-takmir { margin-top: clamp(56px, 4.6vw, 80px); padding-block: clamp(56px, 4.5vw, 78px); background: var(--color-mosque); color: white; }
@@ -392,6 +395,7 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
   .contact-donation-card { padding: 24px; }
   .contact-bank-list { grid-template-columns: minmax(0, 1fr); gap: 20px; }
   .contact-bank-divider { width: 100%; height: 1px; }
+  .contact-bank-grid { grid-template-columns: minmax(0, 1fr); }
   .contact-information-icon { flex-basis: 60px; height: 60px; }
 }
 

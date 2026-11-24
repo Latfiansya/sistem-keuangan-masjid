@@ -1,4 +1,5 @@
 import { getDefaultDatabasePool, withDatabaseClient } from '../config/database.js'
+import { readDonationBankAccounts } from './donationBankRepository.js'
 
 const PROGRAM_ICONS = ['heart', 'health', 'economy']
 
@@ -25,7 +26,7 @@ function buildInitials(name = '') {
 export function createPublicContentRepository(db = getDefaultDatabasePool()) {
   return {
     async findPublicContent() {
-      const { profilRes, settingsRes, misiRes, programRes, sejarahRes, pengurusRes } =
+      const { profilRes, settingsRes, bankResult, misiRes, programRes, sejarahRes, pengurusRes } =
         await withDatabaseClient(db, async (client) => {
           const profilResult = await client.query(
             `SELECT id, nama_masjid, deskripsi, foto_path, lokasi, tagline,
@@ -35,15 +36,22 @@ export function createPublicContentRepository(db = getDefaultDatabasePool()) {
              WHERE id = 1
              LIMIT 1`
           )
-          const settingsResult = await client.query(
-            `SELECT id, laporan_publik_aktif, nomor_whatsapp, email_pengurus,
-                    alamat_lengkap, link_gmaps, jam_operasional,
-                    telepon, keterangan_telepon, latitude, longitude, label_peta,
-                    qris_path, bank_nama, bank_no_rekening, bank_atas_nama
-             FROM keu_masjid.m_pengaturan_website
-             WHERE id = 1
-             LIMIT 1`
-          )
+          let settingsResult
+          try {
+            settingsResult = await client.query(
+              `SELECT id, laporan_publik_aktif, nomor_whatsapp, email_pengurus,
+                      alamat_lengkap, link_gmaps, jam_operasional,
+                      telepon, keterangan_telepon, latitude, longitude, label_peta,
+                      qris_path
+               FROM keu_masjid.m_pengaturan_website
+               WHERE id = 1
+               LIMIT 1`
+            )
+          } catch (error) {
+            if (error?.code !== '42703') throw error
+            settingsResult = { rows: [] }
+          }
+          const donationBankResult = await readDonationBankAccounts(client, settingsResult.rows[0] ?? null)
           const misiResult = await client.query(
             `SELECT id, isi, urutan
              FROM keu_masjid.m_misi_masjid
@@ -69,6 +77,7 @@ export function createPublicContentRepository(db = getDefaultDatabasePool()) {
           return {
             profilRes: profilResult,
             settingsRes: settingsResult,
+            bankResult: donationBankResult,
             misiRes: misiResult,
             programRes: programResult,
             sejarahRes: sejarahResult,
@@ -123,11 +132,13 @@ export function createPublicContentRepository(db = getDefaultDatabasePool()) {
         })
       }
 
-      const bankVerified = Boolean(
-        settings?.bank_nama?.trim() &&
-          settings?.bank_no_rekening?.trim() &&
-          settings?.bank_atas_nama?.trim()
-      )
+      const banks = (bankResult?.accounts || []).map((item) => ({
+        verified: true,
+        name: item.bankName,
+        number: item.accountNumber,
+        recipient: item.accountName,
+      }))
+      const emptyBank = { verified: false, name: null, number: null, recipient: null }
       const qrisSrc = settings?.qris_path?.trim() || null
 
       return {
@@ -201,12 +212,9 @@ export function createPublicContentRepository(db = getDefaultDatabasePool()) {
               verified: Boolean(qrisSrc),
               imageSrc: qrisSrc,
             },
-            bank: {
-              verified: bankVerified,
-              name: bankVerified ? settings.bank_nama.trim() : null,
-              number: bankVerified ? settings.bank_no_rekening.trim() : null,
-              recipient: bankVerified ? settings.bank_atas_nama.trim() : null,
-            },
+            banks,
+            bank: banks[0] ?? { ...emptyBank },
+            bank2: banks[1] ?? { ...emptyBank },
           },
         },
       }

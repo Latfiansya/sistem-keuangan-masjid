@@ -1,6 +1,12 @@
 import { getDefaultDatabasePool, withDatabaseClient, withDatabaseTransaction } from '../config/database.js'
+import { createHttpError } from '../utils/httpError.js'
 import { mapPgErrorToHttpError, resolveAuditPenggunaId } from '../utils/financeMapping.js'
 import { createAgendaRepository } from './agendaRepository.js'
+import {
+  inspectDonationSchema,
+  readDonationBankAccounts,
+  syncDonationBankTable,
+} from './donationBankRepository.js'
 
 function toNullableNumber(value) {
   return value === null || value === undefined ? null : Number(value)
@@ -154,27 +160,41 @@ export function createAdminSettingsRepository(db = getDefaultDatabasePool()) {
     },
 
     async getDonationSettings() {
-      const { rows } = await db.query(
-        `SELECT id, qris_path, bank_nama, bank_no_rekening, bank_atas_nama, nomor_whatsapp
-         FROM keu_masjid.m_pengaturan_website
-         WHERE id = 1
-         LIMIT 1`
-      )
+      const { row, accounts } = await withDatabaseClient(db, async (client) => {
+        const settingsRes = await client.query(
+          `SELECT id, qris_path, nomor_whatsapp
+           FROM keu_masjid.m_pengaturan_website
+           WHERE id = 1
+           LIMIT 1`
+        )
+        const bankResult = await readDonationBankAccounts(client)
+        return {
+          row: settingsRes.rows[0] ?? null,
+          accounts: bankResult.accounts,
+        }
+      })
 
-      const row = rows[0]
       const qrisPath = row?.qris_path?.trim() || null
-      const bankName = row?.bank_nama?.trim() || ''
-      const accountNumber = row?.bank_no_rekening?.trim() || ''
-      const accountName = row?.bank_atas_nama?.trim() || ''
       const whatsappNumber = row?.nomor_whatsapp?.trim() || ''
+      const first = accounts[0] ?? { bankName: '', accountNumber: '', accountName: '' }
+      const second = accounts[1] ?? { bankName: '', accountNumber: '', accountName: '' }
 
       return {
         qrisFile: qrisPath,
         qrisEnabled: Boolean(qrisPath),
-        bankName,
-        accountNumber,
-        accountName,
-        bankEnabled: Boolean(bankName && accountNumber && accountName),
+        bankAccounts: accounts.map(({ id, bankName, accountNumber, accountName }) => ({
+          id,
+          bankName,
+          accountNumber,
+          accountName,
+        })),
+        bankName: first.bankName,
+        accountNumber: first.accountNumber,
+        accountName: first.accountName,
+        bankName2: second.bankName,
+        accountNumber2: second.accountNumber,
+        accountName2: second.accountName,
+        bankEnabled: accounts.length > 0,
         whatsappNumber,
         whatsappEnabled: Boolean(whatsappNumber),
         messageTemplate:
@@ -184,11 +204,69 @@ export function createAdminSettingsRepository(db = getDefaultDatabasePool()) {
     },
 
     async saveDonationSettings(nextSettings, auditUserId = null) {
+      const targetAccounts = Array.isArray(nextSettings.bankAccounts)
+        ? nextSettings.bankAccounts
+        : []
+
       try {
         return await withDatabaseTransaction(db, async (client) => {
           const userId = auditUserId ? Number(auditUserId) : await resolveAuditPenggunaId(client)
           await client.query("SELECT set_config('app.user_id', $1, true)", [String(userId)])
 
+          const { bankTable, hasLegacyBankColumns } = await inspectDonationSchema(client)
+          let savedAccounts = []
+
+          if (bankTable) {
+            savedAccounts = await syncDonationBankTable(client, bankTable, targetAccounts, userId)
+            const settingsRes = await client.query(
+              `INSERT INTO keu_masjid.m_pengaturan_website (id, nomor_whatsapp, created_by)
+               VALUES (1, $1, $2)
+               ON CONFLICT (id) DO UPDATE
+               SET nomor_whatsapp = EXCLUDED.nomor_whatsapp,
+                   updated_at = CURRENT_TIMESTAMP,
+                   updated_by = $2
+               RETURNING qris_path, nomor_whatsapp`,
+              [nextSettings.whatsappNumber || null, userId]
+            )
+            const row = settingsRes.rows[0]
+            const first = savedAccounts[0] ?? { bankName: '', accountNumber: '', accountName: '' }
+            const second = savedAccounts[1] ?? { bankName: '', accountNumber: '', accountName: '' }
+            return {
+              ...nextSettings,
+              qrisFile: row?.qris_path || nextSettings.qrisFile || null,
+              bankAccounts: savedAccounts.map(({ id, bankName, accountNumber, accountName }) => ({
+                id,
+                bankName,
+                accountNumber,
+                accountName,
+              })),
+              bankName: first.bankName,
+              accountNumber: first.accountNumber,
+              accountName: first.accountName,
+              bankName2: second.bankName,
+              accountNumber2: second.accountNumber,
+              accountName2: second.accountName,
+              whatsappNumber: row?.nomor_whatsapp || '',
+            }
+          }
+
+          if (!hasLegacyBankColumns) {
+            throw createHttpError(
+              503,
+              'SERVICE_UNAVAILABLE',
+              'Tabel rekening donasi belum tersedia di database.'
+            )
+          }
+
+          if (targetAccounts.length > 1) {
+            throw createHttpError(
+              503,
+              'SERVICE_UNAVAILABLE',
+              'Penyimpanan lebih dari 1 rekening membutuhkan tabel rekening donasi di database.'
+            )
+          }
+
+          const firstInput = targetAccounts[0] ?? { bankName: '', accountNumber: '', accountName: '' }
           const res = await client.query(
             `INSERT INTO keu_masjid.m_pengaturan_website (
                id, bank_nama, bank_no_rekening, bank_atas_nama, nomor_whatsapp, created_by
@@ -203,21 +281,34 @@ export function createAdminSettingsRepository(db = getDefaultDatabasePool()) {
                  updated_by = $5
              RETURNING qris_path, bank_nama, bank_no_rekening, bank_atas_nama, nomor_whatsapp`,
             [
-              nextSettings.bankName || null,
-              nextSettings.accountNumber || null,
-              nextSettings.accountName || null,
+              firstInput.bankName || null,
+              firstInput.accountNumber || null,
+              firstInput.accountName || null,
               nextSettings.whatsappNumber || null,
               userId,
             ]
           )
 
           const row = res.rows[0]
+          const legacyAccount =
+            row?.bank_nama && row?.bank_no_rekening && row?.bank_atas_nama
+              ? [{
+                  id: '1',
+                  bankName: row.bank_nama,
+                  accountNumber: row.bank_no_rekening,
+                  accountName: row.bank_atas_nama,
+                }]
+              : []
           return {
             ...nextSettings,
             qrisFile: row?.qris_path || nextSettings.qrisFile || null,
+            bankAccounts: legacyAccount,
             bankName: row?.bank_nama || '',
             accountNumber: row?.bank_no_rekening || '',
             accountName: row?.bank_atas_nama || '',
+            bankName2: '',
+            accountNumber2: '',
+            accountName2: '',
             whatsappNumber: row?.nomor_whatsapp || '',
           }
         })

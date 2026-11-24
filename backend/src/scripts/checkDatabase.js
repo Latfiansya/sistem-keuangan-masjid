@@ -27,6 +27,7 @@ async function main() {
       dashboard,
       adminReport,
       adminProfile,
+      donationSettings,
       websiteSettings,
       accounts,
       logs,
@@ -44,6 +45,7 @@ async function main() {
         endDate: '2026-10-31',
       }),
       defaultAdminSettingsRepository.getProfile(),
+      defaultAdminSettingsRepository.getDonationSettings(),
       defaultAdminSettingsRepository.getWebsiteSettings(),
       defaultAdminManagementRepository.findAccounts(),
       defaultAdminManagementRepository.findActivityLogs(),
@@ -59,6 +61,7 @@ async function main() {
     console.log(`- Dashboard admin        : ${dashboard.categories.length} kategori, total saldo akhir Rp${dashboard.totals.closingBalance.toLocaleString('id-ID')}`)
     console.log(`- Laporan admin Jan-Okt  : ${adminReport.transactions.length} transaksi, ${adminReport.monthlyRecap.length} bulan rekap`)
     console.log(`- Profil admin           : ${adminProfile.name ? `"${adminProfile.name}"` : '(tabel m_profil_masjid masih kosong)'}`)
+    console.log(`- Rekening donasi        : ${donationSettings.bankAccounts.length} rekening aktif`)
     console.log(`- Pengaturan website     : ${websiteSettings.email || websiteSettings.address ? 'terisi' : '(tabel m_pengaturan_website masih kosong)'}`)
     console.log(`- Akun pengurus          : ${accounts.length} akun`)
     console.log(`- Activity log           : ${logs.totalCount} baris`)

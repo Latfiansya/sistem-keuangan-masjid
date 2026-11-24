@@ -4,18 +4,111 @@ import { dataSource } from '../utils/env.js'
 
 export const adminDonationQrisAccept = '.png,.jpg,.jpeg'
 export const adminDonationQrisMaxBytes = 2 * 1024 * 1024
+export const MAX_DONATION_BANKS = 4
+
+export function getBankSlotFieldKey(slotIndex, baseKey) {
+  return slotIndex === 0 ? baseKey : `${baseKey}${slotIndex + 1}`
+}
+
+function emptyBankSlot(id = null) {
+  return { id, bankName: '', accountNumber: '', accountName: '' }
+}
+
+function mapRawBankEntry(item) {
+  return {
+    id: item?.id ? String(item.id) : null,
+    bankName: String(item?.bankName ?? item?.name ?? ''),
+    accountNumber: String(item?.accountNumber ?? item?.number ?? ''),
+    accountName: String(item?.accountName ?? item?.recipient ?? ''),
+  }
+}
+
+export function getDonationBankSlots(values) {
+  const fromArray = Array.isArray(values?.bankAccounts)
+    ? values.bankAccounts.map(mapRawBankEntry)
+    : []
+
+  const hasLegacy0 = values && ('bankName' in values || 'accountNumber' in values || 'accountName' in values)
+  const hasLegacy1 = values && ('bankName2' in values || 'accountNumber2' in values || 'accountName2' in values)
+
+  const slot0 = hasLegacy0
+    ? {
+        id: fromArray[0]?.id ?? null,
+        bankName: String(values.bankName ?? ''),
+        accountNumber: String(values.accountNumber ?? ''),
+        accountName: String(values.accountName ?? ''),
+      }
+    : (fromArray[0] ?? emptyBankSlot())
+
+  const slot1 = hasLegacy1
+    ? {
+        id: fromArray[1]?.id ?? null,
+        bankName: String(values.bankName2 ?? ''),
+        accountNumber: String(values.accountNumber2 ?? ''),
+        accountName: String(values.accountName2 ?? ''),
+      }
+    : (fromArray[1] ?? null)
+
+  const slots = [slot0]
+  if (slot1 && (fromArray.length >= 2 || slot1.bankName || slot1.accountNumber || slot1.accountName)) {
+    slots.push(slot1)
+  }
+  for (let index = 2; index < fromArray.length; index += 1) {
+    slots.push(fromArray[index])
+  }
+
+  return slots
+}
+
+export function withUpdatedDonationBankSlots(values, rawSlots) {
+  const slots = rawSlots.map(mapRawBankEntry)
+  const first = slots[0] ?? emptyBankSlot()
+  const second = slots[1] ?? emptyBankSlot()
+  return {
+    ...values,
+    bankAccounts: slots,
+    bankName: first.bankName,
+    accountNumber: first.accountNumber,
+    accountName: first.accountName,
+    bankName2: second.bankName,
+    accountNumber2: second.accountNumber,
+    accountName2: second.accountName,
+  }
+}
 
 function normalizeAdminDonationValues(data) {
-  const firstBank = Array.isArray(data.bankAccounts) ? data.bankAccounts[0] : null
-  const secondBank = Array.isArray(data.bankAccounts) ? data.bankAccounts[1] : null
+  const rawAccounts = Array.isArray(data?.bankAccounts) ? data.bankAccounts.map(mapRawBankEntry) : []
+  const slots = rawAccounts.length
+    ? rawAccounts
+    : [
+        ...(data?.bankName || data?.accountNumber || data?.accountName
+          ? [{
+              id: null,
+              bankName: String(data.bankName ?? ''),
+              accountNumber: String(data.accountNumber ?? ''),
+              accountName: String(data.accountName ?? ''),
+            }]
+          : []),
+        ...(data?.bankName2 || data?.accountNumber2 || data?.accountName2
+          ? [{
+              id: null,
+              bankName: String(data.bankName2 ?? ''),
+              accountNumber: String(data.accountNumber2 ?? ''),
+              accountName: String(data.accountName2 ?? ''),
+            }]
+          : []),
+      ]
+  const first = slots[0] ?? emptyBankSlot()
+  const second = slots[1] ?? emptyBankSlot()
   return {
     ...data,
-    bankName: String(data.bankName ?? firstBank?.bankName ?? firstBank?.name ?? ''),
-    accountNumber: String(data.accountNumber ?? firstBank?.accountNumber ?? firstBank?.number ?? ''),
-    accountName: String(data.accountName ?? firstBank?.accountName ?? firstBank?.recipient ?? ''),
-    bankName2: String(data.bankName2 ?? secondBank?.bankName ?? secondBank?.name ?? ''),
-    accountNumber2: String(data.accountNumber2 ?? secondBank?.accountNumber ?? secondBank?.number ?? ''),
-    accountName2: String(data.accountName2 ?? secondBank?.accountName ?? secondBank?.recipient ?? ''),
+    bankAccounts: slots.slice(0, MAX_DONATION_BANKS),
+    bankName: String(data?.bankName ?? first.bankName),
+    accountNumber: String(data?.accountNumber ?? first.accountNumber),
+    accountName: String(data?.accountName ?? first.accountName),
+    bankName2: String(data?.bankName2 ?? second.bankName),
+    accountNumber2: String(data?.accountNumber2 ?? second.accountNumber),
+    accountName2: String(data?.accountName2 ?? second.accountName),
   }
 }
 
@@ -29,34 +122,55 @@ export async function getAdminDonationSettings({ signal } = {}) {
     return normalizeAdminDonationValues(data)
   }
   const donation = mockPublicContent.contact.donation
-  const bank1 = donation.banks?.[0] ?? donation.bank
-  const bank2 = donation.banks?.[1] ?? donation.bank2
-  return {
-    qrisFile: null, qrisEnabled: false,
-    bankName: bank1?.verified ? bank1.name || '' : '',
-    accountNumber: bank1?.verified ? bank1.number || '' : '',
-    accountName: bank1?.verified ? bank1.recipient || '' : '',
-    bankName2: bank2?.verified ? bank2.name || '' : '',
-    accountNumber2: bank2?.verified ? bank2.number || '' : '',
-    accountName2: bank2?.verified ? bank2.recipient || '' : '',
+  const mockBanks = Array.isArray(donation.banks) && donation.banks.length
+    ? donation.banks
+    : [donation.bank, donation.bank2].filter(Boolean)
+  const verifiedMock = mockBanks
+    .filter((entry) => entry?.verified)
+    .slice(0, MAX_DONATION_BANKS)
+    .map((entry) => ({
+      id: null,
+      bankName: entry.name || '',
+      accountNumber: entry.number || '',
+      accountName: entry.recipient || '',
+    }))
+  return normalizeAdminDonationValues({
+    qrisFile: null,
+    qrisEnabled: false,
+    bankAccounts: verifiedMock,
     bankEnabled: false,
-    whatsappNumber: '', whatsappEnabled: false,
+    whatsappNumber: '',
+    whatsappEnabled: false,
     messageTemplate: 'Assalamu’alaikum Takmir Masjid Al-Hidayah, saya ingin mengonfirmasi donasi.\nNama: [Nama donatur];\nNomor WhatsApp: [Nomor WhatsApp];\nTanggal donasi: [Tanggal];\nNominal: [Nominal];\nMetode pembayaran: [Metode pembayaran];\nTerima kasih.',
     donationNote: 'Periksa nama penerima sebelum transfer dan simpan bukti donasi.',
-  }
+  })
 }
 
 export async function saveAdminDonationSettings(values, { signal } = {}) {
   if (dataSource === 'mock') return normalizeAdminDonationSettings(values)
+  const slots = getDonationBankSlots(values)
+    .slice(0, MAX_DONATION_BANKS)
+    .map((slot) => ({
+      id: slot.id ?? null,
+      bankName: slot.bankName.trim(),
+      accountNumber: slot.accountNumber.trim(),
+      accountName: slot.accountName.trim(),
+    }))
+    .filter((slot) => slot.bankName || slot.accountNumber || slot.accountName)
+
+  const first = slots[0] ?? emptyBankSlot()
+  const second = slots[1] ?? emptyBankSlot()
+
   const saved = await apiRequest('/admin/donation-settings', {
     method: 'PUT',
     body: {
-      bankName: values.bankName || '',
-      accountNumber: values.accountNumber || '',
-      accountName: values.accountName || '',
-      bankName2: values.bankName2 || '',
-      accountNumber2: values.accountNumber2 || '',
-      accountName2: values.accountName2 || '',
+      bankAccounts: slots,
+      bankName: first.bankName,
+      accountNumber: first.accountNumber,
+      accountName: first.accountName,
+      bankName2: second.bankName,
+      accountNumber2: second.accountNumber,
+      accountName2: second.accountName,
       qrisEnabled: values.qrisEnabled === true,
       bankEnabled: values.bankEnabled === true,
       whatsappNumber: values.whatsappNumber || '',
@@ -66,21 +180,23 @@ export async function saveAdminDonationSettings(values, { signal } = {}) {
     },
     signal,
   })
-  const bank2SupportedByBackend =
-    Boolean(saved && typeof saved === 'object' && ('bankName2' in saved || Array.isArray(saved.bankAccounts)))
+  const multiBankSupported = Boolean(saved && typeof saved === 'object' && Array.isArray(saved.bankAccounts))
+  const bank2Supported = Boolean(multiBankSupported || (saved && typeof saved === 'object' && 'bankName2' in saved))
   const merged = normalizeAdminDonationValues({
     ...saved,
-    ...(bank2SupportedByBackend
+    ...(multiBankSupported ? {} : { bankAccounts: slots }),
+    ...(bank2Supported
       ? {}
       : {
-          bankName2: values.bankName2 || '',
-          accountNumber2: values.accountNumber2 || '',
-          accountName2: values.accountName2 || '',
+          bankName2: second.bankName,
+          accountNumber2: second.accountNumber,
+          accountName2: second.accountName,
         }),
   })
   return {
     ...normalizeAdminDonationSettings(merged),
-    bank2BackendSupported: bank2SupportedByBackend,
+    bank2BackendSupported: bank2Supported,
+    multiBankBackendSupported: multiBankSupported,
   }
 }
 
@@ -114,37 +230,67 @@ export async function readAdminDonationQris(files) {
   finally { URL.revokeObjectURL(url) }
 }
 
+function hasForbiddenControlChars(text, allowMultiline = false) {
+  return [...text].some((character) => {
+    const code = character.codePointAt(0)
+    return code === 127 || (code < 32 && !(allowMultiline && [9, 10, 13].includes(code)))
+  })
+}
+
 export function validateAdminDonationSettings(values) {
   const errors = {}
+  const slots = getDonationBankSlots(values)
+
+  if (slots.length > MAX_DONATION_BANKS) {
+    errors.bankAccountsLimit = `Maksimal ${MAX_DONATION_BANKS} rekening donasi. Hapus salah satu rekening terlebih dahulu.`
+  }
+
+  for (let index = 0; index < Math.min(slots.length, MAX_DONATION_BANKS); index += 1) {
+    const slot = slots[index]
+    const slotSuffix = index === 0 ? '' : ` rekening ${index + 1}`
+    const bankKey = getBankSlotFieldKey(index, 'bankName')
+    const numberKey = getBankSlotFieldKey(index, 'accountNumber')
+    const recipientKey = getBankSlotFieldKey(index, 'accountName')
+
+    if (slot.bankName.length > 100 || hasForbiddenControlChars(slot.bankName, false)) {
+      errors[bankKey] = `Nama bank${slotSuffix} tidak valid atau melebihi 100 karakter.`
+    }
+    if (slot.accountName.length > 160 || hasForbiddenControlChars(slot.accountName, false)) {
+      errors[recipientKey] = `Atas nama${slotSuffix} tidak valid atau melebihi 160 karakter.`
+    }
+    const numberTrimmed = slot.accountNumber.trim()
+    if (numberTrimmed && !/^\d{1,40}$/.test(numberTrimmed)) {
+      errors[numberKey] = 'Nomor rekening harus berisi 1–40 digit, tanpa spasi atau tanda baca.'
+    }
+
+    // Rekening 2..4 (atau slot mana pun saat ada slot lain diisi) wajib 3 kolom jika diisi sebagian.
+    const hasPartialExtra =
+      (index > 0 || slots.length > 1) &&
+      (slot.bankName.trim() || numberTrimmed || slot.accountName.trim())
+    if (hasPartialExtra) {
+      const labelNum = `rekening ${index + 1}`
+      if (!slot.bankName.trim() && !errors[bankKey]) {
+        errors[bankKey] = `Nama bank ${labelNum} wajib diisi jika ${labelNum} digunakan.`
+      }
+      if (!numberTrimmed && !errors[numberKey]) {
+        errors[numberKey] = `Nomor ${labelNum} wajib diisi jika ${labelNum} digunakan.`
+      }
+      if (!slot.accountName.trim() && !errors[recipientKey]) {
+        errors[recipientKey] = `Atas nama ${labelNum} wajib diisi jika ${labelNum} digunakan.`
+      }
+    }
+  }
+
   for (const [key, label, limit] of [
-    ['bankName', 'Nama bank', 100],
-    ['accountName', 'Atas nama', 160],
-    ['bankName2', 'Nama bank rekening 2', 100],
-    ['accountName2', 'Atas nama rekening 2', 160],
     ['messageTemplate', 'Template pesan', 2000],
     ['donationNote', 'Catatan donasi', 1000],
   ]) {
     const value = String(values?.[key] ?? '')
-    if (value.length > limit || [...value].some((character) => {
-      const code = character.codePointAt(0)
-      return code === 127 || (code < 32 && !(['messageTemplate', 'donationNote'].includes(key) && [9, 10, 13].includes(code)))
-    })) errors[key] = `${label} tidak valid atau melebihi ${limit} karakter.`
+    if (value.length > limit || hasForbiddenControlChars(value, true)) {
+      errors[key] = `${label} tidak valid atau melebihi ${limit} karakter.`
+    }
   }
-  const accountNumber = String(values?.accountNumber ?? '').trim()
-  if (accountNumber && !/^\d{1,40}$/.test(accountNumber)) {
-    errors.accountNumber = 'Nomor rekening harus berisi 1–40 digit, tanpa spasi atau tanda baca.'
-  }
-  const accountNumber2 = String(values?.accountNumber2 ?? '').trim()
-  if (accountNumber2 && !/^\d{1,40}$/.test(accountNumber2)) {
-    errors.accountNumber2 = 'Nomor rekening harus berisi 1–40 digit, tanpa spasi atau tanda baca.'
-  }
-  const bank2Name = String(values?.bankName2 ?? '').trim()
-  const bank2Recipient = String(values?.accountName2 ?? '').trim()
-  if (bank2Name || accountNumber2 || bank2Recipient) {
-    if (!bank2Name && !errors.bankName2) errors.bankName2 = 'Nama bank rekening 2 wajib diisi jika rekening 2 digunakan.'
-    if (!accountNumber2 && !errors.accountNumber2) errors.accountNumber2 = 'Nomor rekening 2 wajib diisi jika rekening 2 digunakan.'
-    if (!bank2Recipient && !errors.accountName2) errors.accountName2 = 'Atas nama rekening 2 wajib diisi jika rekening 2 digunakan.'
-  }
+
   const whatsappNumber = String(values?.whatsappNumber ?? '').trim()
   if (whatsappNumber && !/^[1-9]\d{7,14}$/.test(whatsappNumber)) {
     errors.whatsappNumber = 'Gunakan nomor internasional 8–15 digit, tanpa +, spasi atau tanda baca; misalnya berawalan 628.'
@@ -155,25 +301,30 @@ export function validateAdminDonationSettings(values) {
 export function getAdminDonationReadiness(values) {
   const errors = validateAdminDonationSettings(values)
   const qrisComplete = Boolean(values?.qrisFile)
-  const bank1Name = String(values?.bankName ?? '').trim()
-  const bank1Number = String(values?.accountNumber ?? '').trim()
-  const bank1Recipient = String(values?.accountName ?? '').trim()
-  const bank1Complete = Boolean(bank1Name && bank1Number && bank1Recipient && !errors.bankName && !errors.accountNumber && !errors.accountName)
+  const slots = getDonationBankSlots(values)
 
-  const bank2Name = String(values?.bankName2 ?? '').trim()
-  const bank2Number = String(values?.accountNumber2 ?? '').trim()
-  const bank2Recipient = String(values?.accountName2 ?? '').trim()
-  const bank2Empty = !bank2Name && !bank2Number && !bank2Recipient
-  const bank2Complete = Boolean(bank2Name && bank2Number && bank2Recipient && !errors.bankName2 && !errors.accountNumber2 && !errors.accountName2)
-  const bank2Partial = !bank2Empty && !bank2Complete
+  const slotStatuses = slots.slice(0, MAX_DONATION_BANKS).map((slot, index) => {
+    const name = slot.bankName.trim()
+    const number = slot.accountNumber.trim()
+    const recipient = slot.accountName.trim()
+    const empty = !name && !number && !recipient
+    const bankKey = getBankSlotFieldKey(index, 'bankName')
+    const numberKey = getBankSlotFieldKey(index, 'accountNumber')
+    const recipientKey = getBankSlotFieldKey(index, 'accountName')
+    const complete = Boolean(name && number && recipient && !errors[bankKey] && !errors[numberKey] && !errors[recipientKey])
+    return { index, name, number, recipient, empty, complete, partial: !empty && !complete }
+  })
 
-  const bankComplete = bank1Complete && (bank2Empty || bank2Complete)
-  const accounts = bankComplete
-    ? [
-        { name: bank1Name, number: bank1Number, recipient: bank1Recipient },
-        ...(bank2Complete ? [{ name: bank2Name, number: bank2Number, recipient: bank2Recipient }] : []),
-      ]
+  const slot1 = slotStatuses[0]
+  const partialExtraSlots = slotStatuses.slice(1).filter((slot) => slot.partial)
+  const bank2Partial = partialExtraSlots.some((slot) => slot.index === 1)
+  const hasAnyPartialSlot = !slot1?.complete || partialExtraSlots.length > 0
+  const overLimit = slots.length > MAX_DONATION_BANKS
+
+  const accounts = !hasAnyPartialSlot && !overLimit
+    ? slotStatuses.filter((slot) => slot.complete).map(({ name, number, recipient }) => ({ name, number, recipient }))
     : []
+  const bankComplete = accounts.length > 0
 
   const whatsappComplete = Boolean(String(values?.whatsappNumber ?? '').trim() && String(values?.messageTemplate ?? '').trim() && !errors.whatsappNumber && !errors.messageTemplate)
   const method = (complete, enabled, missing, readyReason, draftReason) => ({
@@ -186,20 +337,23 @@ export function getAdminDonationReadiness(values) {
         : (draftReason || 'Data lengkap. Aktifkan toggle untuk menampilkannya dalam pratinjau.'),
   })
   const qris = method(qrisComplete, values?.qrisEnabled, 'Gambar QRIS belum tersedia. Unggah gambar valid, lalu aktifkan visibilitas QRIS.')
-  const bankMissing = bank1Complete && bank2Partial
-    ? 'Rekening 2 baru diisi sebagian. Lengkapi ketiga kolom Rekening 2 atau kosongkan seluruhnya.'
-    : 'Lengkapi Nama Bank, Nomor Rekening yang valid, dan Atas Nama pada Rekening 1 sebelum mengaktifkan transfer bank.'
-  const bankReady = accounts.length === 2
-    ? '2 rekening siap ditampilkan dalam pratinjau simulasi.'
-    : '1 rekening siap ditampilkan dalam pratinjau simulasi.'
-  const bankDraft = accounts.length === 2
-    ? '2 rekening lengkap. Aktifkan toggle untuk menampilkannya dalam pratinjau.'
+  const bankMissing = overLimit
+    ? `Maksimal ${MAX_DONATION_BANKS} rekening donasi. Hapus salah satu rekening terlebih dahulu.`
+    : slot1?.complete && partialExtraSlots.length > 0
+      ? `Rekening ${partialExtraSlots[0].index + 1} baru diisi sebagian. Lengkapi ketiga kolomnya atau hapus/kosongkan slot tersebut.`
+      : 'Lengkapi Nama Bank, Nomor Rekening yang valid, dan Atas Nama pada Rekening 1 sebelum mengaktifkan transfer bank.'
+  const bankReady = `${accounts.length} rekening siap ditampilkan dalam pratinjau simulasi.`
+  const bankDraft = accounts.length > 1
+    ? `${accounts.length} rekening lengkap. Aktifkan toggle untuk menampilkannya dalam pratinjau.`
     : 'Data lengkap. Aktifkan toggle untuk menampilkannya dalam pratinjau.'
   const bank = {
     ...method(bankComplete, values?.bankEnabled, bankMissing, bankReady, bankDraft),
     accounts,
     accountCount: accounts.length,
+    maxAccounts: MAX_DONATION_BANKS,
     bank2Partial,
+    hasPartialSlot: partialExtraSlots.length > 0,
+    partialSlotNumbers: partialExtraSlots.map((slot) => slot.index + 1),
   }
   const whatsapp = method(whatsappComplete, values?.whatsappEnabled, 'Lengkapi nomor WhatsApp internasional yang valid dan template pesan konfirmasi.')
   return { qris, bank, whatsapp, paymentReadyCount: Number(qris.enabled) + Number(bank.enabled) }

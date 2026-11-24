@@ -106,6 +106,12 @@ test('GET /api/public/content mengembalikan konten publik tanpa agenda dan menja
     number: null,
     recipient: null,
   })
+  assert.deepEqual(content.contact.donation.bank2, {
+    verified: false,
+    name: null,
+    number: null,
+    recipient: null,
+  })
 })
 
 test('metode selain GET pada endpoint publik mengembalikan JSON 404', async () => {
@@ -177,7 +183,135 @@ test('createPublicContentRepository memakai 1 koneksi client secara berurutan ta
   assert.equal(connectCount, 1)
   assert.equal(releaseCount, 1)
   assert.equal(directPoolQueryCount, 0)
-  assert.equal(queriedSql.length, 6)
+  assert.equal(queriedSql.length, 7)
   assert.equal(content.heroDescription, 'Tagline Beranda')
   assert.equal(content.profile.introduction, 'Deskripsi Lengkap Profil')
+})
+
+test('GET /api/public/content menyertakan hingga 4 rekening terverifikasi, menyaring data tidak terverifikasi, dan fallback aman', async () => {
+  const serviceUnverified = createPublicContentService({
+    async findPublicContent() {
+      return {
+        name: 'Masjid Al-Hidayah',
+        contact: {
+          introduction: '',
+          information: [],
+          location: { verified: false, url: null },
+          donation: {
+            qris: { verified: false, imageSrc: null },
+            banks: [
+              { verified: true, name: 'BSI', number: '007123456789', recipient: 'Takmir' },
+              { verified: false, name: 'BPD', number: '999', recipient: 'Bocoran' },
+            ],
+            bank: { verified: true, name: 'BSI', number: '007123456789', recipient: 'Takmir' },
+            bank2: { verified: false, name: 'BPD', number: '999', recipient: 'Bocoran' },
+          },
+        },
+      }
+    },
+  })
+  const sanitized = await serviceUnverified.getPublicContent()
+  assert.equal(sanitized.contact.donation.banks.length, 1)
+  assert.deepEqual(sanitized.contact.donation.bank2, {
+    verified: false,
+    name: null,
+    number: null,
+    recipient: null,
+  })
+
+  const repoFourBanks = createPublicContentRepository({
+    async connect() {
+      return {
+        async query(sql) {
+          if (sql.includes('m_rekening_donasi')) {
+            return {
+              rows: [
+                {
+                  id: 1,
+                  nama_bank: 'Bank Syariah Indonesia',
+                  no_rekening: '007123456789',
+                  atas_nama: 'Takmir Masjid Al-Hidayah',
+                  urutan: 1,
+                },
+                {
+                  id: 2,
+                  nama_bank: 'Bank BPD DIY Syariah',
+                  no_rekening: '800112233445',
+                  atas_nama: 'Panitia Pembangunan Masjid Al-Hidayah',
+                  urutan: 2,
+                },
+                {
+                  id: 3,
+                  nama_bank: 'Bank Muamalat',
+                  no_rekening: '511000223344',
+                  atas_nama: 'Lazis Masjid Al-Hidayah',
+                  urutan: 3,
+                },
+                {
+                  id: 4,
+                  nama_bank: 'BRI',
+                  no_rekening: '002901001234',
+                  atas_nama: 'Operasional Masjid Al-Hidayah',
+                  urutan: 4,
+                },
+              ],
+            }
+          }
+          return { rows: [] }
+        },
+        release() {},
+      }
+    },
+  })
+  const repoContent = await createPublicContentService(repoFourBanks).getPublicContent()
+  assert.equal(repoContent.contact.donation.banks.length, 4)
+  assert.deepEqual(repoContent.contact.donation.bank, {
+    verified: true,
+    name: 'Bank Syariah Indonesia',
+    number: '007123456789',
+    recipient: 'Takmir Masjid Al-Hidayah',
+  })
+  assert.deepEqual(repoContent.contact.donation.bank2, {
+    verified: true,
+    name: 'Bank BPD DIY Syariah',
+    number: '800112233445',
+    recipient: 'Panitia Pembangunan Masjid Al-Hidayah',
+  })
+
+  // Fallback ke kolom legacy m_pengaturan_website bila tabel rekening terpisah belum ada (42P01)
+  const repoFallbackLegacy = createPublicContentRepository({
+    async connect() {
+      return {
+        async query(sql) {
+          if (/FROM keu_masjid\.(m_rekening_donasi|rekening_donasi|m_rek|m_rekening)/.test(sql)) {
+            const error = new Error('relation does not exist')
+            error.code = '42P01'
+            throw error
+          }
+          if (sql.includes('m_pengaturan_website')) {
+            return {
+              rows: [
+                {
+                  bank_nama: 'Bank Syariah Indonesia',
+                  bank_no_rekening: '007123456789',
+                  bank_atas_nama: 'Takmir Masjid Al-Hidayah',
+                },
+              ],
+            }
+          }
+          return { rows: [] }
+        },
+        release() {},
+      }
+    },
+  })
+  const fallbackContent = await createPublicContentService(repoFallbackLegacy).getPublicContent()
+  assert.equal(fallbackContent.contact.donation.bank.verified, true)
+  assert.equal(fallbackContent.contact.donation.banks.length, 1)
+  assert.deepEqual(fallbackContent.contact.donation.bank2, {
+    verified: false,
+    name: null,
+    number: null,
+    recipient: null,
+  })
 })

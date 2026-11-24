@@ -15,7 +15,7 @@ function getVerifiedBankAccounts(donation) {
   const candidates = Array.isArray(donation.banks) && donation.banks.length
     ? donation.banks
     : [donation.bank, donation.bank2]
-  return candidates.filter(isVerifiedBankAccount).slice(0, 2)
+  return candidates.filter(isVerifiedBankAccount).slice(0, 4)
 }
 
 function BankAccountDetails({ account, confirmed, keyPrefix }) {
@@ -62,6 +62,14 @@ export default function DonationSection({ donation }) {
               <BankAccountDetails account={verifiedBanks[0]} confirmed keyPrefix="bank-1" />
               <span className="contact-bank-divider" aria-hidden="true" />
               <BankAccountDetails account={verifiedBanks[1]} confirmed keyPrefix="bank-2" />
+            </div>
+          ) : verifiedBanks.length > 2 ? (
+            <div className="contact-bank-grid">
+              {verifiedBanks.map((account, index) => (
+                <div className="contact-bank-item" key={`bank-item-${index + 1}`}>
+                  <BankAccountDetails account={account} confirmed keyPrefix={`bank-${index + 1}`} />
+                </div>
+              ))}
             </div>
           ) : (
             <BankAccountDetails

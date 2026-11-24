@@ -1,4 +1,5 @@
 import { defaultAdminSettingsRepository } from '../repositories/adminSettingsRepository.js'
+import { MAX_DONATION_BANKS } from '../repositories/donationBankRepository.js'
 import { createHttpError } from '../utils/httpError.js'
 import { hasControlChars } from '../utils/textValidation.js'
 
@@ -131,20 +132,135 @@ function isValidGoogleMapsUrl(rawUrl) {
   }
 }
 
+function getLegacyBankAccountsFromValues(values) {
+  const slots = [
+    {
+      bankName: String(values?.bankName ?? '').trim(),
+      accountNumber: String(values?.accountNumber ?? '').trim(),
+      accountName: String(values?.accountName ?? '').trim(),
+    },
+    {
+      bankName: String(values?.bankName2 ?? '').trim(),
+      accountNumber: String(values?.accountNumber2 ?? '').trim(),
+      accountName: String(values?.accountName2 ?? '').trim(),
+    },
+  ]
+  return slots.filter((item) => item.bankName && item.accountNumber && item.accountName)
+}
+
+function getEffectiveBankAccounts(values) {
+  if (Array.isArray(values?.bankAccounts)) {
+    return values.bankAccounts
+      .map((item) => ({
+        id: item?.id ? String(item.id) : null,
+        bankName: String(item?.bankName ?? '').trim(),
+        accountNumber: String(item?.accountNumber ?? '').trim(),
+        accountName: String(item?.accountName ?? '').trim(),
+      }))
+      .filter((item) => item.bankName && item.accountNumber && item.accountName)
+      .slice(0, MAX_DONATION_BANKS)
+  }
+  return getLegacyBankAccountsFromValues(values).slice(0, MAX_DONATION_BANKS)
+}
+
+function syncLegacyBankFields(values, bankAccounts) {
+  const first = bankAccounts[0] ?? { bankName: '', accountNumber: '', accountName: '' }
+  const second = bankAccounts[1] ?? { bankName: '', accountNumber: '', accountName: '' }
+  return {
+    ...values,
+    bankAccounts,
+    bankName: first.bankName,
+    accountNumber: first.accountNumber,
+    accountName: first.accountName,
+    bankName2: second.bankName,
+    accountNumber2: second.accountNumber,
+    accountName2: second.accountName,
+  }
+}
+
+function validateBankAccountEntry(entry, index) {
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+    throw createHttpError(400, 'BAD_REQUEST', `Data rekening ${index + 1} tidak valid.`)
+  }
+  const slotLabel = `rekening ${index + 1}`
+  if (entry.bankName !== undefined && typeof entry.bankName !== 'string') {
+    throw createHttpError(400, 'BAD_REQUEST', `Nama bank ${slotLabel} tidak valid.`)
+  }
+  if (entry.accountName !== undefined && typeof entry.accountName !== 'string') {
+    throw createHttpError(400, 'BAD_REQUEST', `Atas nama ${slotLabel} tidak valid.`)
+  }
+
+  const rawBankName = String(entry.bankName ?? '')
+  if (rawBankName.length > 100 || hasControlChars(rawBankName, false)) {
+    throw createHttpError(
+      400,
+      'BAD_REQUEST',
+      `Nama bank ${slotLabel} tidak valid atau melebihi 100 karakter.`
+    )
+  }
+  const rawAccountName = String(entry.accountName ?? '')
+  if (rawAccountName.length > 160 || hasControlChars(rawAccountName, false)) {
+    throw createHttpError(
+      400,
+      'BAD_REQUEST',
+      `Atas nama ${slotLabel} tidak valid atau melebihi 160 karakter.`
+    )
+  }
+
+  const bankName = rawBankName.trim()
+  const accountNumber =
+    entry.accountNumber !== undefined
+      ? validateAccountNumberField(entry.accountNumber, `Nomor ${slotLabel}`)
+      : ''
+  const accountName = rawAccountName.trim()
+
+  const filledCount = [bankName, accountNumber, accountName].filter(Boolean).length
+  if (filledCount === 0) return null
+  if (filledCount < 3) {
+    throw createHttpError(
+      400,
+      'BAD_REQUEST',
+      `Lengkapi Nama Bank, Nomor Rekening, dan Atas Nama pada Rekening ${index + 1}.`
+    )
+  }
+
+  return {
+    id: entry.id ? String(entry.id) : null,
+    bankName,
+    accountNumber,
+    accountName,
+  }
+}
+
 function computeDonationReadiness(values) {
   const qrisComplete = Boolean(values.qrisFile)
-  const bankComplete = Boolean(
-    values.bankName.trim() && values.accountNumber.trim() && values.accountName.trim()
-  )
-  const whatsappComplete = Boolean(values.whatsappNumber.trim() && values.messageTemplate.trim())
+  const effectiveAccounts = getEffectiveBankAccounts(values)
+  const bank2Name = String(values.bankName2 ?? '').trim()
+  const bank2Number = String(values.accountNumber2 ?? '').trim()
+  const bank2Recipient = String(values.accountName2 ?? '').trim()
+  const bank2Empty = !bank2Name && !bank2Number && !bank2Recipient
+  const bank2Complete = Boolean(bank2Name && bank2Number && bank2Recipient)
 
-  const buildMethodStatus = (complete, enabled, missingReason) => ({
+  const bankComplete =
+    effectiveAccounts.length > 0 &&
+    (Array.isArray(values?.bankAccounts) || bank2Empty || bank2Complete)
+
+  const accounts = bankComplete
+    ? effectiveAccounts.map((acc) => ({
+        name: acc.bankName,
+        number: acc.accountNumber,
+        recipient: acc.accountName,
+      }))
+    : []
+  const whatsappComplete = Boolean(String(values.whatsappNumber ?? '').trim() && String(values.messageTemplate ?? '').trim())
+
+  const buildMethodStatus = (complete, enabled, missingReason, readyReason = 'Siap ditampilkan dalam pratinjau simulasi.') => ({
     complete,
     enabled: complete && enabled === true,
     reason: !complete
       ? missingReason
       : enabled
-        ? 'Siap ditampilkan dalam pratinjau simulasi.'
+        ? readyReason
         : 'Data lengkap. Aktifkan toggle untuk menampilkannya dalam pratinjau.',
   })
 
@@ -153,11 +269,17 @@ function computeDonationReadiness(values) {
     values.qrisEnabled,
     'Gambar QRIS belum tersedia. Unggah gambar valid, lalu aktifkan visibilitas QRIS.'
   )
-  const bank = buildMethodStatus(
-    bankComplete,
-    values.bankEnabled,
-    'Lengkapi Nama Bank, Nomor Rekening yang valid, dan Atas Nama sebelum mengaktifkan transfer bank.'
-  )
+  const bank = {
+    ...buildMethodStatus(
+      bankComplete,
+      values.bankEnabled,
+      'Lengkapi Nama Bank, Nomor Rekening yang valid, dan Atas Nama sebelum mengaktifkan transfer bank.',
+      `${accounts.length} rekening siap ditampilkan dalam pratinjau simulasi.`
+    ),
+    accounts,
+    accountCount: accounts.length,
+    maxAccounts: MAX_DONATION_BANKS,
+  }
   const whatsapp = buildMethodStatus(
     whatsappComplete,
     values.whatsappEnabled,
@@ -170,6 +292,21 @@ function computeDonationReadiness(values) {
     whatsapp,
     paymentReadyCount: Number(qris.enabled) + Number(bank.enabled),
   }
+}
+
+function validateAccountNumberField(rawValue, label = 'Nomor rekening') {
+  if (typeof rawValue !== 'string') {
+    throw createHttpError(400, 'BAD_REQUEST', `${label} harus berupa string.`)
+  }
+  const trimmed = rawValue.trim()
+  if (trimmed && !/^\d{1,40}$/.test(trimmed)) {
+    throw createHttpError(
+      400,
+      'BAD_REQUEST',
+      `${label} harus berisi 1–40 digit, tanpa spasi atau tanda baca.`
+    )
+  }
+  return trimmed
 }
 
 // Business logic layer untuk profil masjid, agenda, donasi, dan pengaturan website pengurus.
@@ -310,16 +447,12 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
       }
 
       const current = await repository.getDonationSettings()
-      const textFields = [
-        ['bankName', 'Nama bank', 100, false],
-        ['accountName', 'Atas nama', 160, false],
+      let nextValues = { ...current }
+
+      for (const [key, label, limit, allowMultiline] of [
         ['messageTemplate', 'Template pesan', 2000, true],
         ['donationNote', 'Catatan donasi', 1000, true],
-      ]
-
-      const nextValues = { ...current }
-
-      for (const [key, label, limit, allowMultiline] of textFields) {
+      ]) {
         if (payload[key] !== undefined) {
           if (typeof payload[key] !== 'string') {
             throw createHttpError(400, 'BAD_REQUEST', `${label} tidak valid.`)
@@ -335,19 +468,96 @@ export function createAdminSettingsService(repository = defaultAdminSettingsRepo
         }
       }
 
-      if (payload.accountNumber !== undefined) {
-        if (typeof payload.accountNumber !== 'string') {
-          throw createHttpError(400, 'BAD_REQUEST', 'Nomor rekening harus berupa string.')
+      if (payload.bankAccounts !== undefined) {
+        if (!Array.isArray(payload.bankAccounts)) {
+          throw createHttpError(400, 'BAD_REQUEST', 'Daftar rekening donasi harus berupa array.')
         }
-        const trimmedAccount = payload.accountNumber.trim()
-        if (trimmedAccount && !/^\d{1,40}$/.test(trimmedAccount)) {
+        if (payload.bankAccounts.length > MAX_DONATION_BANKS) {
           throw createHttpError(
             400,
             'BAD_REQUEST',
-            'Nomor rekening harus berisi 1–40 digit, tanpa spasi atau tanda baca.'
+            `Maksimal ${MAX_DONATION_BANKS} rekening donasi. Hapus salah satu rekening terlebih dahulu.`
           )
         }
-        nextValues.accountNumber = trimmedAccount
+        const validatedAccounts = []
+        for (let index = 0; index < payload.bankAccounts.length; index += 1) {
+          const item = validateBankAccountEntry(payload.bankAccounts[index], index)
+          if (item) {
+            validatedAccounts.push(item)
+          }
+        }
+        nextValues = syncLegacyBankFields(nextValues, validatedAccounts)
+      } else {
+        const legacyTextFields = [
+          ['bankName', 'Nama bank', 100, false],
+          ['accountName', 'Atas nama', 160, false],
+          ['bankName2', 'Nama bank rekening 2', 100, false],
+          ['accountName2', 'Atas nama rekening 2', 160, false],
+        ]
+
+        for (const [key, label, limit, allowMultiline] of legacyTextFields) {
+          if (payload[key] !== undefined) {
+            if (typeof payload[key] !== 'string') {
+              throw createHttpError(400, 'BAD_REQUEST', `${label} tidak valid.`)
+            }
+            if (payload[key].length > limit || hasControlChars(payload[key], allowMultiline)) {
+              throw createHttpError(
+                400,
+                'BAD_REQUEST',
+                `${label} tidak valid atau melebihi ${limit} karakter.`
+              )
+            }
+            nextValues[key] = payload[key]
+          }
+        }
+
+        if (payload.accountNumber !== undefined) {
+          nextValues.accountNumber = validateAccountNumberField(payload.accountNumber, 'Nomor rekening')
+        }
+        if (payload.accountNumber2 !== undefined) {
+          nextValues.accountNumber2 = validateAccountNumberField(payload.accountNumber2, 'Nomor rekening 2')
+        }
+
+        const bank1Name = String(nextValues.bankName ?? '').trim()
+        const bank1Number = String(nextValues.accountNumber ?? '').trim()
+        const bank1Recipient = String(nextValues.accountName ?? '').trim()
+        const bank1Complete = Boolean(bank1Name && bank1Number && bank1Recipient)
+
+        const bank2Name = String(nextValues.bankName2 ?? '').trim()
+        const bank2Number = String(nextValues.accountNumber2 ?? '').trim()
+        const bank2Recipient = String(nextValues.accountName2 ?? '').trim()
+        const bank2FilledCount = [bank2Name, bank2Number, bank2Recipient].filter(Boolean).length
+        if (bank2FilledCount > 0 && bank2FilledCount < 3) {
+          throw createHttpError(
+            400,
+            'BAD_REQUEST',
+            'Jika Rekening 2 digunakan, Nama Bank, Nomor Rekening, dan Atas Nama Rekening 2 wajib dilengkapi seluruhnya.'
+          )
+        }
+        nextValues.bankName2 = bank2Name
+        nextValues.accountNumber2 = bank2Number
+        nextValues.accountName2 = bank2Recipient
+
+        const currentTail = Array.isArray(current.bankAccounts) ? current.bankAccounts.slice(2) : []
+        nextValues.bankAccounts = bank1Complete
+          ? [
+              {
+                id: current.bankAccounts?.[0]?.id ?? null,
+                bankName: bank1Name,
+                accountNumber: bank1Number,
+                accountName: bank1Recipient,
+              },
+              ...(bank2FilledCount === 3
+                ? [{
+                    id: current.bankAccounts?.[1]?.id ?? null,
+                    bankName: bank2Name,
+                    accountNumber: bank2Number,
+                    accountName: bank2Recipient,
+                  }]
+                : []),
+              ...currentTail,
+            ].slice(0, MAX_DONATION_BANKS)
+          : []
       }
 
       if (payload.whatsappNumber !== undefined) {

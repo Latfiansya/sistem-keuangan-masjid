@@ -115,6 +115,53 @@ test('dukungan dua rekening: 1 rekening lengkap, 2 rekening lengkap, dan validas
   ])
 })
 
+test('dukungan hingga 4 rekening donasi, penolakan ke-5 saat penuh, dan hapus slot agar bisa diisi ulang', async () => {
+  const initial = await service.getAdminDonationSettings()
+  const fourAccounts = [
+    { id: '1', bankName: 'BSI', accountNumber: '7123456789', accountName: 'Takmir Masjid' },
+    { id: '2', bankName: 'BPD DIY Syariah', accountNumber: '8001122334', accountName: 'Panitia Pembangunan' },
+    { id: '3', bankName: 'Bank Muamalat', accountNumber: '511000223344', accountName: 'Lazis Masjid' },
+    { id: '4', bankName: 'BRI', accountNumber: '002901001234', accountName: 'Operasional Masjid' },
+  ]
+  const stateFour = service.withUpdatedDonationBankSlots(
+    { ...initial, bankEnabled: true },
+    fourAccounts
+  )
+  assert.deepEqual(service.validateAdminDonationSettings(stateFour), {})
+  const readinessFour = service.getAdminDonationReadiness(stateFour)
+  assert.equal(readinessFour.bank.complete, true)
+  assert.equal(readinessFour.bank.enabled, true)
+  assert.equal(readinessFour.bank.accountCount, 4)
+  assert.equal(readinessFour.bank.maxAccounts, 4)
+
+  // Saat 5 rekening dikirim (melebihi batas 4), validasi menolak
+  const stateFive = {
+    ...stateFour,
+    bankAccounts: [
+      ...fourAccounts,
+      { id: null, bankName: 'BCA Syariah', accountNumber: '099887766554', accountName: 'Dana Sosial' },
+    ],
+  }
+  const overErrors = service.validateAdminDonationSettings(stateFive)
+  assert.ok(overErrors.bankAccountsLimit)
+  assert.equal(service.getAdminDonationReadiness(stateFive).bank.complete, false)
+
+  // Hapus Rekening 2 agar tersisa 3, lalu tambahkan rekening baru ke slot ke-4
+  const afterRemove = service.withUpdatedDonationBankSlots(
+    stateFour,
+    fourAccounts.filter((_, index) => index !== 1)
+  )
+  assert.equal(service.getAdminDonationReadiness(afterRemove).bank.accountCount, 3)
+  assert.equal(afterRemove.bankName2, 'Bank Muamalat')
+
+  const afterReplaceFourth = service.withUpdatedDonationBankSlots(afterRemove, [
+    ...service.getDonationBankSlots(afterRemove),
+    { id: null, bankName: 'BCA Syariah', accountNumber: '099887766554', accountName: 'Dana Sosial' },
+  ])
+  assert.deepEqual(service.validateAdminDonationSettings(afterReplaceFourth), {})
+  assert.equal(service.getAdminDonationReadiness(afterReplaceFourth).bank.accountCount, 4)
+})
+
 test('mode API memanggil /api/admin/donation-settings tanpa fallback mock; route Donasi memakai AdminLayout', async () => {
   for (const route of ['/admin/donasi', '/admin/donasi/']) {
     const html = renderToStaticMarkup(h(MemoryRouter, { initialEntries: [route] }, h(App)))

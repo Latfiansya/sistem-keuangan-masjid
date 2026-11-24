@@ -129,9 +129,187 @@ describe('Endpoint konten, profil, agenda, donasi, dan pengaturan website pengur
     assert.equal(validRes.status, 200)
     const validData = (await validRes.json()).data
     assert.equal(validData.accountNumber, '007123456789')
+    assert.equal(validData.bankName2, '')
+    assert.equal(validData.accountNumber2, '')
+    assert.equal(validData.accountName2, '')
     assert.equal(validData.bankEnabled, true)
     assert.equal(validData.whatsappEnabled, true)
     assert.equal(validData.readiness.paymentReadyCount, 1)
+    assert.equal(validData.readiness.bank.accountCount, 1)
+
+    // Tolak Rekening 2 yang diisi sebagian (1 atau 2 dari 3 field) atau format tidak valid
+    const partialBank2Res = await fetch(`${baseUrl}/donation-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bankName2: 'Bank BPD DIY Syariah',
+        accountNumber2: '',
+        accountName2: '',
+      }),
+    })
+    assert.equal(partialBank2Res.status, 400)
+
+    const partialBank2TwoFieldsRes = await fetch(`${baseUrl}/donation-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bankName2: 'Bank BPD DIY Syariah',
+        accountNumber2: '800112233445',
+        accountName2: '',
+      }),
+    })
+    assert.equal(partialBank2TwoFieldsRes.status, 400)
+
+    const badAcc2Res = await fetch(`${baseUrl}/donation-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bankName2: 'Bank BPD DIY Syariah',
+        accountNumber2: '8001-1223',
+        accountName2: 'Panitia Pembangunan',
+      }),
+    })
+    assert.equal(badAcc2Res.status, 400)
+
+    const badName2Res = await fetch(`${baseUrl}/donation-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bankName2: 'x'.repeat(101),
+        accountNumber2: '800112233445',
+        accountName2: 'Panitia Pembangunan',
+      }),
+    })
+    assert.equal(badName2Res.status, 400)
+
+    const ctrlRecipient2Res = await fetch(`${baseUrl}/donation-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bankName2: 'Bank BPD DIY Syariah',
+        accountNumber2: '800112233445',
+        accountName2: 'Panitia\nPembangunan',
+      }),
+    })
+    assert.equal(ctrlRecipient2Res.status, 400)
+
+    // Simpan 2 rekening lengkap (termasuk leading zero pada Rekening 2)
+    const twoBanksRes = await fetch(`${baseUrl}/donation-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bankName: 'Bank Syariah Indonesia',
+        accountNumber: '007123456789',
+        accountName: 'Takmir Masjid Al-Hidayah',
+        bankName2: 'Bank BPD DIY Syariah',
+        accountNumber2: '008112233445',
+        accountName2: 'Panitia Pembangunan Masjid Al-Hidayah',
+        bankEnabled: true,
+      }),
+    })
+    assert.equal(twoBanksRes.status, 200)
+    const twoBanksData = (await twoBanksRes.json()).data
+    assert.equal(twoBanksData.bankName2, 'Bank BPD DIY Syariah')
+    assert.equal(twoBanksData.accountNumber2, '008112233445')
+    assert.equal(twoBanksData.accountName2, 'Panitia Pembangunan Masjid Al-Hidayah')
+    assert.equal(twoBanksData.bankEnabled, true)
+    assert.equal(twoBanksData.readiness.bank.accountCount, 2)
+    assert.match(twoBanksData.readiness.bank.reason, /2 rekening/)
+
+    // Kosongkan kembali Rekening 2 sementara Rekening 1 tetap terjaga
+    const clearBank2Res = await fetch(`${baseUrl}/donation-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bankName2: '',
+        accountNumber2: '',
+        accountName2: '',
+      }),
+    })
+    assert.equal(clearBank2Res.status, 200)
+    const clearedData = (await clearBank2Res.json()).data
+    assert.equal(clearedData.bankName, 'Bank Syariah Indonesia')
+    assert.equal(clearedData.accountNumber, '007123456789')
+    assert.equal(clearedData.bankName2, '')
+    assert.equal(clearedData.accountNumber2, '')
+    assert.equal(clearedData.accountName2, '')
+    assert.equal(clearedData.readiness.bank.accountCount, 1)
+    assert.equal(clearedData.readiness.bank.maxAccounts, 4)
+
+    // Tolak slot rekening tidak lengkap di dalam array bankAccounts
+    const partialArrayRes = await fetch(`${baseUrl}/donation-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bankAccounts: [
+          { bankName: 'Bank Syariah Indonesia', accountNumber: '007123456789', accountName: 'Takmir' },
+          { bankName: 'Mandiri', accountNumber: '137000111222', accountName: '' },
+        ],
+      }),
+    })
+    assert.equal(partialArrayRes.status, 400)
+
+    // Simpan hingga maksimal 4 rekening melalui bankAccounts
+    const fourAccounts = [
+      { bankName: 'BSI', accountNumber: '007123456789', accountName: 'Takmir Masjid Al-Hidayah' },
+      { bankName: 'BPD DIY Syariah', accountNumber: '008112233445', accountName: 'Panitia Pembangunan' },
+      { bankName: 'Bank Muamalat', accountNumber: '511000223344', accountName: 'Lazis Al-Hidayah' },
+      { bankName: 'BRI', accountNumber: '002901001234', accountName: 'Operasional Masjid' },
+    ]
+    const fourBanksRes = await fetch(`${baseUrl}/donation-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bankAccounts: fourAccounts,
+        bankEnabled: true,
+      }),
+    })
+    assert.equal(fourBanksRes.status, 200)
+    const fourBanksData = (await fourBanksRes.json()).data
+    assert.equal(fourBanksData.bankAccounts.length, 4)
+    assert.equal(fourBanksData.readiness.bank.accountCount, 4)
+    assert.equal(fourBanksData.readiness.bank.maxAccounts, 4)
+    assert.match(fourBanksData.readiness.bank.reason, /4 rekening/)
+
+    // Tolak penambahan rekening ke-5 saat 4 rekening sudah penuh
+    const fiveBanksRes = await fetch(`${baseUrl}/donation-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bankAccounts: [
+          ...fourAccounts,
+          { bankName: 'BCA Syariah', accountNumber: '099887766554', accountName: 'Dana Sosial' },
+        ],
+      }),
+    })
+    assert.equal(fiveBanksRes.status, 400)
+
+    // Hapus salah satu rekening (sisa 3), lalu isi rekening ke-4 pengganti
+    const threeBanksRes = await fetch(`${baseUrl}/donation-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bankAccounts: [fourAccounts[0], fourAccounts[2], fourAccounts[3]],
+      }),
+    })
+    assert.equal(threeBanksRes.status, 200)
+    const threeBanksData = (await threeBanksRes.json()).data
+    assert.equal(threeBanksData.bankAccounts.length, 3)
+
+    const replacedFourthRes = await fetch(`${baseUrl}/donation-settings`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        bankAccounts: [
+          ...threeBanksData.bankAccounts,
+          { bankName: 'BCA Syariah', accountNumber: '099887766554', accountName: 'Dana Sosial' },
+        ],
+      }),
+    })
+    assert.equal(replacedFourthRes.status, 200)
+    const replacedData = (await replacedFourthRes.json()).data
+    assert.equal(replacedData.bankAccounts.length, 4)
+    assert.equal(replacedData.bankAccounts[3].bankName, 'BCA Syariah')
   })
 
   it('GET & PUT /api/admin/website-settings memvalidasi WhatsApp, email, dan tautan HTTPS Google Maps', async () => {

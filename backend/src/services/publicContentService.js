@@ -1,5 +1,15 @@
 import { defaultPublicContentRepository } from '../repositories/publicContentRepository.js'
 
+function sanitizeBankAccount(account) {
+  const verified = account?.verified === true
+  return {
+    verified,
+    name: verified ? account?.name ?? null : null,
+    number: verified ? account?.number ?? null : null,
+    recipient: verified ? account?.recipient ?? null : null,
+  }
+}
+
 // Memastikan data kontak dan donasi yang belum terverifikasi tidak mengirim nilai aktif.
 function sanitizePublicContact(contact) {
   if (!contact) return null
@@ -22,7 +32,15 @@ function sanitizePublicContact(contact) {
 
   const locationVerified = contact.location?.verified === true
   const qrisVerified = contact.donation?.qris?.verified === true
-  const bankVerified = contact.donation?.bank?.verified === true
+
+  const sanitizedBanks = Array.isArray(contact.donation?.banks)
+    ? contact.donation.banks.map(sanitizeBankAccount).filter((item) => item.verified).slice(0, 4)
+    : []
+  const bank = sanitizedBanks[0] ?? sanitizeBankAccount(contact.donation?.bank)
+  const bank2 = sanitizedBanks[1] ?? sanitizeBankAccount(contact.donation?.bank2)
+  const banks = sanitizedBanks.length
+    ? sanitizedBanks
+    : [bank, bank2].filter((item) => item.verified)
 
   return {
     introduction: contact.introduction,
@@ -36,12 +54,9 @@ function sanitizePublicContact(contact) {
         verified: qrisVerified,
         imageSrc: qrisVerified ? contact.donation?.qris?.imageSrc ?? null : null,
       },
-      bank: {
-        verified: bankVerified,
-        name: bankVerified ? contact.donation?.bank?.name ?? null : null,
-        number: bankVerified ? contact.donation?.bank?.number ?? null : null,
-        recipient: bankVerified ? contact.donation?.bank?.recipient ?? null : null,
-      },
+      banks,
+      bank,
+      bank2,
     },
   }
 }

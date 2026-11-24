@@ -52,7 +52,9 @@ export function createTestRepositories() {
       location: { verified: false, url: null },
       donation: {
         qris: { verified: false, imageSrc: null },
+        banks: [],
         bank: { verified: false, name: null, number: null, recipient: null },
+        bank2: { verified: false, name: null, number: null, recipient: null },
       },
     },
   }
@@ -186,9 +188,13 @@ export function createTestRepositories() {
   let donationSettings = {
     qrisFile: null,
     qrisEnabled: false,
+    bankAccounts: [],
     bankName: '',
     accountNumber: '',
     accountName: '',
+    bankName2: '',
+    accountNumber2: '',
+    accountName2: '',
     bankEnabled: false,
     whatsappNumber: '',
     whatsappEnabled: false,
