@@ -4,6 +4,17 @@ import { apiRequest } from '../utils/apiClient.js'
 import { dataSource } from '../utils/env.js'
 import { calculateReport, DEFAULT_REPORT_RANGE, validateReportRange } from '../utils/reportCalculations.js'
 
+export const PUBLIC_REPORT_DISABLED_MESSAGE = 'Laporan keuangan publik sedang tidak ditampilkan oleh pengurus masjid.'
+
+export function isPublicReportEnabled(content) {
+  return content?.publicReportEnabled !== false
+}
+
+export function isPublicReportDisabledError(error) {
+  if (!error || typeof error !== 'object') return false
+  return error.status === 403 || error.status === 404 || error.code === 'PUBLIC_REPORT_DISABLED' || error.code === 'FORBIDDEN'
+}
+
 export async function checkReportPassword(password, { signal } = {}) {
   signal?.throwIfAborted()
   if (typeof password !== 'string' || !password.trim()) throw new Error('Sandi wajib diisi.')

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router'
 import { getPublicContent } from '../services/publicContentService.js'
+import { isPublicReportEnabled } from '../services/reportService.js'
 import { resolveUploadedImage } from '../utils/uploadedImage.js'
 import Navbar from './Navbar.jsx'
 import Footer from './Footer.jsx'
@@ -13,8 +14,11 @@ export default function PublicLayout() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
 
+  const showPublicReport = isPublicReportEnabled(content)
+
   function openReportAccess(event) {
     event.preventDefault()
+    if (!showPublicReport) return
     setAccessTrigger(event.currentTarget)
   }
 
@@ -43,7 +47,7 @@ export default function PublicLayout() {
         <Outlet context={{ content, error, openReportAccess }} />
       </main>
       <Footer content={content} onReportAccess={openReportAccess} />
-      {accessTrigger && <ReportAccessModal returnFocusTo={accessTrigger} onClose={() => setAccessTrigger(null)} onAccessGranted={() => { setAccessTrigger(null); navigate('/laporan-keuangan') }} />}
+      {accessTrigger && showPublicReport && <ReportAccessModal returnFocusTo={accessTrigger} onClose={() => setAccessTrigger(null)} onAccessGranted={() => { setAccessTrigger(null); navigate('/laporan-keuangan') }} />}
     </div>
   )
 }

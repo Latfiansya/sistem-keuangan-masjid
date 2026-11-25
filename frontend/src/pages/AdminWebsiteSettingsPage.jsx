@@ -67,7 +67,7 @@ export default function AdminWebsiteSettingsPage() {
         <button className="admin-settings-save" type="submit" form="admin-settings-form" disabled={!values || Boolean(error) || saving}><Check size={16} aria-hidden="true" />{saving ? 'Menyimpan…' : 'Simpan Perubahan'}</button>
       </header>
       {error ? <p className="admin-dashboard-state" role="alert">{error}</p> : !values ? <p className="admin-dashboard-state" role="status">Memuat kontak dan pengaturan website…</p> : (
-        <form id="admin-settings-form" className="admin-panel admin-settings-form" noValidate onSubmit={handleSubmit} aria-label="Formulir kontak dan pengaturan website" aria-describedby="admin-settings-note" aria-busy={saving}>
+        <form id="admin-settings-form" className="admin-panel admin-settings-form" noValidate onSubmit={handleSubmit} aria-label="Formulir kontak dan pengaturan website" aria-describedby={dataSource === 'mock' ? 'admin-settings-note' : undefined} aria-busy={saving}>
           <h3><Phone size={18} aria-hidden="true" />Informasi Kontak</h3>
           <div className="admin-settings-field">
             <label htmlFor="admin-settings-whatsapp">Nomor WhatsApp Pengurus</label>
@@ -109,9 +109,9 @@ export default function AdminWebsiteSettingsPage() {
           </div>
           <label className="admin-settings-report" htmlFor="admin-settings-publicReportEnabled">
             <span><strong>Laporan Keuangan Publik</strong><span id="admin-settings-report-description" className="admin-settings-report-description">Tampilkan akses laporan di website</span></span>
-            <span className="admin-settings-switch"><input id="admin-settings-publicReportEnabled" name="publicReportEnabled" type="checkbox" role="switch" checked={values.publicReportEnabled} disabled={saving} onChange={handleChange} aria-describedby="admin-settings-report-description admin-settings-note" /><span className="admin-settings-switch-track" aria-hidden="true" /></span>
+            <span className="admin-settings-switch"><input id="admin-settings-publicReportEnabled" name="publicReportEnabled" type="checkbox" role="switch" checked={values.publicReportEnabled} disabled={saving} onChange={handleChange} aria-describedby={dataSource === 'mock' ? 'admin-settings-report-description admin-settings-note' : 'admin-settings-report-description'} /><span className="admin-settings-switch-track" aria-hidden="true" /></span>
           </label>
-          <p id="admin-settings-note" className="admin-settings-note">{dataSource === 'mock' ? 'Mode simulasi. Perubahan hilang saat keluar atau memuat ulang halaman. Kontak dan akses laporan publik tidak berubah; toggle ini bukan pengaman laporan.' : 'Terhubung ke database · Perubahan kontak dan visibilitas laporan publik akan langsung disimpan ke PostgreSQL.'}</p>
+          {dataSource === 'mock' && <p id="admin-settings-note" className="admin-settings-note">Mode simulasi. Perubahan hilang saat keluar atau memuat ulang halaman. Kontak dan akses laporan publik tidak berubah; toggle ini bukan pengaman laporan.</p>}
           {submitError && <p className="admin-settings-error" role="alert">{submitError}</p>}
           {saved && <p className="admin-settings-feedback" ref={feedback} role="status">{dataSource === 'mock' ? 'Simulasi berhasil. Pengaturan tersimpan sementara di halaman ini, belum tersimpan permanen ke server. Kontak dan akses laporan publik tidak berubah.' : 'Pengaturan kontak dan website berhasil disimpan ke database.'}</p>}
         </form>

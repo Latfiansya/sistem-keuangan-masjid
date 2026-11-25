@@ -51,10 +51,10 @@ test('modul kategori/akun/kode/profil/agenda/kontak/donasi memilih halaman yang 
 })
 
 test('lonceng dapat diakses dan avatar hanya visual, tanpa dropdown profil atau sesi baru', () => {
-  const html = renderToStaticMarkup(h(MemoryRouter, null, h(Header, { account: { name: 'Pengurus Contoh', initials: 'PC' }, dashboard: null })))
+  const html = renderToStaticMarkup(h(MemoryRouter, null, h(Header, { account: { name: 'Pengurus Masjid', initials: 'PM' }, dashboard: null })))
   assert.equal((html.match(/aria-expanded="false"/g) || []).length, 1)
-  assert.match(html, /class="admin-header-avatar" aria-label="Inisial akun contoh"/)
+  assert.match(html, /class="admin-header-avatar" aria-label="Profil akun pengurus"/)
   assert.equal((html.match(/<button\b/g) || []).length, 1)
-  assert.match(html, /Buka notifikasi aktivitas contoh/)
-  assert.doesNotMatch(html, /aria-current|admin-header-account|admin-header-return|admin-header-dropdown|type="password"|token/)
+  assert.match(html, /Buka notifikasi aktivitas terbaru/)
+  assert.doesNotMatch(html, /contoh|simulasi|mock|aria-current|admin-header-account|admin-header-return|admin-header-dropdown|type="password"|token/i)
 })

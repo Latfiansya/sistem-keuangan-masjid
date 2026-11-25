@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router'
 import Button from '../components/Button.jsx'
 import VisionMission from '../components/VisionMission.jsx'
 import AgendaSummary from '../components/AgendaSummary.jsx'
+import { isPublicReportEnabled } from '../services/reportService.js'
 import { isDefaultMasjidPhoto, resolveUploadedImage } from '../utils/uploadedImage.js'
 
 const icons = { calendar: CalendarDays, expand: Expand, users: Users, heart: Heart, health: HeartPulse, economy: Coins }
@@ -57,13 +58,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="finance-cta" aria-labelledby="finance-heading">
-        <div>
-          <h2 id="finance-heading">Transparansi &amp; Akuntabilitas Keuangan</h2>
-          <p>Lihat ringkasan pemasukan dan pengeluaran dana Masjid Al-Hidayah menggunakan sandi akses bersama yang dibagikan pengurus masjid.</p>
-          <Button to="/laporan-keuangan" onClick={openReportAccess}>Lihat Laporan Keuangan</Button>
-        </div>
-      </section>
+      {isPublicReportEnabled(content) && (
+        <section className="finance-cta" aria-labelledby="finance-heading">
+          <div>
+            <h2 id="finance-heading">Transparansi &amp; Akuntabilitas Keuangan</h2>
+            <p>Lihat ringkasan pemasukan dan pengeluaran dana Masjid Al-Hidayah menggunakan sandi akses bersama yang dibagikan pengurus masjid.</p>
+            <Button to="/laporan-keuangan" onClick={openReportAccess}>Lihat Laporan Keuangan</Button>
+          </div>
+        </section>
+      )}
     </>
   )
 }

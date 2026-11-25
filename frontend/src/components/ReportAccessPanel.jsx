@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, ShieldCheck } from 'lucide-react'
-import { checkReportPassword } from '../services/reportService.js'
+import { checkReportPassword, isPublicReportDisabledError, PUBLIC_REPORT_DISABLED_MESSAGE } from '../services/reportService.js'
 
 export default function ReportAccessPanel({ onAccessGranted }) {
   const [password, setPassword] = useState('')
@@ -31,7 +31,9 @@ export default function ReportAccessPanel({ onAccessGranted }) {
         setError('Sandi tidak cocok. Silakan coba lagi.')
       }
     } catch (cause) {
-      if (!controller.signal.aborted) setError(cause.message || 'Pemeriksaan sandi gagal. Silakan coba lagi.')
+      if (!controller.signal.aborted) {
+        setError(isPublicReportDisabledError(cause) ? PUBLIC_REPORT_DISABLED_MESSAGE : cause.message || 'Pemeriksaan sandi gagal. Silakan coba lagi.')
+      }
     } finally {
       if (!controller.signal.aborted) {
         pending.current = null

@@ -12,7 +12,7 @@ export default function AdminRecentTransactions({ transactions, categories, onVi
       <p className="admin-table-hint">Geser tabel untuk melihat seluruh kolom.</p>
       <div className="admin-table-scroll" role="region" aria-label="Transaksi terbaru, dapat digeser pada layar kecil" tabIndex={0}>
         <table className="admin-recent-table">
-          <caption className="sr-only">{sessionCount ? 'Transaksi tambahan sesi mock dan cuplikan snapshot; belum tersimpan ke server.' : 'Cuplikan transaksi terbaru dari data contoh, bukan seluruh transaksi periode.'}</caption>
+          <caption className="sr-only">{sessionCount ? 'Transaksi tambahan sesi mock dan cuplikan snapshot; belum tersimpan ke server.' : 'Cuplikan transaksi terbaru dari seluruh periode berjalan.'}</caption>
           <thead><tr><th scope="col">Tanggal</th><th scope="col">Kategori</th><th scope="col">Jenis</th><th scope="col">Uraian</th><th scope="col">Nominal (Rp)</th></tr></thead>
           <tbody>{transactions.map((item) => {
             const category = categories.find((entry) => entry.id === item.categoryId)

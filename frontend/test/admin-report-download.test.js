@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { fileURLToPath } from 'node:url'
+import { createServer } from 'vite'
 import { mockAdminDashboard } from '../src/mocks/adminDashboard.js'
 import { buildAdminFinanceReport } from '../src/services/adminFinanceReportService.js'
 import { adminReportTypes, getAdminDownloadDefaults, validateAdminDownloadSettings, ADMIN_REPORT_PAGE, buildAdminDownloadDocument, getAdminDownloadDefaultRange, getAdminDownloadMonthRange, paginateAdminDownload, getAdminDownloadFilename, validateAdminDownloadSheets, createAdminReportDownload } from '../src/services/adminReportDownloadService.js'
@@ -123,4 +125,60 @@ test('pengaturan memakai tiga jenis, format tunggal dan mode periode eksklusif; 
   assert.equal(doc.totals.income,rows.filter(row=>row.type==='income').reduce((sum,row)=>sum+row.amount,0))
   assert.equal(doc.totals.expense,rows.filter(row=>row.type==='expense').reduce((sum,row)=>sum+row.amount,0))
   assert.equal(doc.totals.closingBalance,doc.totals.openingBalance+doc.totals.income-doc.totals.expense)
+})
+
+test('mode API menghasilkan nama file dan lembar cetak bersih tanpa kata mock/simulasi/PostgreSQL', async () => {
+  const api = await createServer({
+    root: fileURLToPath(new URL('../', import.meta.url)),
+    server: { middlewareMode: true, ws: false, hmr: false },
+    appType: 'custom',
+    define: { 'import.meta.env.VITE_DATA_SOURCE': '"api"' },
+  })
+  try {
+    const apiDownload = await api.ssrLoadModule('/src/services/adminReportDownloadService.js')
+    const { default: ApiSheet } = await api.ssrLoadModule('/src/components/AdminDownloadSheet.jsx')
+    const { default: ApiDashboardPage } = await api.ssrLoadModule('/src/pages/AdminDashboardPage.jsx')
+    const { default: ApiFinanceReportPage } = await api.ssrLoadModule('/src/pages/AdminFinanceReportPage.jsx')
+    const { MemoryRouter, Outlet, Route, Routes } = await import('react-router')
+    const { createElement: h } = await import('react')
+    const { renderToStaticMarkup } = await import('react-dom/server')
+
+    const report = build()
+    const doc = apiDownload.buildAdminDownloadDocument(report, october, ['income', 'monthly'])
+    const filename = apiDownload.getAdminDownloadFilename(doc, 'pdf', 1)
+    assert.equal(filename, 'laporan-keuangan-income-monthly-2026-10-01--2026-10-31.pdf')
+    assert.doesNotMatch(doc.note, /mock|simulasi/i)
+
+    const sheetHtml = renderToStaticMarkup(h(ApiSheet, { document: doc, page: { sectionId: 'income', title: 'Kas Masuk', rows: [], number: 1 }, pageCount: 1 }))
+    assert.match(sheetHtml, /Laporan Keuangan Masjid Al-Hidayah · Nominal dalam Rupiah/)
+    assert.match(sheetHtml, /Tidak ada transaksi untuk jenis laporan dan periode ini\./)
+    assert.doesNotMatch(sheetHtml, /SIMULASI|MOCK|Data contoh|Bukan laporan resmi|PostgreSQL|APPEND-ONLY/i)
+
+    const categories = mockAdminDashboard.categories.map((category) => ({
+      ...category,
+      closingBalance: category.openingBalance + category.income - category.expense,
+    }))
+    const totals = categories.reduce((sum, category) => ({
+      openingBalance: sum.openingBalance + category.openingBalance,
+      income: sum.income + category.income,
+      expense: sum.expense + category.expense,
+      closingBalance: sum.closingBalance + category.closingBalance,
+    }), { openingBalance: 0, income: 0, expense: 0, closingBalance: 0 })
+    const apiDashboard = { ...structuredClone(mockAdminDashboard), categories, totals, apiTransactions: report.transactions, apiTransfers: [], apiCoverage: report.coverage }
+    const renderOutlet = (Component) => renderToStaticMarkup(h(
+      MemoryRouter,
+      { initialEntries: ['/admin/laporan'] },
+      h(Routes, null, h(Route, { element: h(Outlet, { context: { dashboard: apiDashboard, error: '', deleteTransaction() {}, reportView: null, setReportView() {} } }) }, h(Route, { path: '*', element: h(Component) })))
+    ))
+
+    const dashHtml = renderOutlet(ApiDashboardPage)
+    assert.match(dashHtml, /Terakhir Update:/)
+    assert.doesNotMatch(dashHtml, /Data contoh|simulasi|mock|PostgreSQL/i)
+
+    const reportHtml = renderOutlet(ApiFinanceReportPage)
+    assert.match(reportHtml, /Detail Laporan/)
+    assert.doesNotMatch(reportHtml, /mock|simulasi|bukan data resmi|bukan riwayat resmi|PostgreSQL|APPEND-ONLY/i)
+  } finally {
+    await api.close()
+  }
 })

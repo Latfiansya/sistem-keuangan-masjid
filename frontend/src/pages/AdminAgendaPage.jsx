@@ -181,7 +181,7 @@ export default function AdminAgendaPage() {
       </header>
       {feedback && <p className="admin-crud-feedback" role="status">{feedback}</p>}
       {error ? <p className="admin-dashboard-state" role="alert">{error}</p> : !agenda ? <p className="admin-dashboard-state" role="status">Memuat agenda masjid…</p> : agenda.groups.some((group) => group.items.length) ? (
-        <div className="admin-agenda-list" aria-describedby="admin-agenda-note">
+        <div className="admin-agenda-list" aria-describedby={!apiEnabled ? 'admin-agenda-note' : undefined}>
           {agenda.groups.map((group) => (
             <section key={group.id} className="admin-agenda-group" aria-labelledby={`admin-agenda-${group.id}`}>
               <h3 className="sr-only" id={`admin-agenda-${group.id}`}>{group.title}</h3>
@@ -200,7 +200,7 @@ export default function AdminAgendaPage() {
               ))}</ul> : <p className="admin-dashboard-state">Belum ada agenda pada kelompok ini.</p>}
             </section>
           ))}
-          <p id="admin-agenda-note" className="admin-agenda-note">{apiEnabled ? 'Terhubung ke database · Perubahan agenda tersimpan langsung ke PostgreSQL.' : 'Data contoh. Fitur tambah, edit dan hapus agenda belum tersedia.'}</p>
+          {!apiEnabled && <p id="admin-agenda-note" className="admin-agenda-note">Data contoh. Fitur tambah, edit dan hapus agenda belum tersedia.</p>}
         </div>
       ) : <p className="admin-dashboard-state" role="status">Belum ada agenda kegiatan.</p>}
       {apiEnabled && dialog && (

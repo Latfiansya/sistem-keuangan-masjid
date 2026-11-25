@@ -90,17 +90,26 @@ test('mode API mengambil activity log dari /api/admin/activity-logs tanpa fallba
   } finally { globalThis.fetch = originalFetch; await api.close() }
 })
 
-test('route/menu aktif dan copy append-only jelas berupa konsep mock, tanpa tombol atau form mutasi log', () => {
+test('route/menu aktif dan copy riwayat permanen jelas, tanpa tombol atau form mutasi log', async () => {
   for (const path of ['/admin/activity-log', '/admin/activity-log/']) {
     const html = renderToStaticMarkup(h(MemoryRouter, { initialEntries: [path] }, h(App)))
     assert.match(html, /<h1>Activity Log<\/h1>/)
     assert.match(html, /aria-current="page"[^>]*href="\/admin\/activity-log"/)
-    assert.match(html, /Memuat aktivitas contoh/)
+    assert.match(html, /Memuat log aktivitas/)
     assert.doesNotMatch(html, /public-layout|public-footer|admin-login-form/)
   }
   const html = renderToStaticMarkup(h(Page))
-  assert.match(html, /APPEND-ONLY · TIDAK DAPAT DIHAPUS/)
+  assert.match(html, /RIWAYAT PERMANEN · TIDAK DAPAT DIHAPUS/)
   assert.match(html, /Saat ini hanya data contoh; integritas dan kelengkapan pencatatan belum ditegakkan/)
+  assert.doesNotMatch(html, /APPEND-ONLY|PostgreSQL/)
   assert.equal((html.match(/<select\b/g) || []).length, 3)
   assert.doesNotMatch(html, /<button|<form|<dialog|type="password"/)
+
+  const api = await createServer({ root: fileURLToPath(new URL('../', import.meta.url)), server: { middlewareMode: true, ws: false, hmr: false }, appType: 'custom', define: { 'import.meta.env.VITE_DATA_SOURCE': '"api"' } })
+  try {
+    const { default: ApiPage } = await api.ssrLoadModule('/src/pages/AdminActivityLogPage.jsx')
+    const apiHtml = renderToStaticMarkup(h(ApiPage))
+    assert.match(apiHtml, /RIWAYAT PERMANEN · TIDAK DAPAT DIHAPUS/)
+    assert.doesNotMatch(apiHtml, /APPEND-ONLY|append-only|PostgreSQL|contoh|simulasi|mock/i)
+  } finally { await api.close() }
 })

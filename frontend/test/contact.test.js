@@ -49,7 +49,7 @@ test('card Transfer Bank tidak menampilkan badge Terkonfirmasi serta mendukung 1
   oneBank.contact.donation.bank2 = { verified: false, name: 'Bank Tersembunyi', number: '9999999999', recipient: 'Tidak Aktif' }
   const htmlOne = renderPage({ content: oneBank, error: '' })
   assert.doesNotMatch(htmlOne, /Terkonfirmasi/)
-  assert.equal((htmlOne.match(/class="contact-chip"/g) || []).length, 1)
+  assert.equal((htmlOne.match(/class="contact-chip"/g) || []).length, 0)
   assert.equal((htmlOne.match(/class="contact-bank"/g) || []).length, 1)
   assert.doesNotMatch(htmlOne, /contact-bank-list|contact-bank-divider|Bank Tersembunyi/)
   assert.ok(htmlOne.includes('Bank Syariah Indonesia'))
@@ -60,7 +60,7 @@ test('card Transfer Bank tidak menampilkan badge Terkonfirmasi serta mendukung 1
   twoBanks.contact.donation.bank2 = { verified: true, name: 'Bank BPD DIY Syariah', number: '8001122334', recipient: 'Panitia Pembangunan' }
   const htmlTwo = renderPage({ content: twoBanks, error: '' })
   assert.doesNotMatch(htmlTwo, /Terkonfirmasi/)
-  assert.equal((htmlTwo.match(/class="contact-chip"/g) || []).length, 1)
+  assert.equal((htmlTwo.match(/class="contact-chip"/g) || []).length, 0)
   assert.equal((htmlTwo.match(/class="contact-bank-list"/g) || []).length, 1)
   assert.equal((htmlTwo.match(/class="contact-bank-divider"/g) || []).length, 1)
   assert.equal((htmlTwo.match(/class="contact-bank"/g) || []).length, 2)
@@ -132,4 +132,30 @@ test('service Kontak tetap mendukung pembatalan dan mode API memanggil /api/publ
     const service = await apiServer.ssrLoadModule('/src/services/publicContentService.js')
     await assert.rejects(service.getPublicContent(), /Gagal memuat konten/)
   } finally { globalThis.fetch = originalFetch; await apiServer.close() }
+})
+
+test('pengantar seksi Takmir dinamis mengikuti contact.introduction dan status verifikasi informasi kontak (D-18) serta Scan QRIS tanpa chip (B-02)', async () => {
+  const base = await getPublicContent()
+
+  // 1) contact.introduction terisi -> dipakai sebagai pengantar
+  const withIntro = structuredClone(base)
+  withIntro.contact.introduction = 'Hubungi sekretariat takmir setiap hari kerja.'
+  const htmlIntro = renderPage({ content: withIntro, error: '' })
+  assert.match(htmlIntro, /class="contact-takmir-description">Hubungi sekretariat takmir setiap hari kerja\./)
+  assert.equal((htmlIntro.match(/class="contact-chip"/g) || []).length, 0)
+
+  // 2) contact.introduction kosong namun ada kontak terverifikasi -> teks pengantar normal (bukan "menunggu konfirmasi")
+  const verifiedOnly = structuredClone(base)
+  verifiedOnly.contact.introduction = ''
+  verifiedOnly.contact.information[0] = { id: 'address', label: 'Alamat', verified: true, value: 'Sorolaten, Sidokarto, Godean' }
+  const htmlVerified = renderPage({ content: verifiedOnly, error: '' })
+  assert.match(htmlVerified, /Silakan hubungi pengurus takmir melalui informasi kontak dan jam layanan berikut\./)
+  assert.doesNotMatch(htmlVerified, /Informasi kontak dan jam layanan menunggu konfirmasi pengurus masjid/)
+
+  // 3) contact.introduction kosong dan semua informasi belum terverifikasi -> tampilkan pesan menunggu konfirmasi
+  const unverified = structuredClone(base)
+  unverified.contact.introduction = ''
+  unverified.contact.information = unverified.contact.information.map((item) => ({ ...item, verified: false, value: null }))
+  const htmlUnverified = renderPage({ content: unverified, error: '' })
+  assert.match(htmlUnverified, /Informasi kontak dan jam layanan menunggu konfirmasi pengurus masjid\./)
 })

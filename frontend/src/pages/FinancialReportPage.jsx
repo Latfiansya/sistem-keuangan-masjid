@@ -5,7 +5,8 @@ import FinancialTable from '../components/FinancialTable.jsx'
 import BalanceSummary from '../components/BalanceSummary.jsx'
 import ReportFormatPicker from '../components/ReportFormatPicker.jsx'
 import ReportPreview from '../components/ReportPreview.jsx'
-import { getReport } from '../services/reportService.js'
+import { getPublicContent } from '../services/publicContentService.js'
+import { getReport, isPublicReportDisabledError, isPublicReportEnabled, PUBLIC_REPORT_DISABLED_MESSAGE } from '../services/reportService.js'
 import { dataSource } from '../utils/env.js'
 import { DEFAULT_REPORT_RANGE, getMonthRange, getPresetRange, validateReportRange } from '../utils/reportCalculations.js'
 import { formatReportMonth, formatReportPeriod, formatReportYear } from '../utils/reportFormatters.js'
@@ -21,6 +22,8 @@ export default function FinancialReportPage() {
   const [activePreset, setActivePreset] = useState('1m')
   const [showCustomRange, setShowCustomRange] = useState(true)
   const [filterError, setFilterError] = useState('')
+  const [reportDisabled, setReportDisabled] = useState(false)
+  const [mosqueName, setMosqueName] = useState('Masjid Al-Hidayah')
   const [reportState, setReportState] = useState({ report: null, loading: true, error: '' })
   const heading = useRef(null)
   useEffect(() => {
@@ -30,14 +33,35 @@ export default function FinancialReportPage() {
 
   useEffect(() => {
     const controller = new AbortController()
+    getPublicContent({ signal: controller.signal })
+      .then((content) => {
+        if (controller.signal.aborted) return
+        if (content?.name) setMosqueName(content.name)
+        if (!isPublicReportEnabled(content)) setReportDisabled(true)
+      })
+      .catch(() => { /* fallback tetap mengandalkan hasil endpoint laporan */ })
+    return () => controller.abort()
+  }, [])
+
+  useEffect(() => {
+    if (reportDisabled) return
+    const controller = new AbortController()
     const params = range ? { ...range, signal: controller.signal } : { signal: controller.signal }
     getReport(params)
       .then((report) => {
         if (!controller.signal.aborted) setReportState({ report, loading: false, error: '' })
       })
-      .catch((cause) => { if (!controller.signal.aborted) setReportState({ report: null, loading: false, error: cause.message }) })
+      .catch((cause) => {
+        if (controller.signal.aborted) return
+        if (isPublicReportDisabledError(cause)) {
+          setReportDisabled(true)
+          setReportState({ report: null, loading: false, error: '' })
+          return
+        }
+        setReportState({ report: null, loading: false, error: cause.message })
+      })
     return () => controller.abort()
-  }, [range])
+  }, [range, reportDisabled])
 
   function applyRange(nextRange, preset, showCustom) {
     try {
@@ -60,6 +84,23 @@ export default function FinancialReportPage() {
   const presetAnchorEnd = report?.coverage?.endDate ?? activeRange?.endDate ?? (isMockSource ? DEFAULT_REPORT_RANGE.endDate : '')
   const availableMonths = report?.months ?? (isMockSource ? ['2026-04'] : [])
 
+  if (reportDisabled) {
+    return (
+      <main className="report-page report-page--opened">
+        <div className="financial-report">
+          <header className="financial-header">
+            <Link to="/" className="financial-navigation"><ArrowLeft aria-hidden="true" />Beranda</Link>
+            <div className="financial-header-identity"><h1 ref={heading} tabIndex={-1}>Laporan Keuangan</h1><p>{mosqueName}</p></div>
+          </header>
+          <section className="financial-status" role="status" aria-live="polite">
+            <p>{PUBLIC_REPORT_DISABLED_MESSAGE}</p>
+            <p><Link to="/" className="financial-navigation"><ArrowLeft aria-hidden="true" />Kembali ke Beranda</Link></p>
+          </section>
+        </div>
+      </main>
+    )
+  }
+
   if (canPreview && view !== 'report') {
     return <main className="report-page report-page--opened">{view === 'format' ? <ReportFormatPicker report={report} pages={pages} format={format} onFormatChange={setFormat} onBack={() => setView('report')} onNext={() => setView('preview')} headingRef={heading} /> : <ReportPreview report={report} pages={pages} format={format} onFormatChange={setFormat} onBack={() => setView('format')} headingRef={heading} />}</main>
   }
@@ -69,8 +110,8 @@ export default function FinancialReportPage() {
       <div className="financial-report">
         <header className="financial-header">
           <Link to="/" className="financial-navigation"><ArrowLeft aria-hidden="true" />Beranda</Link>
-          <div className="financial-header-identity"><h1 ref={heading} tabIndex={-1}>Laporan Keuangan{year ? ` ${year}` : ''}</h1><p>{report?.name ?? 'Masjid Al-Hidayah'}</p><small>Data contoh pengembangan · bukan laporan produksi</small></div>
-          <div className="financial-export"><button type="button" className="financial-navigation" disabled={!canPreview} onClick={() => { if (canPreview) setView('format') }} aria-describedby="financial-export-status"><Download aria-hidden="true" />Unduh</button><small id="financial-export-status">{canPreview ? 'Pilih format laporan.' : 'Pratinjau belum tersedia.'}</small></div>
+          <div className="financial-header-identity"><h1 ref={heading} tabIndex={-1}>Laporan Keuangan{year ? ` ${year}` : ''}</h1><p>{report?.name ?? mosqueName}</p><small>Laporan keuangan resmi · diperbarui berkala</small></div>
+          <div className="financial-export"><button type="button" className="financial-navigation" disabled={!canPreview} onClick={() => { if (canPreview) setView('format') }} aria-describedby={!canPreview ? 'financial-export-status' : undefined}><Download aria-hidden="true" />Unduh</button>{!canPreview && <small id="financial-export-status">Pratinjau belum tersedia.</small>}</div>
         </header>
 
         <section className="financial-filters" aria-labelledby="financial-detail-heading">

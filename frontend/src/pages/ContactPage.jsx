@@ -12,6 +12,11 @@ export default function ContactPage() {
   const { contact } = content
   if (!contact) return <p role="status" className="contact-status page-container">Informasi kontak dan donasi belum tersedia.</p>
   const hasLocation = contact.location?.verified === true && Boolean(contact.location.url)
+  const hasVerifiedInfo = Array.isArray(contact.information) && contact.information.some((item) => item?.verified === true && Boolean(item?.value))
+  const takmirDescription = contact.introduction?.trim()
+    || (hasVerifiedInfo
+      ? 'Silakan hubungi pengurus takmir melalui informasi kontak dan jam layanan berikut.'
+      : 'Informasi kontak dan jam layanan menunggu konfirmasi pengurus masjid.')
 
   return (
     <>
@@ -26,7 +31,7 @@ export default function ContactPage() {
       <section className="contact-takmir" aria-labelledby="takmir-heading">
         <div className="page-container">
           <h2 id="takmir-heading">Hubungi Pengurus Takmir</h2>
-          <p className="contact-takmir-description">Informasi kontak dan jam layanan menunggu konfirmasi pengurus masjid.</p>
+          <p className="contact-takmir-description">{takmirDescription}</p>
           {contact.information?.length ? <div className="contact-information">
             {contact.information.map((item) => {
               const Icon = informationIcons[item.id] ?? MapPin

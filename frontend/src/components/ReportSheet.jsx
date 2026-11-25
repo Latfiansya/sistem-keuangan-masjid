@@ -24,7 +24,7 @@ export default function ReportSheet({ report, page, pageCount }) {
         })}
       </div>
       {page.showSummary && <BalanceSummary summary={report.summary} period={period} variant="sheet" />}
-      <footer className="report-sheet-footer"><span>Data contoh pengembangan · {describeSheet(page)}</span><strong>Halaman {page.number} / {pageCount}</strong></footer>
+      <footer className="report-sheet-footer"><span>{report.name} · {describeSheet(page)}</span><strong>Halaman {page.number} / {pageCount}</strong></footer>
     </article>
   )
 }

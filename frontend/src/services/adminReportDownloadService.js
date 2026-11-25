@@ -3,6 +3,7 @@ import { createReportSheetsExport } from './reportExportService.js'
 import { getAdminHistoricalTransactions } from './adminTransactionData.js'
 import { getMonthRange, validateReportRange } from '../utils/reportCalculations.js'
 import { formatReportMonth } from '../utils/reportFormatters.js'
+import { dataSource } from '../utils/env.js'
 
 export const ADMIN_REPORT_PAGE = Object.freeze({ width: 794, height: 1123 })
 export const adminReportTypes = [
@@ -73,7 +74,9 @@ export function buildAdminDownloadDocument(report, range, types) {
     transfers: filterTransfersInRange(report.transfers, range),
     sessionChangeCount: report.sessionChangeCount,
     coverage: { ...report.coverage },
-    note: beforeCoverage ? 'Awal periode mendahului cakupan mock; saldo awal/akhir tidak tersedia. Nominal hanya mencakup transaksi mock yang tersedia.' : 'Saldo simulasi dihitung dari saldo awal historis dan transaksi aktif. Data di luar cakupan mock belum tersedia; tanpa transaksi tambahan yang direkayasa.',
+    note: beforeCoverage
+      ? 'Awal periode mendahului data tercatat; saldo awal/akhir tidak tersedia. Nominal hanya mencakup transaksi yang tersedia.'
+      : 'Saldo dihitung dari saldo awal historis dan transaksi aktif.',
   }
 }
 
@@ -114,7 +117,8 @@ export function validateAdminDownloadSheets(document, pages, sheets) {
 export function getAdminDownloadFilename(document, format, count) {
   if (!['pdf', 'png'].includes(format)) throw new Error('Format unduhan tidak valid.')
   const types = document.sections.map((section) => section.id).join('-')
-  return `laporan-admin-mock-${types}-${document.range.startDate}--${document.range.endDate}.${format === 'png' && count > 1 ? 'zip' : format}`
+  const prefix = dataSource === 'mock' ? 'laporan-admin-mock' : 'laporan-keuangan'
+  return `${prefix}-${types}-${document.range.startDate}--${document.range.endDate}.${format === 'png' && count > 1 ? 'zip' : format}`
 }
 
 export async function createAdminReportDownload({ document, pages, sheets, format, signal, onProgress }) {

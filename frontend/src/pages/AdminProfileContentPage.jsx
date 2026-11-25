@@ -207,7 +207,7 @@ export default function AdminProfileContentPage() {
               </section>
             )
           })}
-          <p className="admin-content-note">{mock ? 'Mode simulasi: perubahan hanya berlaku selama halaman admin terbuka dan hilang saat dimuat ulang. Halaman publik tidak berubah.' : 'Terhubung ke database · Perubahan langsung tersimpan ke PostgreSQL dan tercatat di Activity Log. Visi diatur pada menu Profil Masjid.'}</p>
+          <p className="admin-content-note">{mock ? 'Mode simulasi: perubahan hanya berlaku selama halaman admin terbuka dan hilang saat dimuat ulang. Halaman publik tidak berubah.' : 'Visi diatur pada menu Profil Masjid.'}</p>
         </>
       )}
       {dialog && <ProfileContentDialog {...dialog} onDone={handleDone} onClose={() => setDialog(null)} returnFocusRef={returnFocusRef} />}

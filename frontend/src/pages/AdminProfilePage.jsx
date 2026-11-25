@@ -172,7 +172,7 @@ export default function AdminProfilePage() {
         <button className="admin-profile-save" type="submit" form="admin-profile-form" disabled={!ready || Boolean(error) || saving}><Check size={16} aria-hidden="true" />{saving ? 'Menyimpan…' : 'Simpan Perubahan'}</button>
       </header>
       {error ? <p className="admin-dashboard-state" role="alert">{error}</p> : !ready ? <p className="admin-dashboard-state" role="status">Memuat profil masjid…</p> : (
-        <form id="admin-profile-form" className="admin-panel admin-profile-form" noValidate onSubmit={handleSubmit} aria-label="Formulir profil masjid" aria-describedby="admin-profile-note" aria-busy={saving}>
+        <form id="admin-profile-form" className="admin-panel admin-profile-form" noValidate onSubmit={handleSubmit} aria-label="Formulir profil masjid" aria-describedby={dataSource === 'mock' ? 'admin-profile-note' : undefined} aria-busy={saving}>
           <div className="admin-profile-banner">
             <p>Foto / Banner Masjid</p>
             <div className="admin-profile-photo">
@@ -262,7 +262,7 @@ export default function AdminProfilePage() {
             {errors.contact && <p id="admin-profile-contact-error" className="admin-profile-error" role="alert">{errors.contact}</p>}
             <p id="admin-profile-contact-help" className="admin-profile-help">Opsional.{dataSource === 'mock' ? ' Nomor telepon resmi belum tersedia.' : ''}</p>
           </div>
-          <p id="admin-profile-note" className="admin-profile-note">{dataSource === 'mock' ? 'Mode simulasi: perubahan hanya berlaku di halaman ini dan akan hilang saat halaman ditinggalkan atau dimuat ulang. Profil publik tidak berubah.' : 'Terhubung ke database · Simpan Perubahan akan memperbarui identitas, visi, statistik, alamat, dan telepon masjid di PostgreSQL.'}</p>
+          {dataSource === 'mock' && <p id="admin-profile-note" className="admin-profile-note">Mode simulasi: perubahan hanya berlaku di halaman ini dan akan hilang saat halaman ditinggalkan atau dimuat ulang. Profil publik tidak berubah.</p>}
           {submitError && <p className="admin-profile-error" role="alert">{submitError}</p>}
           {saved && <p ref={feedback} className="admin-profile-feedback" role="status">{dataSource === 'mock' ? `Simulasi berhasil. Perubahan tersimpan sementara di halaman ini, belum tersimpan permanen ke server.${photoFile || logoFile ? ' Foto/logo baru hanya dipratinjau dan belum tersimpan ke server.' : ''}` : `Perubahan profil masjid berhasil disimpan ke database.${uploadNote}`}</p>}
         </form>

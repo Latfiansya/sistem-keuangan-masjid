@@ -2,6 +2,7 @@ import { getAdminRecentTransactions } from '../services/adminTransactionService.
 import { ArrowDownCircle, ArrowUpCircle, ClipboardList, FileText, TrendingDown, TrendingUp, Users, Wallet } from 'lucide-react'
 import { useNavigate, useOutletContext } from 'react-router'
 import { formatReportDate, formatRupiah } from '../utils/reportFormatters.js'
+import { dataSource } from '../utils/env.js'
 import AdminRecentTransactions from '../components/AdminRecentTransactions.jsx'
 import AdminBalanceSummary from '../components/AdminBalanceSummary.jsx'
 
@@ -36,7 +37,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       </section>
-      <div className="admin-dashboard-status"><span className="admin-updated"><i aria-hidden="true" />Terakhir Update: <time dateTime={updatedDate}>{updatedLabel}</time></span><span>Data contoh · Interaksi admin menggunakan simulasi.</span></div>
+      <div className="admin-dashboard-status"><span className="admin-updated"><i aria-hidden="true" />Terakhir Update: <time dateTime={updatedDate}>{updatedLabel}</time></span>{dataSource === 'mock' && <span>Data contoh · Interaksi admin menggunakan simulasi.</span>}</div>
       <section className="admin-statistics" aria-label="Ringkasan keuangan">
         {statistics.map(({ id, label, icon: Icon, color }) => <article className={`admin-statistic admin-statistic--${color}`} key={id}>
           <div className="admin-statistic-label"><span><Icon size={21} aria-hidden="true" /></span><h2>{label}</h2></div>

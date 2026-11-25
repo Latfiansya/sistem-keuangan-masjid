@@ -109,10 +109,10 @@ export default function AdminReportAccessPage() {
         <div className="admin-report-access-heading"><h2>Kode Akses Laporan Publik</h2><p>Kelola kode akses untuk laporan keuangan publik</p></div>
       </header>
       {feedback && <p className="admin-crud-feedback" role="status">{feedback}</p>}
-      {error ? <p className="admin-dashboard-state" role="alert">{error}</p> : !status ? <p className="admin-dashboard-state" role="status">Memuat status kode akses contoh…</p> : (
+      {error ? <p className="admin-dashboard-state" role="alert">{error}</p> : !status ? <p className="admin-dashboard-state" role="status">Memuat status kode akses laporan…</p> : (
         <section className="admin-panel admin-report-access-status" aria-labelledby="admin-report-access-status-title">
           <div className="admin-report-access-status-heading"><span className="admin-report-access-key"><KeyRound size={24} aria-hidden="true" /></span><div><h3 id="admin-report-access-status-title">Status Kode Akses</h3><span className={`admin-report-access-badge${status.active ? ' admin-report-access-badge--active' : ''}`}>{status.active ? 'Aktif' : 'Nonaktif'}</span></div></div>
-          <div className="admin-report-access-code"><div><p>Kode Akses Saat Ini</p><span className="admin-report-access-mask" aria-hidden="true">••••••••</span><span className="sr-only">Placeholder kode tersamarkan, tanpa nilai kode asli.</span></div><span className="admin-report-access-badge">{apiEnabled ? (status.active ? 'Tersimpan (Hash)' : 'Belum diatur') : 'Simulasi'}</span></div>
+          <div className="admin-report-access-code"><div><p>Kode Akses Saat Ini</p><span className="admin-report-access-mask" aria-hidden="true">••••••••</span><span className="sr-only">Placeholder kode tersamarkan, tanpa nilai kode asli.</span></div><span className="admin-report-access-badge">{apiEnabled ? (status.active ? 'Kode Terpasang' : 'Belum diatur') : 'Simulasi'}</span></div>
           <div className="admin-report-access-history"><p>Terakhir diubah: {status.changedDate ? <><time dateTime={status.changedDate}>{formatReportDate(status.changedDate)}</time>{status.changedTime ? `, ${status.changedTime}` : ''}</> : 'Belum pernah diubah'}</p><p>Diubah oleh: {status.changedBy || '—'}</p></div>
           <button ref={editButtonRef} type="button" disabled={!apiEnabled} title={apiEnabled ? 'Ubah kode akses laporan publik' : 'Fitur ubah kode akses belum tersedia'} onClick={() => { setFeedback(''); setEditing(true) }}><KeyRound size={16} aria-hidden="true" />Ubah Kode Akses</button>
         </section>
@@ -120,14 +120,12 @@ export default function AdminReportAccessPage() {
       <section className="admin-panel admin-report-access-how" aria-labelledby="admin-report-access-how-title">
         <h3 id="admin-report-access-how-title"><Info size={18} aria-hidden="true" />Cara Kerja Kode Akses</h3>
         <ul>
-          <li><ChevronRight size={16} aria-hidden="true" /><span>Tombol laporan di Beranda atau Footer membuka gate (permintaan kode).</span></li>
-          <li><ChevronRight size={16} aria-hidden="true" /><span>Setelah integrasi, sistem memeriksa kode yang dimasukkan pengunjung.</span></li>
-          <li><ChevronRight size={16} aria-hidden="true" /><span>Jika kode sesuai, gate ditutup dan pengunjung menuju <code>/laporan-keuangan</code>.</span></li>
-          <li><ChevronRight size={16} aria-hidden="true" /><span>Akses langsung dan refresh <code>/laporan-keuangan</code> tetap tanpa gate; kode bukan autentikasi atau otorisasi laporan.</span></li>
-          <li><ChevronRight size={16} aria-hidden="true" /><span>Ubah Kode Akses mengganti kode gate dan dikelola oleh pengurus terautentikasi (Admin dan Super Admin).</span></li>
+          <li><ChevronRight size={16} aria-hidden="true" /><span>Pengunjung diminta memasukkan kode akses saat membuka Laporan Keuangan dari Beranda atau Footer.</span></li>
+          <li><ChevronRight size={16} aria-hidden="true" /><span>Sistem akan memverifikasi kode akses yang dimasukkan pengunjung sebelum membuka halaman laporan.</span></li>
+          <li><ChevronRight size={16} aria-hidden="true" /><span>Pengurus dapat mengganti kode akses atau mengatur visibilitas laporan publik kapan saja melalui tombol Ubah Kode Akses.</span></li>
         </ul>
       </section>
-      <p className="admin-report-access-note">{apiEnabled ? 'Terhubung ke database · Kode akses disimpan sebagai hash aman di PostgreSQL dan disinkronkan ke gate publik.' : 'Status, tanggal dan pengubah adalah data contoh, belum terhubung backend.'}</p>
+      {!apiEnabled && <p className="admin-report-access-note">Status, tanggal dan pengubah adalah data contoh, belum terhubung backend.</p>}
       {apiEnabled && editing && status && (
         <ReportAccessDialog
           currentStatus={status}
