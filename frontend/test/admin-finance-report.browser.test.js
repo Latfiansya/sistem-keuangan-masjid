@@ -169,12 +169,12 @@ test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan pengaturan un
       await search(' INFAQ '); assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),fixture.filter(row=>row.type==='income'&&row.description.toLowerCase().includes('infaq')).length)
       await search('tidak ditemukan'); assert.match(await evaluate('document.querySelector(".admin-report-ledger-table tbody").textContent'),/Tidak ada transaksi mock/)
       await search(' '); assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),141)
-      assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-report-presets button")].map(e=>e.textContent)'), ['1 minggu terakhir', '1 bulan terakhir', '3 bulan terakhir', 'Bulan ini'])
-      for (let index = 0; index < 4; index++) {
-        const expected = await evaluate(`(() => {const end=new Date(),start=new Date(end),day=start.getDate();if(${index}===0)start.setDate(day-6);else if(${index}===3)start.setDate(1);else {start.setDate(1);start.setMonth(start.getMonth()-(${index}===1?1:3));start.setDate(Math.min(day,new Date(start.getFullYear(),start.getMonth()+1,0).getDate()))}const f=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');return {startDate:f(start),endDate:f(end)}})()`)
-        await click(`.admin-report-presets button:nth-child(${index+1})`)
+      assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-report-presets > button")].map(e=>e.textContent)'), ['1 minggu terakhir', '1 bulan terakhir', '3 bulan terakhir'])
+      for (let index = 0; index < 3; index++) {
+        const expected = await evaluate(`(() => {const end=new Date(),start=new Date(end),day=start.getDate();if(${index}===0)start.setDate(day-6);else {start.setDate(1);start.setMonth(start.getMonth()-(${index}===1?1:3));start.setDate(Math.min(day,new Date(start.getFullYear(),start.getMonth()+1,0).getDate()))}const f=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');return {startDate:f(start),endDate:f(end)}})()`)
+        await click(`.admin-report-presets > button:nth-of-type(${index+1})`)
         assert.deepEqual(await evaluate('Object.fromEntries([...document.querySelectorAll(".admin-report-filters input")].map(e=>[e.name,e.value]))'),expected)
-        assert.equal(await evaluate(`document.querySelector('.admin-report-presets button:nth-child(${index+1})').getAttribute('aria-pressed')`),'true')
+        assert.equal(await evaluate(`document.querySelector('.admin-report-presets > button:nth-of-type(${index+1})').getAttribute('aria-pressed')`),'true')
         const rows = fixture.filter(row=>row.date>=expected.startDate&&row.date<=expected.endDate)
         assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),rows.length)
         assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),rows.filter(row=>row.type==='income').length)
@@ -204,7 +204,7 @@ test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan pengaturan un
       await setDate('startDate','2026-01-01'); await setDate('endDate','2026-01-31'); await click('.admin-report-filters button')
       assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),26)
       assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),11)
-      assert.equal(await evaluate('document.querySelector("#admin-report-detail-title").textContent'),'Detail Riwayat Mock')
+      assert.equal(await evaluate('document.querySelector("#admin-report-detail-title").textContent'),'Detail Laporan')
       assert.equal(await summary(),initialSummary)
       await click('#admin-report-tab-income'); assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),15)
       await click('#admin-report-tab-monthly'); assert.equal(await evaluate('document.querySelectorAll(".admin-report-monthly-table tbody").length'),1)
@@ -218,8 +218,8 @@ test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan pengaturan un
       const script = await send('Page.addScriptToEvaluateOnNewDocument', { source: `const OriginalDate=Date;globalThis.Date=class extends OriginalDate{constructor(...args){super(...(args.length?args:['2026-11-11T01:00:00Z']))}static now(){return new OriginalDate('2026-11-11T01:00:00Z').getTime()}}` })
       try {
         await open()
-        for (const [index, start] of ['2026-11-04','2026-10-10','2026-08-10','2026-11-01'].entries()) {
-          await click(`.admin-report-presets button:nth-child(${index+1})`)
+        for (const [index, start] of ['2026-11-04','2026-10-10','2026-08-10'].entries()) {
+          await click(`.admin-report-presets > button:nth-of-type(${index+1})`)
           assert.equal(await evaluate('document.querySelector("[name=startDate]").value'), start)
           assert.equal(await evaluate('document.querySelector("[name=endDate]").value'), '2026-11-10')
         }

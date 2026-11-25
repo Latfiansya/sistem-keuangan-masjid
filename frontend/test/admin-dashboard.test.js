@@ -92,12 +92,15 @@ test('mode API mengambil ringkasan dashboard dari /api/admin/dashboard tanpa fal
   } finally { globalThis.fetch = originalFetch; await api.close() }
 })
 
-test('dashboard menangani loading/error dan menampilkan tabel dan enam tombol navigasi aktif dari satu data', async () => {
+test('dashboard menangani loading/error dan menampilkan tabel dan tujuh tombol navigasi aktif dari satu data', async () => {
   assert.match(renderPage({ dashboard: null, error: '' }), /role="status".*Memuat dashboard/)
   assert.match(renderPage({ dashboard: null, error: 'Gagal memuat.' }), /role="alert".*Gagal memuat/)
   const html = renderPage({ dashboard: await getAdminDashboard(), error: '' })
   assert.equal((html.match(/<table\b/g) || []).length, 2)
-  assert.equal((html.match(/<button\b/g) || []).length - (html.match(/disabled=""/g) || []).length, 6)
+  assert.equal((html.match(/<button\b/g) || []).length - (html.match(/disabled=""/g) || []).length, 7)
+  assert.equal(html.includes('disabled=""'), false)
+  assert.match(html, /title="Lihat semua transaksi di laporan"[^>]*>Lihat Semua/)
+  assert.doesNotMatch(html, /Daftar transaksi lengkap belum tersedia/)
   assert.match(html, /Data contoh/)
   assert.match(html, /Saldo Awal \(Rp\)/)
   assert.match(html, /17\.228\.200/)

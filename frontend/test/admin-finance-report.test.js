@@ -5,7 +5,7 @@ import { createServer } from 'vite'
 import { createElement as h } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter, Outlet, Route, Routes } from 'react-router'
-import { buildAdminFinanceReport, buildAdminMonthlyRecap, filterAdminFinanceTransactions, getAdminFinancePreset, summarizeAdminFinanceTransactions, validateAdminFinanceRange } from '../src/services/adminFinanceReportService.js'
+import { ADMIN_REPORT_MONTHS, buildAdminFinanceReport, buildAdminMonthlyRecap, filterAdminFinanceTransactions, getAdminFinanceMonthRange, getAdminFinancePreset, summarizeAdminFinanceTransactions, validateAdminFinanceRange } from '../src/services/adminFinanceReportService.js'
 
 let server, App, Page, DashboardPage, DownloadPage, getAdminDashboard
 before(async () => {
@@ -107,6 +107,62 @@ test('empat preset memakai kalender lokal, bulan bergulir menjepit akhir bulan, 
   assert.throws(() => getAdminFinancePreset('unknown'))
   for (const range of [{ startDate: '', endDate: report.updatedDate }, { startDate: '2026-10-15', endDate: '2026-10-14' }, { startDate: '2026-02-31', endDate: report.updatedDate }]) assert.throws(() => validateAdminFinanceRange(report, range))
   assert.deepEqual(report.totals, { openingBalance: 16864200, income: 1791500, expense: 1427500, closingBalance: 17228200 })
+})
+
+test('pilihan bulan lengkap Januari–Desember menghitung tanggal 01 s/d akhir bulan termasuk tahun kabisat', () => {
+  assert.deepEqual(ADMIN_REPORT_MONTHS, [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+  ])
+  assert.deepEqual(getAdminFinanceMonthRange(1, 2026), { startDate: '2026-01-01', endDate: '2026-01-31' })
+  assert.deepEqual(getAdminFinanceMonthRange(2, 2026), { startDate: '2026-02-01', endDate: '2026-02-28' })
+  assert.deepEqual(getAdminFinanceMonthRange(2, 2024), { startDate: '2024-02-01', endDate: '2024-02-29' })
+  assert.deepEqual(getAdminFinanceMonthRange(4, 2026), { startDate: '2026-04-01', endDate: '2026-04-30' })
+  assert.deepEqual(getAdminFinanceMonthRange(11, 2026), { startDate: '2026-11-01', endDate: '2026-11-30' })
+  assert.deepEqual(getAdminFinanceMonthRange(12, 2026), { startDate: '2026-12-01', endDate: '2026-12-31' })
+  assert.throws(() => getAdminFinanceMonthRange(0, 2026))
+  assert.throws(() => getAdminFinanceMonthRange(13, 2026))
+  assert.throws(() => getAdminFinanceMonthRange(5, 1800))
+})
+
+test('judul detail statis Detail Laporan serta urutan kontrol Pilih bulan sebelum tiga preset', async () => {
+  const dashboard = await getAdminDashboard()
+  const currentMonthName = ADMIN_REPORT_MONTHS[new Date().getMonth()]
+  const html = renderPage(Page, { dashboard, error: '' })
+  assert.match(html, /<h2 id="admin-report-detail-title">Detail Laporan<\/h2>/)
+  assert.doesNotMatch(html, /Bulan ini/)
+  assert.match(html, new RegExp(`Pilih bulan.*aria-haspopup="listbox" aria-expanded="false".*${currentMonthName}.*1 minggu terakhir.*1 bulan terakhir.*3 bulan terakhir`))
+
+  const htmlOtherRange = renderPage(Page, {
+    dashboard,
+    error: '',
+    reportView: {
+      range: { startDate: '2026-01-01', endDate: '2026-01-31' },
+      draftRange: { startDate: '2026-01-01', endDate: '2026-01-31' },
+      historyRange: { startDate: '2026-01-01', endDate: '2026-01-31' },
+      activePreset: 'monthSelect',
+      selectedMonth: 1,
+    },
+  })
+  assert.match(htmlOtherRange, /<h2 id="admin-report-detail-title">Detail Laporan<\/h2>/)
+  assert.match(htmlOtherRange, /class="admin-report-month-trigger is-active"/)
+  assert.match(htmlOtherRange, /<span id="admin-report-month-value">Januari<\/span>/)
+  const presetsOtherRange = htmlOtherRange.match(/class="admin-report-presets"[\s\S]*?<form/)[0]
+  assert.doesNotMatch(presetsOtherRange, /aria-pressed="true"/)
+
+  const htmlPresetActive = renderPage(Page, {
+    dashboard,
+    error: '',
+    reportView: {
+      range: { startDate: '2026-11-19', endDate: '2026-11-25' },
+      draftRange: { startDate: '2026-11-19', endDate: '2026-11-25' },
+      historyRange: { startDate: '2026-11-19', endDate: '2026-11-25' },
+      activePreset: 'week',
+      selectedMonth: 11,
+    },
+  })
+  assert.doesNotMatch(htmlPresetActive, /admin-report-month-trigger is-active/)
+  assert.match(htmlPresetActive, /aria-pressed="true">1 minggu terakhir/)
 })
 
 test('route/menu benar, loading/error, tiga jenis laporan saja dan aksi mutasi nonaktif', async () => {

@@ -47,7 +47,7 @@ export default function AdminDashboardPage() {
       </section>
       <AdminBalanceSummary categories={categories} totals={totals} updatedDate={updatedDate} />
       <section className="admin-transparency" aria-labelledby="admin-transparency-title"><div><h2 id="admin-transparency-title">Transparansi &amp; Akuntabilitas Keuangan</h2><p>Pantau dan ekspor laporan keuangan masjid dengan mudah.</p></div><button type="button" onClick={() => navigate('/admin/laporan')}><FileText size={16} aria-hidden="true" />Lihat Laporan</button></section>
-      <AdminRecentTransactions hasSessionChanges={Boolean(Object.keys(dashboard.transactionChanges || {}).length || dashboard.deletedTransactionIds?.length)} transactions={getAdminRecentTransactions(dashboard)} categories={categories} />
+      <AdminRecentTransactions hasSessionChanges={Boolean(Object.keys(dashboard.transactionChanges || {}).length || dashboard.deletedTransactionIds?.length)} onViewAll={() => navigate('/admin/laporan#kas-masuk')} transactions={getAdminRecentTransactions(dashboard)} categories={categories} />
       <div className="admin-shortcuts" aria-label="Pintasan admin">{shortcuts.map(({ label, description, icon: Icon, color, to }) => <button key={label} type="button" onClick={() => navigate(to)}><span className={`admin-shortcut-icon admin-shortcut-icon--${color}`}><Icon size={21} aria-hidden="true" /></span><span><strong>{label}</strong><small>{description}</small></span></button>)}</div>
     </div>
   )

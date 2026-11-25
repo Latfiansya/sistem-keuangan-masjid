@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useOutletContext } from 'react-router'
-import { ArrowDownCircle, ArrowDownRight, ArrowUpCircle, ArrowUpRight, CalendarDays, ChevronLeft, ChevronRight, Download, FileText, Landmark, Pencil, Search, ShieldCheck, Trash2, Wallet } from 'lucide-react'
+import { ArrowDownCircle, ArrowDownRight, ArrowUpCircle, ArrowUpRight, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Download, FileText, Landmark, Pencil, Search, ShieldCheck, Trash2, Wallet } from 'lucide-react'
 import { paginateAdminTransactions } from '../utils/adminPagination.js'
 import AdminBalanceSummary from '../components/AdminBalanceSummary.jsx'
 import AdminTransactionDeleteDialog from '../components/AdminTransactionDeleteDialog.jsx'
-import { buildAdminFinanceReport, buildAdminMonthlyRecap, filterAdminFinanceTransactions, getAdminFinancePreset, summarizeAdminFinanceTransactions, validateAdminFinanceRange } from '../services/adminFinanceReportService.js'
+import { ADMIN_REPORT_MONTHS, buildAdminFinanceReport, buildAdminMonthlyRecap, filterAdminFinanceTransactions, getAdminFinanceMonthRange, getAdminFinancePreset, summarizeAdminFinanceTransactions, validateAdminFinanceRange } from '../services/adminFinanceReportService.js'
 import { formatReportDate, formatReportMonth, formatReportNumber, formatRupiah, formatTransferNote } from '../utils/reportFormatters.js'
 import { adminCategoryColorStyle } from '../utils/adminCategoryColors.js'
 import { dataSource } from '../utils/env.js'
@@ -93,6 +93,8 @@ function AdminFinanceReportContent({ report, deleteTransaction }) {
   const [historyRange, setHistoryRange] = useState(() => reportView?.historyRange ?? report.coverage)
   const [rangeError, setRangeError] = useState('')
   const [activePreset, setActivePreset] = useState(() => reportView?.activePreset ?? null)
+  const [selectedMonth, setSelectedMonth] = useState(() => reportView?.selectedMonth ?? (new Date().getMonth() + 1))
+  const [monthMenuOpen, setMonthMenuOpen] = useState(false)
   const [tabId, setTabId] = useState(() => reportView?.tabId ?? 'income')
   const [query, setQuery] = useState(() => reportView?.query ?? '')
   const [page, setPage] = useState(() => reportView?.page || 1)
@@ -102,6 +104,8 @@ function AdminFinanceReportContent({ report, deleteTransaction }) {
   const deleteReturnFocus = useRef(null)
   const tabPanel = useRef(null)
   const reportNavigation = useRef(null)
+  const monthPickerRef = useRef(null)
+  const monthTriggerRef = useRef(null)
   const navigate = useNavigate()
   const periodLabel = formatReportMonth(report.month)
   const monthLabel = periodLabel.split(' ')[0]
@@ -131,7 +135,28 @@ function AdminFinanceReportContent({ report, deleteTransaction }) {
     return () => { controller.abort(); cancelAnimationFrame(frame) }
   }, [hash, key, reportView?.tabId])
 
-  function rememberView() { setReportView?.({ range, draftRange, historyRange, tabId, query, page: paginateAdminTransactions(ledgerTransactions, page, pageSize).page, pageSize, activePreset }) }
+  useEffect(() => {
+    if (!monthMenuOpen) return undefined
+    function handlePointerDown(event) {
+      if (!monthPickerRef.current?.contains(event.target)) {
+        setMonthMenuOpen(false)
+      }
+    }
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setMonthMenuOpen(false)
+        monthTriggerRef.current?.focus()
+      }
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [monthMenuOpen])
+
+  function rememberView() { setReportView?.({ range, draftRange, historyRange, tabId, query, page: paginateAdminTransactions(ledgerTransactions, page, pageSize).page, pageSize, activePreset, selectedMonth }) }
 
   function editTransactionItem(transaction) {
     rememberView()
@@ -154,15 +179,30 @@ function AdminFinanceReportContent({ report, deleteTransaction }) {
     )
   }
 
+  function resolveActiveYear(currentRange) {
+    const candidate = Number(currentRange?.startDate?.slice(0, 4) || currentRange?.endDate?.slice(0, 4))
+    return Number.isInteger(candidate) && candidate >= 1900 && candidate <= 9999
+      ? candidate
+      : new Date().getFullYear()
+  }
+
   function applyRange(event) {
     event.preventDefault()
+    setMonthMenuOpen(false)
     try { validateAdminFinanceRange(report, draftRange); setRange({ ...draftRange }); setHistoryRange({ ...draftRange }); setRangeError(''); setActivePreset(null); setPage(1) }
     catch (cause) { setRangeError(cause.message) }
   }
 
   function applyPreset(preset) {
     const next = getAdminFinancePreset(preset)
-    setRange(next); setDraftRange(next); setHistoryRange(next); setRangeError(''); setActivePreset(preset); setPage(1)
+    setRange(next); setDraftRange(next); setHistoryRange(next); setRangeError(''); setActivePreset(preset); setPage(1); setMonthMenuOpen(false)
+  }
+
+  function applyMonth(monthNumber) {
+    const activeYear = resolveActiveYear(range)
+    const next = getAdminFinanceMonthRange(monthNumber, activeYear)
+    setSelectedMonth(monthNumber)
+    setRange(next); setDraftRange(next); setHistoryRange(next); setRangeError(''); setActivePreset('monthSelect'); setPage(1); setMonthMenuOpen(false)
   }
 
   function selectTab(id) { setTabId(id); setQuery(''); setPage(1) }
@@ -186,8 +226,8 @@ function AdminFinanceReportContent({ report, deleteTransaction }) {
     <header className="admin-report-hero"><span><Landmark size={14} aria-hidden="true" />MASJID AL-HIDAYAH</span><h2>LAPORAN<br />KEUANGAN</h2><p>Ringkasan pemasukan, pengeluaran, dan saldo<br className="admin-desktop-break" /> dana masjid dalam satu tampilan.</p><div><button type="button" onClick={() => navigate('/admin/kelola-dana', { state: { openTransaction: 'income' } })}><ArrowDownCircle size={16} aria-hidden="true" />Tambah Pemasukan</button><button type="button" onClick={() => navigate('/admin/kelola-dana', { state: { openTransaction: 'expense' } })}><ArrowUpCircle size={16} aria-hidden="true" />Tambah Pengeluaran</button></div></header>
     <section className="admin-report-balance" aria-label="Total saldo seluruh dana"><p>TOTAL SALDO SELURUH DANA</p><span><i aria-hidden="true" />{periodLabel} · snapshot {snapshotLabel}</span><h2>{formatRupiah(report.totals.closingBalance)}</h2><dl>{[['openingBalance', 'Saldo Awal'], ['income', 'Pemasukan'], ['expense', 'Pengeluaran']].map(([key, label]) => <div key={key}><dt>{label}</dt><dd>{formatRupiah(report.totals[key])}</dd></div>)}</dl></section>
     <div className="admin-report-category-cards">{report.categories.map((category) => <button key={category.id} type="button" style={adminCategoryColorStyle(category.color)} className={`admin-report-category-card admin-report-category--${category.color}`} onClick={() => { selectTab('monthly'); tabPanel.current?.scrollIntoView({ block: 'start' }) }} aria-label={`Lihat rincian ${category.label}`}><span><Wallet size={21} aria-hidden="true" /></span><small>{category.label}</small><strong>{formatRupiah(category.closingBalance)}</strong></button>)}</div>
-    <section className="admin-report-detail" aria-labelledby="admin-report-detail-title"><div className="admin-report-detail-heading"><div><h2 id="admin-report-detail-title">Detail {range.startDate.slice(0, 7) === report.month ? periodLabel : 'Riwayat Mock'}</h2><p>Rincian pemasukan dan pengeluaran simulasi untuk rentang terpilih.</p></div><div className="admin-report-presets">{[['week', '1 minggu terakhir'], ['month', '1 bulan terakhir'], ['quarter', '3 bulan terakhir'], ['currentMonth', 'Bulan ini']].map(([id, label]) => <button key={id} type="button" aria-pressed={activePreset === id} onClick={() => applyPreset(id)}>{id === 'currentMonth' && <CalendarDays size={14} aria-hidden="true" />}{label}</button>)}</div></div>
-      <form className="admin-report-filters" noValidate onSubmit={applyRange} aria-label="Filter tanggal transaksi mock"><span><CalendarDays size={16} aria-hidden="true" />Rentang transaksi:</span>{[['startDate', 'Dari tanggal'], ['endDate', 'Sampai tanggal']].map(([key, label]) => <label key={key}><span>{label}</span><input name={key} type="date" required value={draftRange[key]} onChange={(event) => { setDraftRange((previous) => ({ ...previous, [key]: event.target.value })); setRangeError(''); setActivePreset(null); setPage(1) }} aria-invalid={Boolean(rangeError)} aria-describedby={rangeError ? 'admin-report-range-error' : undefined} /></label>)}<button type="submit">Terapkan</button><p>{transactions.length} dari {report.transactions.length} transaksi mock</p></form>
+    <section className="admin-report-detail" aria-labelledby="admin-report-detail-title"><div className="admin-report-detail-heading"><div><h2 id="admin-report-detail-title">Detail Laporan</h2><p>Rincian pemasukan dan pengeluaran simulasi untuk rentang terpilih.</p></div><div className="admin-report-presets"><div className="admin-report-month-picker" ref={monthPickerRef}><span id="admin-report-month-label" className="admin-report-month-label">Pilih bulan</span><div className="admin-report-month-dropdown"><button ref={monthTriggerRef} type="button" className={`admin-report-month-trigger${activePreset === 'monthSelect' ? ' is-active' : ''}`} aria-labelledby="admin-report-month-label admin-report-month-value" aria-haspopup="listbox" aria-expanded={monthMenuOpen} aria-controls="admin-report-month-listbox" onClick={() => setMonthMenuOpen((open) => !open)}><CalendarDays size={14} aria-hidden="true" /><span id="admin-report-month-value">{ADMIN_REPORT_MONTHS[selectedMonth - 1]}</span><ChevronDown size={14} aria-hidden="true" className={monthMenuOpen ? 'is-open' : undefined} /></button>{monthMenuOpen && <ul id="admin-report-month-listbox" role="listbox" aria-labelledby="admin-report-month-label" className="admin-report-month-menu">{ADMIN_REPORT_MONTHS.map((label, index) => { const monthNumber = index + 1; return <li key={label}><button type="button" role="option" aria-selected={selectedMonth === monthNumber} className={selectedMonth === monthNumber ? 'is-selected' : undefined} onClick={() => applyMonth(monthNumber)}>{label}</button></li> })}</ul>}</div></div>{[['week', '1 minggu terakhir'], ['month', '1 bulan terakhir'], ['quarter', '3 bulan terakhir']].map(([id, label]) => <button key={id} type="button" aria-pressed={activePreset === id} onClick={() => applyPreset(id)}>{label}</button>)}</div></div>
+      <form className="admin-report-filters" noValidate onSubmit={applyRange} aria-label="Filter tanggal transaksi mock"><span><CalendarDays size={16} aria-hidden="true" />Rentang transaksi:</span>{[['startDate', 'Dari tanggal'], ['endDate', 'Sampai tanggal']].map(([key, label]) => <label key={key}><span>{label}</span><input name={key} type="date" required value={draftRange[key]} onChange={(event) => { setDraftRange((previous) => ({ ...previous, [key]: event.target.value })); setRangeError(''); setActivePreset(null); setMonthMenuOpen(false); setPage(1) }} aria-invalid={Boolean(rangeError)} aria-describedby={rangeError ? 'admin-report-range-error' : undefined} /></label>)}<button type="submit">Terapkan</button><p>{transactions.length} dari {report.transactions.length} transaksi mock</p></form>
       {rangeError && <p className="admin-report-error" id="admin-report-range-error" role="alert">{rangeError}</p>}
       <aside className="admin-report-notice"><ShieldCheck size={18} aria-hidden="true" /><p>Data mock khusus review · {report.historicalTransactionCount} transaksi historis mock, {report.transactions.length} transaksi aktif; bukan riwayat resmi. Ringkasan saldo tetap snapshot {snapshotLabel}. Filter tanggal juga membatasi ketiga tampilan laporan di bawah.{report.sessionChangeCount > 0 && <> Ada perubahan sesi: tabel, total filter, dan rekap memakai data aktif. Saldo snapshot tetap memakai baseline; ekspor dokumen menggunakan transaksi aktif.</>}</p></aside>
       <div className="admin-report-transaction-panels"><TransactionPanel type="income" transactions={transactions} categories={report.categories} onEdit={editTransactionItem} onDelete={requestDeleteTransaction} /><TransactionPanel type="expense" transactions={transactions} categories={report.categories} onEdit={editTransactionItem} onDelete={requestDeleteTransaction} /></div>

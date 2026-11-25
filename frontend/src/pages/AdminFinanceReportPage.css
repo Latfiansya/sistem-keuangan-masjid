@@ -28,10 +28,20 @@
 .admin-report-detail-heading h2, .admin-report-ledger-heading h2 { margin: 0; font-size: 24px; font-weight: 750; line-height: 1.4; letter-spacing: -.5px; }
 .admin-report-detail-heading p, .admin-report-ledger-heading p { margin: 4px 0 0; color: #8b9fbf; font-size: 13px; line-height: 1.5; }
 .admin-report-presets { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-.admin-report-presets button, .admin-report-presets > span { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 8px 12px; border: 1px solid #e1e9f4; border-radius: 12px; color: #61748e; background: #fff; font-size: 12px; }
-.admin-report-presets button[aria-pressed="true"] { color: #fff; background: #087815; }
-.admin-report-hero button, .admin-report-presets button:not(:disabled), .admin-report-filters button, .admin-report-download button { cursor: pointer; }
-.admin-report-presets button:disabled { opacity: .6; }
+.admin-report-presets > button, .admin-report-month-trigger { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 8px 12px; border: 1px solid #e1e9f4; border-radius: 12px; color: #61748e; background: #fff; font: inherit; font-size: 12px; }
+.admin-report-presets > button[aria-pressed="true"], .admin-report-month-trigger.is-active { border-color: #087815; color: #fff; background: #087815; }
+.admin-report-hero button, .admin-report-presets > button:not(:disabled), .admin-report-month-trigger, .admin-report-month-menu button, .admin-report-filters button, .admin-report-download button { cursor: pointer; }
+.admin-report-presets > button:disabled { opacity: .6; }
+.admin-report-presets > button:focus-visible, .admin-report-month-trigger:focus-visible, .admin-report-month-menu button:focus-visible { outline: 3px solid #d58b00; outline-offset: 2px; }
+.admin-report-month-picker { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.admin-report-month-label { color: #61748e; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.admin-report-month-dropdown { position: relative; }
+.admin-report-month-trigger svg:last-child { transition: transform 140ms ease; }
+.admin-report-month-trigger svg.is-open { transform: rotate(180deg); }
+.admin-report-month-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 40; display: grid; gap: 2px; min-width: 176px; max-width: calc(100vw - 48px); max-height: 280px; overflow-y: auto; margin: 0; padding: 6px; border: 1px solid #d7e3f0; border-radius: 14px; background: #fff; box-shadow: 0 12px 28px #17344f22; list-style: none; }
+.admin-report-month-menu button { width: 100%; padding: 8px 12px; border: 0; border-radius: 10px; color: #34465f; background: transparent; font: inherit; font-size: 12px; font-weight: 500; text-align: left; }
+.admin-report-month-menu button:hover { color: #087815; background: #f0faf3; }
+.admin-report-month-menu button.is-selected { color: #087815; background: #ecfdf5; font-weight: 700; }
 .admin-report-filters { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 8px 16px; border-radius: 16px; background: #fff; }
 .admin-report-filters > span { display: flex; align-items: center; gap: 6px; min-height: 36px; color: #8295af; font-size: 12px; }
 .admin-report-filters > span svg { color: #148447; }
@@ -115,7 +125,7 @@
 @keyframes admin-report-spin { to { transform: rotate(360deg); } }
 @media (max-width: 1023px) {
   .admin-report-hero { padding: 28px 32px; }
-  .admin-report-hero button, .admin-report-presets button, .admin-report-download button { min-height: 44px; }
+  .admin-report-hero button, .admin-report-presets > button, .admin-report-month-trigger, .admin-report-download button { min-height: 44px; }
   .admin-report-filters input, .admin-report-search input { font-size: 16px; }
   .admin-report-category-cards { gap: 12px; }
   .admin-report-category-card { padding: 16px; }
