@@ -40,9 +40,9 @@ export default function AdminActivityLogPage() {
   return (
     <div className="admin-activity">
       <header className="admin-activity-hero">
-        <span className="admin-activity-hero-badge"><Shield size={14} aria-hidden="true" />APPEND-ONLY · TIDAK DAPAT DIHAPUS</span>
+        <span className="admin-activity-hero-badge"><Shield size={14} aria-hidden="true" />RIWAYAT PERMANEN · TIDAK DAPAT DIHAPUS</span>
         <h2>Activity Log</h2>
-        <p>{dataSource === 'mock' ? <>Data contoh aktivitas pengurus untuk meninjau konsep pencatatan<br className="admin-activity-desktop-break" /> perubahan yang tidak menyediakan fitur ubah/hapus riwayat.</> : <>Riwayat aktivitas perubahan data keuangan, konten, dan akun pengurus<br className="admin-activity-desktop-break" /> yang tercatat di database secara permanen (append-only).</>}</p>
+        <p>{dataSource === 'mock' ? <>Data contoh aktivitas pengurus untuk meninjau konsep pencatatan<br className="admin-activity-desktop-break" /> perubahan yang tidak menyediakan fitur ubah/hapus riwayat.</> : <>Riwayat aktivitas perubahan data keuangan, konten, dan akun pengurus.</>}</p>
       </header>
       <section className="admin-panel admin-activity-filters" aria-labelledby="admin-activity-filters-title">
         <h3 id="admin-activity-filters-title"><Filter size={16} aria-hidden="true" />Filter Aktivitas</h3>
@@ -54,9 +54,9 @@ export default function AdminActivityLogPage() {
         </div>
         <div className="admin-activity-search"><Search size={16} aria-hidden="true" /><label htmlFor="admin-activity-query" className="sr-only">Cari nama admin atau judul aktivitas</label><input id="admin-activity-query" name="query" type="search" maxLength={160} autoComplete="off" placeholder="Cari nama admin atau judul aktivitas..." value={filters.query} onChange={handleFilter} disabled={!activities || Boolean(error)} /></div>
       </section>
-      <aside className="admin-activity-system"><span><Shield size={22} aria-hidden="true" /></span><div><h3>Sistem Append-Only</h3><p>{dataSource === 'mock' ? 'Konsep riwayat tanpa fitur ubah/hapus log. Saat ini hanya data contoh; integritas dan kelengkapan pencatatan belum ditegakkan.' : 'Riwayat aktivitas berasal dari PostgreSQL tanpa fitur ubah atau hapus log.'}</p></div></aside>
-      {error ? <p className="admin-dashboard-state" role="alert">{error}</p> : !activities ? <p className="admin-dashboard-state" role="status">Memuat aktivitas contoh…</p> : groups.length ? (
-        <div className="admin-activity-timeline" aria-label="Timeline aktivitas contoh">
+      {dataSource === 'mock' && <aside className="admin-activity-system"><span><Shield size={22} aria-hidden="true" /></span><div><h3>Sistem Riwayat Permanen</h3><p>Konsep riwayat tanpa fitur ubah/hapus log. Saat ini hanya data contoh; integritas dan kelengkapan pencatatan belum ditegakkan.</p></div></aside>}
+      {error ? <p className="admin-dashboard-state" role="alert">{error}</p> : !activities ? <p className="admin-dashboard-state" role="status">Memuat log aktivitas…</p> : groups.length ? (
+        <div className="admin-activity-timeline" aria-label="Timeline riwayat aktivitas">
           {groups.map((group) => <section key={group.date} className="admin-activity-date-group" aria-labelledby={`admin-activity-day-${group.date}`}>
             <div className="admin-activity-day-heading"><h3 id={`admin-activity-day-${group.date}`}><span><CalendarDays size={16} aria-hidden="true" /></span><time dateTime={group.date}>{formatReportDate(group.date)}</time></h3><i aria-hidden="true" /><span>{group.items.length} aktivitas</span></div>
             <ol className="admin-activity-events">{group.items.map((activity) => {

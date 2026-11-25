@@ -1,7 +1,9 @@
 import { FileText, LogIn, MapPin } from 'lucide-react'
 import { Link } from 'react-router'
+import { isPublicReportEnabled } from '../services/reportService.js'
 
 export default function Footer({ content, onReportAccess }) {
+  const showPublicReport = isPublicReportEnabled(content)
   return (
     <footer className="public-footer">
       <div className="footer-top">
@@ -11,7 +13,7 @@ export default function Footer({ content, onReportAccess }) {
         </div>
         <div className="footer-links">
           <p>TAUTAN KHUSUS</p>
-          <Link to="/laporan-keuangan" onClick={onReportAccess}><FileText aria-hidden="true" />Laporan Keuangan</Link>
+          {showPublicReport && <Link to="/laporan-keuangan" onClick={onReportAccess}><FileText aria-hidden="true" />Laporan Keuangan</Link>}
           <Link to="/admin/login"><LogIn aria-hidden="true" />Masuk Pengurus</Link>
         </div>
       </div>

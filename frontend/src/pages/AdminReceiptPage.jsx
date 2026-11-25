@@ -16,11 +16,11 @@ function ReceiptDocument({ receipt }) {
   return <article className="admin-receipt-document" aria-label={issued ? `Kwitansi ${receipt.number}` : 'Pratinjau draft kwitansi'}>
     <header className="admin-receipt-banner"><img src={`${import.meta.env.BASE_URL}assets/masjid-background.webp`} alt="" width="1928" height="1089" /><div><span><Building2 size={24} aria-hidden="true" /></span><h3>MASJID AL-HIDAYAH<br />SOROLATEN</h3></div></header>
     <div className="admin-receipt-body">
-      {!issued && <p className="admin-receipt-draft">Draft / Belum tersimpan ke server</p>}
+      {!issued && <p className="admin-receipt-draft">Pratinjau Draf · Belum Diterbitkan</p>}
       {receipt?.status === 'Dibatalkan' && <p className="admin-receipt-cancelled">Dibatalkan — kwitansi ini tidak berlaku</p>}
       <dl>{[['No', receipt?.number || 'Belum diterbitkan'], ['Telah terima dari', receipt?.payer || 'Nama pemberi pembayaran'], ['Uang sejumlah', receipt ? formatRupiah(Number(receipt.amount)) : 'Nominal jumlah'], ['Untuk Pembayaran', receipt?.purpose || 'Keterangan pembayaran'], ['Metode Pembayaran', receipt?.method || 'Pilih metode pembayaran']].map(([label, value]) => <div key={label}><dt>{label}:</dt><dd>{value}</dd></div>)}</dl>
       <div className="admin-receipt-bottom"><p><span>Terbilang:</span> <strong>{receipt ? receiptAmountInWords(Number(receipt.amount)) : 'Belum diisi'}</strong></p><p><strong>Yogyakarta,</strong> {receipt?.date || 'dd/mm/yyyy'}</p></div>
-      <p className="admin-receipt-generated"><Sparkles size={20} aria-hidden="true" />Kwitansi generated dengan web</p>
+      <p className="admin-receipt-generated"><Sparkles size={20} aria-hidden="true" />Diterbitkan secara digital oleh Masjid Al-Hidayah</p>
     </div>
   </article>
 }
@@ -196,10 +196,10 @@ export default function AdminReceiptPage() {
   const note = !receipt
     ? 'Isi field melalui Buat Kwitansi sebelum mengunduh PNG.'
     : cancelled ? `Kwitansi ${receipt.number} sudah dibatalkan sehingga tidak dapat diunduh.`
-    : receipt.number ? `Kwitansi ${receipt.number} tersimpan di database. Nomor memakai format sementara sampai format resmi ditetapkan.` : 'PNG menyertakan penanda draft. Nomor resmi dan penyimpanan server hanya tersedia pada mode API.'
+    : receipt.number ? `Kwitansi ${receipt.number} tersimpan di database.` : 'PNG menyertakan penanda draft. Nomor resmi dan penyimpanan server hanya tersedia pada mode API.'
 
   return <div className="admin-receipt">
-    <header className="admin-receipt-heading"><div><h2>Kwitansi</h2><p>Generate dan unduh kwitansi PNG</p></div><button ref={trigger} type="button" className="admin-receipt-create" disabled={exporting} onClick={() => { setToast(null); setModalOpen(true) }}><Receipt size={20} aria-hidden="true" />Buat Kwitansi</button></header>
+    <header className="admin-receipt-heading"><div><h2>Kwitansi</h2><p>Buat, kelola, dan unduh kwitansi donasi (PNG)</p></div><button ref={trigger} type="button" className="admin-receipt-create" disabled={exporting} onClick={() => { setToast(null); setModalOpen(true) }}><Receipt size={20} aria-hidden="true" />Buat Kwitansi</button></header>
     <ReceiptDocument receipt={receipt} />
     <button ref={downloadButton} type="button" className="admin-receipt-download" onClick={handleDownload} disabled={!receipt || cancelled || exporting} aria-describedby="admin-receipt-download-note">{exporting ? <LoaderCircle size={20} className="admin-receipt-spinner" aria-hidden="true" /> : <Download size={20} aria-hidden="true" />}{exporting ? 'Membuat PNG…' : 'Unduh PNG'}</button>
     <p id="admin-receipt-download-note" className="admin-receipt-note">{note}</p>

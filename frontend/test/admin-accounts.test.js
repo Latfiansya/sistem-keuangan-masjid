@@ -87,7 +87,7 @@ test('route akun langsung/trailing slash memakai menu aktif dan label visual tan
     assert.match(html, /<h1>Kelola Akun<\/h1>/)
     assert.match(html, /aria-current="page"[^>]*href="\/admin\/kelola-akun"/)
     assert.match(html, /Super Admin Only/)
-    assert.match(html, /Memuat daftar akun contoh/)
+    assert.match(html, /Memuat daftar akun pengurus/)
     assert.match(html, /role="search"/)
     assert.doesNotMatch(html, /public-layout|public-footer|admin-login-form|type="password"|<dialog/)
   }

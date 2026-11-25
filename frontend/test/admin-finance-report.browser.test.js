@@ -167,7 +167,7 @@ test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan pengaturan un
     await t.test('pencarian/rentang lokal, preset, validasi dan rekap parsial/kosong tanpa mengubah snapshot', async () => {
       await open(); await click('.admin-report-page-size button:last-of-type'); const initialSummary = await summary()
       await search(' INFAQ '); assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),fixture.filter(row=>row.type==='income'&&row.description.toLowerCase().includes('infaq')).length)
-      await search('tidak ditemukan'); assert.match(await evaluate('document.querySelector(".admin-report-ledger-table tbody").textContent'),/Tidak ada transaksi mock/)
+      await search('tidak ditemukan'); assert.match(await evaluate('document.querySelector(".admin-report-ledger-table tbody").textContent'),/Tidak ada transaksi yang sesuai filter/)
       await search(' '); assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),141)
       assert.deepEqual(await evaluate('[...document.querySelectorAll(".admin-report-presets > button")].map(e=>e.textContent)'), ['1 minggu terakhir', '1 bulan terakhir', '3 bulan terakhir'])
       for (let index = 0; index < 3; index++) {
@@ -181,8 +181,8 @@ test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan pengaturan un
       }
       await setDate('startDate','2026-10-14'); await setDate('endDate','2026-10-14'); await click('.admin-report-filters button')
       assert.equal(await evaluate('document.querySelectorAll(".admin-report-transactions li").length'),1)
-      assert.match(await evaluate('document.querySelector(".admin-report-transactions--income").textContent'),/Tidak ada transaksi mock pemasukan/)
-      assert.match(await evaluate('document.querySelector(".admin-report-ledger-table tbody").textContent'),/Tidak ada transaksi mock/)
+      assert.match(await evaluate('document.querySelector(".admin-report-transactions--income").textContent'),/Tidak ada transaksi pemasukan/)
+      assert.match(await evaluate('document.querySelector(".admin-report-ledger-table tbody").textContent'),/Tidak ada transaksi yang sesuai filter/)
       await click('#admin-report-tab-expense'); assert.equal(await evaluate('document.querySelectorAll(".admin-report-ledger-table tbody tr[data-transaction-id]").length'),1)
       await setDate('startDate','2026-10-15'); await click('.admin-report-filters button')
       assert.match(await evaluate('document.querySelector("#admin-report-range-error").textContent'),/tidak boleh melebihi/)
@@ -223,9 +223,9 @@ test('Laporan admin: snapshot, tiga jenis laporan, filter mock dan pengaturan un
           assert.equal(await evaluate('document.querySelector("[name=startDate]").value'), start)
           assert.equal(await evaluate('document.querySelector("[name=endDate]").value'), '2026-11-10')
         }
-        assert.match(await evaluate('document.querySelector(".admin-report-ledger-table tbody").textContent'), /Tidak ada transaksi mock/)
+        assert.match(await evaluate('document.querySelector(".admin-report-ledger-table tbody").textContent'), /Tidak ada transaksi yang sesuai filter/)
         await click('#admin-report-tab-monthly')
-        assert.match(await evaluate('document.querySelector(".admin-report-monthly-table tbody").textContent'), /Tidak ada transaksi mock/)
+        assert.match(await evaluate('document.querySelector(".admin-report-monthly-table tbody").textContent'), /Tidak ada transaksi untuk rentang ini/)
         assert.equal(await evaluate('document.querySelectorAll(".admin-report-monthly-table [data-month-total]").length'), 0)
       } finally {
         await send('Page.removeScriptToEvaluateOnNewDocument', { identifier: script.identifier })

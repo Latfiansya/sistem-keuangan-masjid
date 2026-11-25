@@ -216,7 +216,7 @@ export default function AdminAccountsPage() {
         <button type="submit" disabled={!accounts || Boolean(error)}>Pencarian</button>
       </form>
       {feedback && <p className={`admin-crud-feedback${feedback.type === 'error' ? ' admin-crud-feedback--error' : ''}`} role={feedback.type === 'error' ? 'alert' : 'status'}>{feedback.message}</p>}
-      {error ? <p className="admin-dashboard-state" role="alert">{error}</p> : !accounts ? <p className="admin-dashboard-state" role="status">Memuat daftar akun contoh…</p> : visibleAccounts.length ? (
+      {error ? <p className="admin-dashboard-state" role="alert">{error}</p> : !accounts ? <p className="admin-dashboard-state" role="status">Memuat daftar akun pengurus…</p> : visibleAccounts.length ? (
         <ul className="admin-accounts-list" aria-label={apiEnabled ? 'Daftar akun pengurus' : 'Daftar akun contoh'}>
           {visibleAccounts.map((account) => <li className="admin-panel admin-accounts-card" key={account.id}>
             <span className="admin-accounts-avatar" aria-hidden="true">{account.initials}</span>
@@ -235,7 +235,7 @@ export default function AdminAccountsPage() {
           </li>)}
         </ul>
       ) : <p className="admin-dashboard-state" role="status">{accounts.length ? 'Tidak ada akun yang cocok. Gunakan nama atau email lain, lalu tekan Pencarian.' : 'Belum ada akun pengurus.'}</p>}
-      {accounts && <p className="admin-accounts-note">{apiEnabled ? 'Terhubung ke database · Pengelolaan akun pengurus hanya diizinkan untuk role Super Admin saat autentikasi diaktifkan.' : 'Data contoh tampilan, bukan akun login. Super Admin Only adalah label visual; izin akses belum diterapkan. Fitur tambah, edit, aktivasi, nonaktifkan dan hapus belum tersedia.'}</p>}
+      {accounts && <p className="admin-accounts-note">{apiEnabled ? 'Pengelolaan akun pengurus hanya tersedia untuk akun dengan role Super Admin.' : 'Data contoh tampilan, bukan akun login. Super Admin Only adalah label visual; izin akses belum diterapkan. Fitur tambah, edit, aktivasi, nonaktifkan dan hapus belum tersedia.'}</p>}
       {accounts && <span className="sr-only" role="status">{visibleAccounts.length} akun ditampilkan.</span>}
       {apiEnabled && dialog && (
         <AccountDialog

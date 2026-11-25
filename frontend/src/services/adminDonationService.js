@@ -76,6 +76,26 @@ export function withUpdatedDonationBankSlots(values, rawSlots) {
   }
 }
 
+export function normalizeDonationReadinessReason(reason) {
+  if (typeof reason !== 'string' || !reason) return reason
+  return reason
+    .replace(/^Siap ditampilkan dalam pratinjau simulasi\.$/i, 'Aktif dan siap ditampilkan pada halaman Kontak.')
+    .replace(/^(\d+)\s+rekening siap ditampilkan dalam pratinjau simulasi\.$/i, '$1 rekening aktif dan siap ditampilkan pada halaman Kontak.')
+    .replace(/dalam pratinjau simulasi/gi, 'pada halaman Kontak')
+    .replace(/pratinjau simulasi/gi, 'halaman Kontak')
+}
+
+export function sanitizeAdminDonationReadiness(readiness) {
+  if (!readiness || typeof readiness !== 'object') return readiness
+  const next = { ...readiness }
+  for (const key of ['qris', 'bank', 'whatsapp']) {
+    if (next[key] && typeof next[key] === 'object' && typeof next[key].reason === 'string') {
+      next[key] = { ...next[key], reason: normalizeDonationReadinessReason(next[key].reason) }
+    }
+  }
+  return next
+}
+
 function normalizeAdminDonationValues(data) {
   const rawAccounts = Array.isArray(data?.bankAccounts) ? data.bankAccounts.map(mapRawBankEntry) : []
   const slots = rawAccounts.length
@@ -102,6 +122,7 @@ function normalizeAdminDonationValues(data) {
   const second = slots[1] ?? emptyBankSlot()
   return {
     ...data,
+    ...(data?.readiness ? { readiness: sanitizeAdminDonationReadiness(data.readiness) } : {}),
     bankAccounts: slots.slice(0, MAX_DONATION_BANKS),
     bankName: String(data?.bankName ?? first.bankName),
     accountNumber: String(data?.accountNumber ?? first.accountNumber),
@@ -333,7 +354,7 @@ export function getAdminDonationReadiness(values) {
     reason: !complete
       ? missing
       : enabled
-        ? (readyReason || 'Siap ditampilkan dalam pratinjau simulasi.')
+        ? (readyReason || 'Aktif dan siap ditampilkan pada halaman Kontak.')
         : (draftReason || 'Data lengkap. Aktifkan toggle untuk menampilkannya dalam pratinjau.'),
   })
   const qris = method(qrisComplete, values?.qrisEnabled, 'Gambar QRIS belum tersedia. Unggah gambar valid, lalu aktifkan visibilitas QRIS.')
@@ -342,7 +363,7 @@ export function getAdminDonationReadiness(values) {
     : slot1?.complete && partialExtraSlots.length > 0
       ? `Rekening ${partialExtraSlots[0].index + 1} baru diisi sebagian. Lengkapi ketiga kolomnya atau hapus/kosongkan slot tersebut.`
       : 'Lengkapi Nama Bank, Nomor Rekening yang valid, dan Atas Nama pada Rekening 1 sebelum mengaktifkan transfer bank.'
-  const bankReady = `${accounts.length} rekening siap ditampilkan dalam pratinjau simulasi.`
+  const bankReady = `${accounts.length} rekening aktif dan siap ditampilkan pada halaman Kontak.`
   const bankDraft = accounts.length > 1
     ? `${accounts.length} rekening lengkap. Aktifkan toggle untuk menampilkannya dalam pratinjau.`
     : 'Data lengkap. Aktifkan toggle untuk menampilkannya dalam pratinjau.'

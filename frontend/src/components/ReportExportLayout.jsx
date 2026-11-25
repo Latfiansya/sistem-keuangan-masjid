@@ -6,7 +6,7 @@ export default function ReportExportLayout({ report, headingRef, title, descript
     <div className={`report-export report-export--${step === 1 ? 'picker' : 'preview'}`}>
       <header className="report-export-header">
         {onBack && <button type="button" className="export-button export-button--back" onClick={onBack} disabled={busy}><ArrowLeft aria-hidden="true" />Kembali</button>}
-        <div><h1 ref={headingRef} tabIndex={-1}>Laporan Keuangan {formatReportYear(report.range)}</h1><p>{report.name}</p><small>Data contoh pengembangan · bukan laporan produksi</small></div>
+        <div><h1 ref={headingRef} tabIndex={-1}>Laporan Keuangan {formatReportYear(report.range)}</h1><p>{report.name}</p><small>Laporan keuangan resmi · diperbarui berkala</small></div>
       </header>
       <div className="report-export-introduction"><div><h2>{title}</h2><p>{description}</p></div>
         <ol className="report-export-steps" aria-label="Tahapan unduhan">

@@ -174,7 +174,26 @@ test('mode API memanggil /api/admin/donation-settings tanpa fallback mock; route
   const originalFetch = globalThis.fetch
   globalThis.fetch = async (url, init) => {
     if (url === '/api/admin/donation-settings' && init.method === 'GET') {
-      return new Response(JSON.stringify({ success: true, data: { qrisFile: '/images/qris-donasi.png', qrisEnabled: true, bankName: 'BSI', accountNumber: '123456', accountName: 'Masjid', bankEnabled: true, whatsappNumber: '', whatsappEnabled: false, messageTemplate: 'Halo', donationNote: 'Catatan' } }), { status: 200 })
+      return new Response(JSON.stringify({
+        success: true,
+        data: {
+          qrisFile: '/images/qris-donasi.png',
+          qrisEnabled: true,
+          bankName: 'BSI',
+          accountNumber: '123456',
+          accountName: 'Masjid',
+          bankEnabled: true,
+          whatsappNumber: '',
+          whatsappEnabled: false,
+          messageTemplate: 'Halo',
+          donationNote: 'Catatan',
+          readiness: {
+            qris: { complete: true, enabled: true, reason: 'Siap ditampilkan dalam pratinjau simulasi.' },
+            bank: { complete: true, enabled: true, reason: '2 rekening siap ditampilkan dalam pratinjau simulasi.' },
+            whatsapp: { complete: false, enabled: false, reason: 'Lengkapi nomor WhatsApp.' },
+          },
+        },
+      }), { status: 200 })
     }
     return new Response(JSON.stringify({ success: false, error: { message: 'Unexpected' } }), { status: 404 })
   }
@@ -186,5 +205,12 @@ test('mode API memanggil /api/admin/donation-settings tanpa fallback mock; route
     assert.equal(settings.bankName2, '')
     assert.equal(settings.accountNumber2, '')
     assert.equal(settings.accountName2, '')
+    // Normalisasi defensif M-35 membersihkan frasa "pratinjau simulasi" baik dari respons backend maupun komputasi lokal
+    assert.equal(settings.readiness.qris.reason, 'Aktif dan siap ditampilkan pada halaman Kontak.')
+    assert.equal(settings.readiness.bank.reason, '2 rekening aktif dan siap ditampilkan pada halaman Kontak.')
+    const localReadiness = adapter.getAdminDonationReadiness(settings)
+    assert.equal(localReadiness.qris.reason, 'Aktif dan siap ditampilkan pada halaman Kontak.')
+    assert.equal(localReadiness.bank.reason, '1 rekening aktif dan siap ditampilkan pada halaman Kontak.')
+    assert.doesNotMatch(localReadiness.qris.reason + localReadiness.bank.reason, /simulasi|mock/i)
   } finally { globalThis.fetch = originalFetch; await api.close() }
 })

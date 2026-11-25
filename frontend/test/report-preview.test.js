@@ -70,7 +70,8 @@ test('PDF dan PNG memakai lembar identik dengan semua nominal dan total dari ser
   for (const markup of html) {
     assert.equal((markup.match(/data-transaction-id=/g) || []).length, 50)
     assert.equal((markup.match(/id="report-sheet-summary-heading"/g) || []).length, 1)
-    for (const value of ['18.590.700', '10.665.500', '8.771.500', '20.484.700', 'Data contoh pengembangan']) assert.ok(markup.includes(value))
+    for (const value of ['18.590.700', '10.665.500', '8.771.500', '20.484.700', 'Laporan keuangan resmi · diperbarui berkala', 'Masjid Al-Hidayah · Pemasukan']) assert.ok(markup.includes(value))
+    assert.doesNotMatch(markup, /Data contoh pengembangan|bukan laporan produksi|simulasi|mock/i)
     assert.match(markup, /aria-describedby="report-export-status"/)
     assert.doesNotMatch(markup, /Ubah format/)
     assert.match(markup, /Kembali ke pilihan format/)

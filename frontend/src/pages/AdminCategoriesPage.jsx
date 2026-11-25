@@ -42,7 +42,7 @@ export default function AdminCategoriesPage() {
         <div><h2>Kategori Dana</h2><p>Kelola kategori dana masjid</p></div>
         <button className="admin-categories-add" type="button" ref={addButton} onClick={(event) => openDialog('add', null, event)}><Plus size={16} aria-hidden="true" />Tambah Kategori</button>
       </header>
-      <p className="admin-category-session-note" role="status">{message || (dataSource === 'mock' ? 'Data mock · Perubahan hanya selama sesi admin dan hilang setelah muat ulang.' : 'Terhubung ke database · Perubahan kategori tersimpan langsung ke PostgreSQL.')}</p>
+      {(message || dataSource === 'mock') && <p className="admin-category-session-note" role="status">{message || 'Data mock · Perubahan hanya selama sesi admin dan hilang setelah muat ulang.'}</p>}
       <section className="admin-panel admin-categories-list" aria-label="Daftar kategori dana">
         <p className="admin-table-hint">Geser tabel untuk melihat seluruh kolom.</p>
         <div className="admin-table-scroll" role="region" aria-label="Daftar kategori dana, dapat digeser pada layar kecil" tabIndex={0}>

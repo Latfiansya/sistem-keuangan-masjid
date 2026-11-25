@@ -47,7 +47,7 @@ export default function DonationSection({ donation }) {
       <h2 id="donation-heading">Donasi</h2>
       <div className="contact-donation-grid">
         <article className="contact-donation-card">
-          <div className="contact-donation-heading"><h3>Scan QRIS</h3><span className="contact-chip">{hasQris ? 'QRIS' : 'Belum dikonfirmasi'}</span></div>
+          <div className="contact-donation-heading"><h3>Scan QRIS</h3></div>
           <p className="contact-donation-description">Pindai kode QRIS untuk donasi cepat dan aman.</p>
           <figure className="contact-qris">
             {hasQris ? <img src={qrisSrc} alt="QRIS donasi Masjid Al-Hidayah" /> : <div className="contact-qris-placeholder"><ScanLine aria-hidden="true" /></div>}

@@ -1,5 +1,6 @@
 import { formatReportDate, formatReportMonth, formatReportPeriod, formatReportNumber, formatRupiah, formatTransferNote } from '../utils/reportFormatters.js'
 import { adminCategoryColorStyle } from '../utils/adminCategoryColors.js'
+import { dataSource } from '../utils/env.js'
 
 const balance = (amount) => amount === null ? 'Belum tersedia' : formatReportNumber(amount)
 
@@ -12,12 +13,16 @@ export default function AdminDownloadSheet({ document, page, pageCount, measurin
   const monthly = page.sectionId === 'monthly'
   const transactionCount = document.transactions.filter((item) => !ledger || item.type === page.sectionId).length
   const headings = ledger ? ['Tanggal', 'Kategori Dana', 'Uraian', 'Jumlah (Rp)'] : [monthly ? 'Bulan / Kategori Dana' : 'Kategori Dana', 'Saldo Awal', 'Pemasukan', 'Pengeluaran', 'Saldo Akhir']
+  const transferNote = formatTransferNote(document.transfers)
+  const sheetNote = dataSource === 'mock'
+    ? `SIMULASI / MOCK · Belum tersimpan ke server${document.sessionChangeCount > 0 ? ` · ${document.sessionChangeCount} perubahan sesi diperhitungkan` : ''}. ${document.note}${transferNote ? ` ${transferNote}` : ''}`
+    : [document.note, transferNote].filter(Boolean).join(' ')
   return <article className={`admin-download-sheet${measuring ? ' admin-download-sheet--measure' : ''}`} data-section={page.sectionId} aria-label={`Halaman ${page.number} ${page.title}`}>
     <header className="admin-download-sheet-header"><img src={`${import.meta.env.BASE_URL}assets/masjid-logo.webp`} alt="" width="142" height="43" /><div><strong>MASJID AL-HIDAYAH SOROLATEN</strong><h3>Laporan Keuangan</h3><p>{formatReportPeriod(document.range)}</p></div></header>
     <div className="admin-download-sheet-content">
       <div className={`admin-download-section-title admin-download-section-title--${page.sectionId}`}><h4>{page.title}</h4><span>{transactionCount} transaksi periode · seluruh kategori</span></div>
       <AdminDownloadTotals document={document} />
-      <p className="admin-download-sheet-note">SIMULASI / MOCK · Belum tersimpan ke server{document.sessionChangeCount > 0 ? ` · ${document.sessionChangeCount} perubahan sesi diperhitungkan` : ''}. {document.note}{formatTransferNote(document.transfers) ? ` ${formatTransferNote(document.transfers)}` : ''}</p>
+      {sheetNote && <p className="admin-download-sheet-note">{sheetNote}</p>}
       <table className={ledger ? 'admin-download-ledger' : 'admin-download-balances'}>
         <thead><tr>{headings.map((heading) => <th scope="col" key={heading}>{heading}</th>)}</tr></thead>
         <tbody>{page.rows.length ? page.rows.map((row) => {
@@ -26,9 +31,9 @@ export default function AdminDownloadSheet({ document, page, pageCount, measurin
           return <tr key={row.key} data-export-row={row.key} data-transaction-id={row.kind === 'transaction' ? row.id : undefined} className={row.total ? 'admin-download-total-row' : undefined}>
             {ledger ? <><td>{formatReportDate(row.date)}</td><td>{label}</td><td>{row.description}</td><td className={`admin-download-amount--${row.type}`}>{formatReportNumber(row.amount)}</td></> : <><th scope="row">{monthly && <small>{formatReportMonth(row.month)}</small>}{label}</th><td>{balance(row.openingBalance)}</td><td className="admin-download-amount--income">{balance(row.income)}</td><td className="admin-download-amount--expense">{balance(row.expense)}</td><td>{balance(row.closingBalance)}</td></>}
           </tr>
-        }) : <tr className="admin-download-empty"><td colSpan={headings.length}>Tidak ada transaksi mock untuk jenis laporan dan periode ini.</td></tr>}</tbody>
+        }) : <tr className="admin-download-empty"><td colSpan={headings.length}>Tidak ada transaksi untuk jenis laporan dan periode ini.</td></tr>}</tbody>
       </table>
     </div>
-    <footer className="admin-download-sheet-footer"><span>Data contoh · Bukan laporan resmi masjid · Nominal dalam Rupiah</span><strong>Halaman {page.number} / {pageCount}</strong></footer>
+    <footer className="admin-download-sheet-footer"><span>{dataSource === 'mock' ? 'Data contoh · Bukan laporan resmi masjid · Nominal dalam Rupiah' : 'Laporan Keuangan Masjid Al-Hidayah · Nominal dalam Rupiah'}</span><strong>Halaman {page.number} / {pageCount}</strong></footer>
   </article>
 }

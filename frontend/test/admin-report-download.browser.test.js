@@ -116,7 +116,7 @@ test('Admin 1.17: dua halaman, mode periode, format awal dan ekspor portrait pen
       }
       await selectMode('dates');await field('.admin-download-date-range input[name=startDate]','2027-01-01');await field('.admin-download-date-range input[name=endDate]','2027-01-31')
       await next();assert.equal(await evaluate('document.querySelectorAll(".admin-download-preview-pages [data-transaction-id]").length'),0)
-      assert.match(await evaluate('document.querySelector(".admin-download-preview-pages").textContent'),/Tidak ada transaksi mock/)
+      assert.match(await evaluate('document.querySelector(".admin-download-preview-pages").textContent'),/Tidak ada transaksi untuk jenis laporan dan periode ini/)
       const history=await send('Page.getNavigationHistory');await send('Page.navigateToHistoryEntry',{entryId:history.entries[history.currentIndex-1].id})
       await waitFor('location.pathname==="/admin/laporan/unduh"&&!!document.querySelector(".admin-download-settings")')
       assert.equal(await evaluate('document.querySelector(".admin-download-format input:checked").value'),'png')

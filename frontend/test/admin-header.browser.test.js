@@ -79,7 +79,7 @@ test('Dashboard/Header: tombol, modal sekali buka, akun dan notifikasi contoh pa
         await open('/admin/dashboard','.admin-hero-actions')
         await openNotifications()
         assert.deepEqual(await evaluate('[...document.querySelectorAll("#admin-header-notifications time")].map(e=>e.dateTime)'),['2026-06-14T10:12','2026-06-14T09:35','2026-06-13T11:00','2026-06-12T08:00','2026-06-11T08:00'])
-        assert.match(await evaluate('document.querySelector("#admin-header-notifications").textContent'),/Data contoh.*bukan notifikasi real-time/)
+        assert.match(await evaluate('document.querySelector("#admin-header-notifications").textContent'),/Ringkasan 5 aktivitas terbaru dari Activity Log/)
         assert.deepEqual(await evaluate('[...document.querySelectorAll("#admin-header-notifications li a")].map(e=>e.getAttribute("href"))'),['/admin/kelola-dana','/admin/kelola-dana','/admin/kelola-dana','/admin/kelola-akun','/admin/kelola-akun'])
         await noOverflow();await screenshot(`notifikasi-${width}`)
         await key('Escape',27);assert.equal(await evaluate('document.querySelector(".admin-header-dropdown")'),null)

@@ -53,18 +53,16 @@ test('mode API membaca dan memperbarui kode akses lewat /api/admin/report-access
   } finally { globalThis.fetch = originalFetch; await api.close() }
 })
 
-test('route dan penjelasan mengikuti UI gate M1.8b tanpa form, klaim enkripsi atau penguncian laporan', () => {
+test('route dan penjelasan ringkas dalam bahasa awam tanpa jargon teknis atau form langsung', () => {
   for (const path of ['/admin/kode-akses-laporan', '/admin/kode-akses-laporan/']) {
     const html = renderToStaticMarkup(h(MemoryRouter, { initialEntries: [path] }, h(App)))
     assert.match(html, /<h1>Kode Akses Laporan<\/h1>/)
     assert.match(html, /aria-current="page"[^>]*href="\/admin\/kode-akses-laporan"/)
     assert.doesNotMatch(html, /Super Admin Only/)
-    assert.match(html, /Memuat status kode akses contoh/)
-    assert.match(html, /Tombol laporan di Beranda atau Footer membuka gate \(permintaan kode\)/)
-    assert.match(html, /Setelah integrasi, sistem memeriksa kode yang dimasukkan pengunjung/)
-    assert.match(html, /Akses langsung dan refresh <code>\/laporan-keuangan<\/code> tetap tanpa gate/)
-    assert.match(html, /bukan autentikasi atau otorisasi laporan/)
-    assert.match(html, /dikelola oleh pengurus terautentikasi \(Admin dan Super Admin\)/)
-    assert.doesNotMatch(html, /<form|<input|<dialog|Terenkripsi|realtime|<code>\/laporan<\/code>/)
+    assert.match(html, /Memuat status kode akses laporan/)
+    assert.match(html, /Pengunjung diminta memasukkan kode akses saat membuka Laporan Keuangan dari Beranda atau Footer/)
+    assert.match(html, /Sistem akan memverifikasi kode akses yang dimasukkan pengunjung sebelum membuka halaman laporan/)
+    assert.match(html, /Pengurus dapat mengganti kode akses atau mengatur visibilitas laporan publik kapan saja melalui tombol Ubah Kode Akses/)
+    assert.doesNotMatch(html, /<form|<input|<dialog|Terenkripsi|realtime|PostgreSQL|Tersimpan \(Hash\)|Setelah integrasi|<code>\/laporan<\/code>/)
   }
 })

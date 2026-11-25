@@ -82,3 +82,43 @@ test('panel sandi reusable mempertahankan form dan keterangan netral', () => {
   assert.match(html, /Akses menggunakan sandi bersama/)
   assert.doesNotMatch(html, /aman.*terenkripsi|demo123/)
 })
+
+test('D-20: publicReportEnabled false menyembunyikan CTA Beranda dan tautan Footer, serta helper mendeteksi 403/404', async () => {
+  const { isPublicReportEnabled, isPublicReportDisabledError, PUBLIC_REPORT_DISABLED_MESSAGE } = await server.ssrLoadModule('/src/services/reportService.js')
+  const { default: HomePage } = await server.ssrLoadModule('/src/pages/HomePage.jsx')
+  const { default: Footer } = await server.ssrLoadModule('/src/components/Footer.jsx')
+  const { getPublicContent } = await server.ssrLoadModule('/src/services/publicContentService.js')
+  const { Outlet, Route, Routes } = await import('react-router')
+
+  // Default aman: undefined/null/true tetap dianggap aktif; hanya false eksplisit yang menonaktifkan
+  assert.equal(isPublicReportEnabled(null), true)
+  assert.equal(isPublicReportEnabled(undefined), true)
+  assert.equal(isPublicReportEnabled({}), true)
+  assert.equal(isPublicReportEnabled({ publicReportEnabled: true }), true)
+  assert.equal(isPublicReportEnabled({ publicReportEnabled: false }), false)
+
+  // Penanganan defensif error 403/404/PUBLIC_REPORT_DISABLED dari API laporan
+  assert.equal(isPublicReportDisabledError({ status: 403 }), true)
+  assert.equal(isPublicReportDisabledError({ status: 404 }), true)
+  assert.equal(isPublicReportDisabledError({ status: 400, code: 'PUBLIC_REPORT_DISABLED' }), true)
+  assert.equal(isPublicReportDisabledError({ status: 400, code: 'FORBIDDEN' }), true)
+  assert.equal(isPublicReportDisabledError({ status: 500, code: 'INTERNAL_ERROR' }), false)
+  assert.match(PUBLIC_REPORT_DISABLED_MESSAGE, /tidak ditampilkan oleh pengurus masjid/)
+
+  const base = await getPublicContent()
+  const renderHome = (content) => renderToStaticMarkup(h(
+    MemoryRouter,
+    { initialEntries: ['/'] },
+    h(Routes, null, h(Route, { element: h(Outlet, { context: { content, error: '', openReportAccess() {} } }) }, h(Route, { index: true, element: h(HomePage) }))),
+    h(Footer, { content, onReportAccess() {} })
+  ))
+
+  const htmlActive = renderHome({ ...base, publicReportEnabled: true })
+  assert.match(htmlActive, /Transparansi &amp; Akuntabilitas Keuangan/)
+  assert.match(htmlActive, /href="\/laporan-keuangan"/)
+
+  const htmlHidden = renderHome({ ...base, publicReportEnabled: false })
+  assert.doesNotMatch(htmlHidden, /Transparansi &amp; Akuntabilitas Keuangan/)
+  assert.doesNotMatch(htmlHidden, /href="\/laporan-keuangan"/)
+  assert.match(htmlHidden, /href="\/admin\/login"/)
+})

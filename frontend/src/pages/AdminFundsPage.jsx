@@ -73,7 +73,7 @@ export default function AdminFundsPage() {
       <section className="admin-funds-hero" aria-labelledby="admin-funds-title">
         <span className="admin-funds-badge"><ArrowRightLeft size={15} aria-hidden="true" />MANAJEMEN TRANSAKSI</span>
         <h2 id="admin-funds-title">Kelola Dana Keuangan</h2>
-        <p>{dataSource === 'mock' ? <>Catat transaksi dana masjid dalam sesi mock.<br />Tambahan sesi belum mengubah laporan snapshot.</> : <>Catat pemasukan dan pengeluaran dana masjid.<br />Transaksi tersimpan langsung ke database PostgreSQL.</>}</p>
+        <p>{dataSource === 'mock' ? <>Catat transaksi dana masjid dalam sesi mock.<br />Tambahan sesi belum mengubah laporan snapshot.</> : <>Catat pemasukan, pengeluaran, dan transfer antar kategori dana masjid.</>}</p>
       </section>
       <section className="admin-panel admin-funds-controls" aria-labelledby="admin-funds-controls-title">
         <div className="admin-funds-controls-heading"><h2 id="admin-funds-controls-title">Kelola Transaksi</h2><p>{dataSource === 'mock' ? 'Catat pemasukan, pengeluaran, atau transfer antar kategori dalam sesi mock' : 'Catat pemasukan, pengeluaran, atau transfer dana antar kategori'}</p></div>
@@ -83,7 +83,7 @@ export default function AdminFundsPage() {
             <button ref={expenseButton} type="button" onClick={() => openForm('expense')}><ArrowUpCircle size={18} aria-hidden="true" />Pengeluaran</button>
             <button ref={transferButton} type="button" className="admin-funds-transfer" disabled={dashboard.categories.length < 2} title={dashboard.categories.length < 2 ? 'Transfer membutuhkan minimal dua kategori dana' : 'Pindahkan saldo antar kategori dana'} onClick={(event) => openTransferDialog('add', null, event)}><ArrowRightLeft size={18} aria-hidden="true" />Transfer Dana</button>
           </div>
-          <p role="status">{message || (dataSource === 'mock' ? 'Simulasi sesi admin · Belum tersimpan ke server.' : 'Terhubung ke database · Transaksi akan langsung dicatat ke server.')}</p>
+          {(message || dataSource === 'mock') && <p role="status">{message || 'Simulasi sesi admin · Belum tersimpan ke server.'}</p>}
         </div>
       </section>
       <AdminRecentTransactions hasSessionChanges={Boolean(Object.keys(dashboard.transactionChanges || {}).length || dashboard.deletedTransactionIds?.length)} onViewAll={() => navigate('/admin/laporan#kas-masuk')} transactions={getAdminRecentTransactions(dashboard)} categories={dashboard.categories} />
