@@ -73,6 +73,25 @@ export function buildAdminFinanceReport(dashboard) {
   return { ...dashboard, month, range, coverage, transactions, transfers: [], historyOpeningBalances, historicalTransactionCount: historical.length, sessionChangeCount }
 }
 
+export const ADMIN_REPORT_MONTHS = [
+  'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+  'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember',
+]
+
+// Menghitung rentang tanggal 01 s/d akhir bulan (28/29/30/31, mendukung tahun kabisat) untuk bulan 1..12.
+export function getAdminFinanceMonthRange(monthNumber, year = new Date().getFullYear()) {
+  if (!Number.isInteger(monthNumber) || monthNumber < 1 || monthNumber > 12) {
+    throw new Error('Bulan harus berupa bilangan bulat 1–12.')
+  }
+  if (!Number.isInteger(year) || year < 1900 || year > 9999) {
+    throw new Error('Tahun tidak valid.')
+  }
+  const lastDay = new Date(Date.UTC(year, monthNumber, 0)).getUTCDate()
+  const mm = String(monthNumber).padStart(2, '0')
+  const dd = String(lastDay).padStart(2, '0')
+  return { startDate: `${year}-${mm}-01`, endDate: `${year}-${mm}-${dd}` }
+}
+
 export function getAdminFinancePreset(preset, today = new Date()) {
   const end = new Date(today.getFullYear(), today.getMonth(), today.getDate())
   const start = new Date(end)

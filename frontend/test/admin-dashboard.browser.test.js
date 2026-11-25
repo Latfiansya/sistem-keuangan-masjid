@@ -196,7 +196,7 @@ test('Dashboard Keuangan responsive, navigasi dan mock tanpa autentikasi pada Ch
 
     await t.test('fitur di luar lingkup nonaktif, akun contoh tidak menjadi autentikasi dan refresh tetap membuka dashboard', async () => {
       assert.equal(await evaluate('[...document.querySelectorAll(".admin-nav-group button")].every(e=>e.disabled&&!!e.title)'), true)
-      assert.equal(await evaluate('document.querySelectorAll(".admin-dashboard button:not(:disabled)").length'), 6)
+      assert.equal(await evaluate('document.querySelectorAll(".admin-dashboard button:not(:disabled)").length'), 7)
       assert.equal(await evaluate('document.querySelector(".admin-account button").disabled'), false)
       assert.equal(await evaluate('document.querySelectorAll(".admin-topbar-actions > button:not(:disabled)").length'), 1)
       assert.match(await evaluate('document.querySelector(".admin-dashboard-status").textContent'), /Data contoh/)
