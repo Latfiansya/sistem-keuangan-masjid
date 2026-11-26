@@ -159,3 +159,18 @@ test('pengantar seksi Takmir dinamis mengikuti contact.introduction dan status v
   const htmlUnverified = renderPage({ content: unverified, error: '' })
   assert.match(htmlUnverified, /Informasi kontak dan jam layanan menunggu konfirmasi pengurus masjid\./)
 })
+
+test('peta lokasi menampilkan embed Google Maps, label peta, dan tombol action-button saat lokasi terverifikasi', async () => {
+  const base = await getPublicContent()
+  const withLocation = structuredClone(base)
+  withLocation.contact.location = {
+    verified: true,
+    url: 'https://www.google.com/maps/place/Masjid+Al-Hidayah/@-7.775123,110.295456,17z',
+    label: 'Masjid Al-Hidayah Sorolaten',
+    embedUrl: 'https://maps.google.com/maps?q=-7.775123%2C110.295456&t=&z=16&ie=UTF8&iwloc=&output=embed',
+  }
+  const html = renderPage({ content: withLocation, error: '' })
+  assert.match(html, /<iframe[^>]*class="contact-map-frame"[^>]*src="https:\/\/maps\.google\.com\/maps\?q=-7\.775123%2C110\.295456[^"]*output=embed"/)
+  assert.match(html, /class="contact-map-label"[^>]*>.*Masjid Al-Hidayah Sorolaten/)
+  assert.match(html, /<a class="action-button action-button--solid" href="https:\/\/www\.google\.com\/maps\/place\/Masjid\+Al-Hidayah\/@-7\.775123,110\.295456,17z"/)
+})

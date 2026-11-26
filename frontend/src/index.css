@@ -380,14 +380,15 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .contact-information-row h3 { color: #b1d1a3; text-transform: uppercase; font-size: 17px; line-height: 1.3; letter-spacing: 1px; }
 .contact-information-row p { margin-top: 3px; font-size: clamp(20px, 1.65vw, 28px); font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
 .contact-information-row small { display: block; margin-top: 4px; color: #b1d1a3; font-size: 17px; line-height: 1.4; }
-.contact-map { position: relative; min-height: clamp(480px, 45.3vw, 784px); margin-top: 32px; border: 1px solid #ffffff45; border-radius: 20px; background: #ffffff0d; box-shadow: 0 5px 8px #00390040; }
-.contact-map-label { position: absolute; top: 42px; left: 40px; display: inline-flex; align-items: center; gap: 10px; padding: 16px 28px; background: #ed7100; border-radius: 14px; font-size: 20px; font-weight: 600; }
+.contact-map { position: relative; overflow: hidden; min-height: clamp(480px, 45.3vw, 784px); margin-top: 32px; border: 1px solid #ffffff45; border-radius: 20px; background: #ffffff0d; box-shadow: 0 5px 8px #00390040; }
+.contact-map-frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: #e8efe9; }
+.contact-map-label { position: absolute; z-index: 2; top: 42px; left: 40px; display: inline-flex; align-items: center; gap: 10px; padding: 16px 28px; background: #ed7100; border-radius: 14px; box-shadow: 0 6px 18px #00390045; font-size: 20px; font-weight: 600; }
 .contact-map-label svg, .contact-map .action-button svg { width: 20px; height: 20px; flex-shrink: 0; }
 .contact-map-placeholder { position: absolute; inset: 110px 24px 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; color: #d3e8c9; }
 .contact-map-placeholder > svg { width: 44px; height: 44px; color: var(--color-lime); stroke-width: 1.3; }
 .contact-map-placeholder p { font-size: clamp(20px, 1.6vw, 28px); font-weight: 600; }
 .contact-map-placeholder small { font-size: 16px; }
-.contact-map .action-button { position: absolute; right: 40px; bottom: 48px; gap: 14px; padding: 24px 32px; border-radius: 14px; background: #ed7100; color: white; box-shadow: none; }
+.contact-map .action-button { position: absolute; z-index: 2; right: 40px; bottom: 48px; gap: 14px; padding: 24px 32px; border-radius: 14px; background: #ed7100; color: white; box-shadow: 0 6px 18px #00390045; }
 .contact-empty { margin-top: 28px; }
 
 @media (max-width: 1023px) {

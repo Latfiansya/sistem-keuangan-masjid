@@ -100,7 +100,8 @@ export default function AdminWebsiteSettingsPage() {
           </div>
           <div className="admin-settings-field">
             <label htmlFor="admin-settings-mapsUrl">Link Google Maps</label>
-            <input id="admin-settings-mapsUrl" name="mapsUrl" type="url" maxLength={2048} placeholder="https://maps.google.com/..." value={values.mapsUrl} disabled={saving} onChange={handleChange} aria-invalid={Boolean(errors.mapsUrl)} aria-describedby={errors.mapsUrl ? 'admin-settings-mapsUrl-error' : undefined} />
+            <input id="admin-settings-mapsUrl" name="mapsUrl" type="url" maxLength={2048} placeholder="https://maps.google.com/..." value={values.mapsUrl} disabled={saving} onChange={handleChange} aria-invalid={Boolean(errors.mapsUrl)} aria-describedby={errors.mapsUrl ? 'admin-settings-mapsUrl-error' : 'admin-settings-mapsUrl-help'} />
+            <p id="admin-settings-mapsUrl-help" className="admin-settings-note">Isi tautan Google Maps resmi masjid untuk mengaktifkan peta interaktif dan tombol Buka Google Maps pada halaman Kontak.</p>
             {errors.mapsUrl && <p id="admin-settings-mapsUrl-error" className="admin-settings-error" role="alert">{errors.mapsUrl}</p>}
           </div>
           <div className="admin-settings-field">

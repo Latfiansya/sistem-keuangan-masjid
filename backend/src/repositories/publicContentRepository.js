@@ -1,4 +1,9 @@
 import { getDefaultDatabasePool, withDatabaseClient } from '../config/database.js'
+import {
+  buildMapsUrlFromCoordinates,
+  isValidGoogleMapsUrl,
+  resolveGoogleMapsEmbedUrl,
+} from '../utils/mapsLocation.js'
 import { readDonationBankAccounts } from './donationBankRepository.js'
 
 const PROGRAM_ICONS = ['heart', 'health', 'economy']
@@ -49,7 +54,18 @@ export function createPublicContentRepository(db = getDefaultDatabasePool()) {
             )
           } catch (error) {
             if (error?.code !== '42703') throw error
-            settingsResult = { rows: [] }
+            try {
+              settingsResult = await client.query(
+                `SELECT id, laporan_publik_aktif, nomor_whatsapp, email_pengurus,
+                        alamat_lengkap, link_gmaps, qris_path
+                 FROM keu_masjid.m_pengaturan_website
+                 WHERE id = 1
+                 LIMIT 1`
+              )
+            } catch (fallbackError) {
+              if (fallbackError?.code !== '42703') throw fallbackError
+              settingsResult = { rows: [] }
+            }
           }
           const donationBankResult = await readDonationBankAccounts(client, settingsResult.rows[0] ?? null)
           const misiResult = await client.query(
@@ -96,7 +112,20 @@ export function createPublicContentRepository(db = getDefaultDatabasePool()) {
         settings?.telepon?.trim() || settings?.nomor_whatsapp?.trim() || ''
       const phoneNote = settings?.keterangan_telepon?.trim() || null
       const hoursValue = settings?.jam_operasional?.trim() || ''
-      const mapsUrl = settings?.link_gmaps?.trim() || ''
+      const rawMapsUrl = settings?.link_gmaps?.trim() || ''
+      const mapsUrl = isValidGoogleMapsUrl(rawMapsUrl)
+        ? rawMapsUrl
+        : buildMapsUrlFromCoordinates(settings?.latitude, settings?.longitude)
+      const mapLabel = settings?.label_peta?.trim() || ''
+      const mapsEmbedUrl = mapsUrl
+        ? resolveGoogleMapsEmbedUrl({
+            url: mapsUrl,
+            latitude: settings?.latitude,
+            longitude: settings?.longitude,
+            address: addressValue,
+            label: mapLabel,
+          })
+        : null
 
       const statistics = []
       if (profil?.tahun_berdiri) {
@@ -205,7 +234,8 @@ export function createPublicContentRepository(db = getDefaultDatabasePool()) {
           location: {
             verified: Boolean(mapsUrl),
             url: mapsUrl || null,
-            ...(settings?.label_peta ? { label: settings.label_peta } : {}),
+            ...(mapsUrl && mapLabel ? { label: mapLabel } : {}),
+            ...(mapsUrl && mapsEmbedUrl ? { embedUrl: mapsEmbedUrl } : {}),
           },
           donation: {
             qris: {
