@@ -235,14 +235,14 @@ function computeDonationReadiness(values) {
     : []
   const whatsappComplete = Boolean(String(values.whatsappNumber ?? '').trim() && String(values.messageTemplate ?? '').trim())
 
-  const buildMethodStatus = (complete, enabled, missingReason, readyReason = 'Siap ditampilkan dalam pratinjau simulasi.') => ({
+  const buildMethodStatus = (complete, enabled, missingReason, readyReason = 'Aktif dan siap ditampilkan pada halaman Kontak.') => ({
     complete,
     enabled: complete && enabled === true,
     reason: !complete
       ? missingReason
       : enabled
         ? readyReason
-        : 'Data lengkap. Aktifkan toggle untuk menampilkannya dalam pratinjau.',
+        : 'Data lengkap. Aktifkan toggle untuk menampilkannya pada halaman Kontak.',
   })
 
   const qris = buildMethodStatus(
@@ -255,7 +255,7 @@ function computeDonationReadiness(values) {
       bankComplete,
       values.bankEnabled,
       'Lengkapi Nama Bank, Nomor Rekening yang valid, dan Atas Nama sebelum mengaktifkan transfer bank.',
-      `${accounts.length} rekening siap ditampilkan dalam pratinjau simulasi.`
+      `${accounts.length} rekening aktif dan siap ditampilkan pada halaman Kontak.`
     ),
     accounts,
     accountCount: accounts.length,

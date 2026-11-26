@@ -270,6 +270,8 @@ describe('Endpoint konten, profil, agenda, donasi, dan pengaturan website pengur
     assert.equal(fourBanksData.readiness.bank.accountCount, 4)
     assert.equal(fourBanksData.readiness.bank.maxAccounts, 4)
     assert.match(fourBanksData.readiness.bank.reason, /4 rekening/)
+    assert.doesNotMatch(fourBanksData.readiness.bank.reason, /simulasi/i)
+    assert.doesNotMatch(fourBanksData.readiness.whatsapp.reason, /simulasi/i)
 
     // Tolak penambahan rekening ke-5 saat 4 rekening sudah penuh
     const fiveBanksRes = await fetch(`${baseUrl}/donation-settings`, {
