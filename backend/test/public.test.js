@@ -315,3 +315,99 @@ test('GET /api/public/content menyertakan hingga 4 rekening terverifikasi, menya
     recipient: null,
   })
 })
+
+test('GET /api/public/content memetakan lokasi Google Maps, label_peta, embedUrl, serta fallback koordinat dan sanitasi', async () => {
+  // 1) Sanitasi membuang label & embedUrl bila verified !== true
+  const unverifiedService = createPublicContentService({
+    async findPublicContent() {
+      return {
+        name: 'Masjid Al-Hidayah',
+        contact: {
+          introduction: '',
+          information: [],
+          location: {
+            verified: false,
+            url: 'https://maps.app.goo.gl/Bocoran',
+            label: 'Lokasi Tersembunyi',
+            embedUrl: 'https://maps.google.com/maps?q=Bocoran&output=embed',
+          },
+          donation: {
+            qris: { verified: false, imageSrc: null },
+            banks: [],
+            bank: { verified: false, name: null, number: null, recipient: null },
+            bank2: { verified: false, name: null, number: null, recipient: null },
+          },
+        },
+      }
+    },
+  })
+  const sanitizedHidden = await unverifiedService.getPublicContent()
+  assert.deepEqual(sanitizedHidden.contact.location, { verified: false, url: null })
+
+  // 2) Repository dengan link_gmaps koordinat & label_peta menghasilkan url, label, dan embedUrl valid
+  const repoMaps = createPublicContentRepository({
+    async connect() {
+      return {
+        async query(sql) {
+          if (sql.includes('m_pengaturan_website')) {
+            return {
+              rows: [
+                {
+                  alamat_lengkap: 'Sorolaten, Sidokarto, Godean, Sleman',
+                  link_gmaps: 'https://www.google.com/maps/place/Masjid+Al-Hidayah/@-7.775123,110.295456,17z',
+                  label_peta: 'Masjid Al-Hidayah Sorolaten',
+                },
+              ],
+            }
+          }
+          return { rows: [] }
+        },
+        release() {},
+      }
+    },
+  })
+  const mappedContent = await createPublicContentService(repoMaps).getPublicContent()
+  assert.equal(mappedContent.contact.location.verified, true)
+  assert.equal(
+    mappedContent.contact.location.url,
+    'https://www.google.com/maps/place/Masjid+Al-Hidayah/@-7.775123,110.295456,17z'
+  )
+  assert.equal(mappedContent.contact.location.label, 'Masjid Al-Hidayah Sorolaten')
+  assert.equal(
+    mappedContent.contact.location.embedUrl,
+    'https://maps.google.com/maps?q=-7.775123%2C110.295456&t=&z=16&ie=UTF8&iwloc=&output=embed'
+  )
+
+  // 3) Fallback ke latitude & longitude saat link_gmaps kosong, serta short link memakai alamat/label untuk embed
+  const repoCoordFallback = createPublicContentRepository({
+    async connect() {
+      return {
+        async query(sql) {
+          if (sql.includes('m_pengaturan_website')) {
+            return {
+              rows: [
+                {
+                  alamat_lengkap: 'Sorolaten, Sleman',
+                  link_gmaps: null,
+                  latitude: '-7.775',
+                  longitude: '110.295',
+                  label_peta: 'Sorolaten, Sidokarto',
+                },
+              ],
+            }
+          }
+          return { rows: [] }
+        },
+        release() {},
+      }
+    },
+  })
+  const coordContent = await createPublicContentService(repoCoordFallback).getPublicContent()
+  assert.equal(coordContent.contact.location.verified, true)
+  assert.equal(
+    coordContent.contact.location.url,
+    'https://www.google.com/maps/search/?api=1&query=-7.775%2C110.295'
+  )
+  assert.equal(coordContent.contact.location.label, 'Sorolaten, Sidokarto')
+  assert.match(coordContent.contact.location.embedUrl, /output=embed$/)
+})

@@ -1,4 +1,5 @@
 import { defaultPublicContentRepository } from '../repositories/publicContentRepository.js'
+import { isValidGoogleMapsEmbedUrl } from '../utils/mapsLocation.js'
 
 function sanitizeBankAccount(account) {
   const verified = account?.verified === true
@@ -30,7 +31,12 @@ function sanitizePublicContact(contact) {
     })
     : []
 
-  const locationVerified = contact.location?.verified === true
+  const locationVerified = contact.location?.verified === true && Boolean(contact.location?.url)
+  const locationLabel = locationVerified ? String(contact.location?.label ?? '').trim() : ''
+  const locationEmbedUrl =
+    locationVerified && isValidGoogleMapsEmbedUrl(contact.location?.embedUrl)
+      ? contact.location.embedUrl.trim()
+      : ''
   const qrisVerified = contact.donation?.qris?.verified === true
 
   const sanitizedBanks = Array.isArray(contact.donation?.banks)
@@ -48,6 +54,8 @@ function sanitizePublicContact(contact) {
     location: {
       verified: locationVerified,
       url: locationVerified ? contact.location?.url ?? null : null,
+      ...(locationLabel ? { label: locationLabel } : {}),
+      ...(locationEmbedUrl ? { embedUrl: locationEmbedUrl } : {}),
     },
     donation: {
       qris: {
