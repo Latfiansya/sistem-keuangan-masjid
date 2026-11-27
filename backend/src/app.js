@@ -1,3 +1,4 @@
+import crypto from 'node:crypto'
 import express from 'express'
 import { getDefaultDatabasePool } from './config/database.js'
 import { loadEnv, normalizeBasePath } from './config/env.js'
@@ -54,6 +55,9 @@ export function createApp(overrides = {}) {
   const adminAuthRequired = overrides.adminAuthRequired ?? config.adminAuthRequired
   const authSecret = overrides.authSecret !== undefined ? overrides.authSecret : config.authSecret
   const authTokenTtlMs = overrides.authTokenTtlMs ?? config.authTokenTtlMs
+  const reportAccessSecret =
+    overrides.reportAccessSecret ??
+    (authSecret.length >= 32 ? authSecret : crypto.randomBytes(32).toString('hex'))
 
   const dbPool = overrides.dbPool ?? getDefaultDatabasePool()
   const repos = overrides.repositories ?? {}
@@ -77,7 +81,13 @@ export function createApp(overrides = {}) {
   const publicController = createPublicController({ publicContentService, agendaService })
 
   const reportService = createReportService(financeReportRepository)
-  const reportController = createReportController({ reportPasswordHash, reportService })
+  const reportController = createReportController({
+    reportPasswordHash,
+    reportAccessSecret,
+    nodeEnv,
+    reportAccessTtlMs: authTokenTtlMs,
+    reportService,
+  })
 
   const passwordRateLimiter = createRateLimiter({
     windowMs: rateLimitWindowMs,

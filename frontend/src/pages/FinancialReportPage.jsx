@@ -3,10 +3,18 @@ import { ArrowLeft, CalendarDays, Download } from 'lucide-react'
 import { Link } from 'react-router'
 import FinancialTable from '../components/FinancialTable.jsx'
 import BalanceSummary from '../components/BalanceSummary.jsx'
+import ReportAccessPanel from '../components/ReportAccessPanel.jsx'
 import ReportFormatPicker from '../components/ReportFormatPicker.jsx'
 import ReportPreview from '../components/ReportPreview.jsx'
 import { getPublicContent } from '../services/publicContentService.js'
-import { getReport, isPublicReportDisabledError, isPublicReportEnabled, PUBLIC_REPORT_DISABLED_MESSAGE } from '../services/reportService.js'
+import {
+  getReport,
+  hasMockReportAccess,
+  isPublicReportDisabledError,
+  isPublicReportEnabled,
+  isReportAccessRequiredError,
+  PUBLIC_REPORT_DISABLED_MESSAGE,
+} from '../services/reportService.js'
 import { dataSource } from '../utils/env.js'
 import { DEFAULT_REPORT_RANGE, getMonthRange, getPresetRange, validateReportRange } from '../utils/reportCalculations.js'
 import { formatReportMonth, formatReportPeriod, formatReportYear } from '../utils/reportFormatters.js'
@@ -15,6 +23,9 @@ import { paginateReport } from '../utils/reportPagination.js'
 const isMockSource = dataSource === 'mock'
 
 export default function FinancialReportPage() {
+  const [accessState, setAccessState] = useState(() => (
+    isMockSource ? (hasMockReportAccess() ? 'granted' : 'locked') : 'checking'
+  ))
   const [view, setView] = useState('report')
   const [format, setFormat] = useState('pdf')
   const [range, setRange] = useState(() => (isMockSource ? { ...DEFAULT_REPORT_RANGE } : undefined))
@@ -22,14 +33,15 @@ export default function FinancialReportPage() {
   const [activePreset, setActivePreset] = useState('1m')
   const [showCustomRange, setShowCustomRange] = useState(true)
   const [filterError, setFilterError] = useState('')
-  const [reportDisabled, setReportDisabled] = useState(false)
   const [mosqueName, setMosqueName] = useState('Masjid Al-Hidayah')
   const [reportState, setReportState] = useState({ report: null, loading: true, error: '' })
   const heading = useRef(null)
+  const shouldFetchReport = accessState === 'checking' || accessState === 'granted'
+
   useEffect(() => {
     window.scrollTo(0, 0)
     heading.current?.focus()
-  }, [view])
+  }, [view, accessState])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -37,31 +49,44 @@ export default function FinancialReportPage() {
       .then((content) => {
         if (controller.signal.aborted) return
         if (content?.name) setMosqueName(content.name)
-        if (!isPublicReportEnabled(content)) setReportDisabled(true)
+        if (!isPublicReportEnabled(content)) setAccessState('disabled')
       })
       .catch(() => { /* fallback tetap mengandalkan hasil endpoint laporan */ })
     return () => controller.abort()
   }, [])
 
   useEffect(() => {
-    if (reportDisabled) return
+    if (!shouldFetchReport) return
     const controller = new AbortController()
     const params = range ? { ...range, signal: controller.signal } : { signal: controller.signal }
     getReport(params)
       .then((report) => {
-        if (!controller.signal.aborted) setReportState({ report, loading: false, error: '' })
+        if (controller.signal.aborted) return
+        setAccessState('granted')
+        setReportState({ report, loading: false, error: '' })
       })
       .catch((cause) => {
         if (controller.signal.aborted) return
         if (isPublicReportDisabledError(cause)) {
-          setReportDisabled(true)
+          setAccessState('disabled')
           setReportState({ report: null, loading: false, error: '' })
           return
         }
+        if (isReportAccessRequiredError(cause)) {
+          setAccessState('locked')
+          setReportState({ report: null, loading: false, error: '' })
+          return
+        }
+        setAccessState('granted')
         setReportState({ report: null, loading: false, error: cause.message })
       })
     return () => controller.abort()
-  }, [range, reportDisabled])
+  }, [range, shouldFetchReport])
+
+  function handleAccessGranted() {
+    setReportState({ report: null, loading: true, error: '' })
+    setAccessState('granted')
+  }
 
   function applyRange(nextRange, preset, showCustom) {
     try {
@@ -84,7 +109,7 @@ export default function FinancialReportPage() {
   const presetAnchorEnd = report?.coverage?.endDate ?? activeRange?.endDate ?? (isMockSource ? DEFAULT_REPORT_RANGE.endDate : '')
   const availableMonths = report?.months ?? (isMockSource ? ['2026-04'] : [])
 
-  if (reportDisabled) {
+  if (accessState === 'disabled') {
     return (
       <main className="report-page report-page--opened">
         <div className="financial-report">
@@ -96,6 +121,28 @@ export default function FinancialReportPage() {
             <p>{PUBLIC_REPORT_DISABLED_MESSAGE}</p>
             <p><Link to="/" className="financial-navigation"><ArrowLeft aria-hidden="true" />Kembali ke Beranda</Link></p>
           </section>
+        </div>
+      </main>
+    )
+  }
+
+  if (accessState === 'locked') {
+    return (
+      <main className="report-page">
+        <ReportAccessPanel onAccessGranted={handleAccessGranted} backTo="/" />
+      </main>
+    )
+  }
+
+  if (accessState === 'checking') {
+    return (
+      <main className="report-page report-page--opened">
+        <div className="financial-report">
+          <header className="financial-header">
+            <Link to="/" className="financial-navigation"><ArrowLeft aria-hidden="true" />Beranda</Link>
+            <div className="financial-header-identity"><h1 ref={heading} tabIndex={-1}>Laporan Keuangan</h1><p>{mosqueName}</p></div>
+          </header>
+          <p role="status" className="financial-status">Memeriksa akses laporan keuangan…</p>
         </div>
       </main>
     )

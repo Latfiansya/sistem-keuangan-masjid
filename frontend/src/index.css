@@ -158,6 +158,9 @@ h2 { font-size: clamp(32px, 3.2vw, 56px); line-height: 1.14; letter-spacing: -1.
 .report-access-error { margin-top: 12px; font-size: 15px; line-height: 1.4; text-align: center; color: #ffe0db; }
 .report-access-note { margin-top: 52px; padding-top: 18px; border-top: 1px solid #ffffff14; font-size: 12px; line-height: 1.4; color: #b3d2a9; }
 .report-access-note::before { content: "•"; color: #49df84; margin-right: 10px; }
+.report-access-back { margin-top: 14px; }
+.report-access-back a { display: inline-flex; align-items: center; gap: 6px; color: #c6dfbd; font-size: 13px; font-weight: 600; text-decoration: none; }
+.report-access-back a:hover { color: white; text-decoration: underline; }
 .report-access-dialog { width: min(calc(100% - 32px), 1120px); max-width: none; max-height: calc(100svh - 32px); margin: auto; padding: 0; border: 0; border-radius: 24px; background: transparent; color: inherit; font-family: "Plus Jakarta Sans", var(--font-sans); overflow-y: auto; z-index: 100; }
 .report-access-dialog::backdrop { background: #07110bbb; }
 .report-access-dialog .report-access-panel { padding: clamp(24px, 3vw, 40px) clamp(24px, 3vw, 40px) 24px; box-shadow: 0 20px 60px #00000059; }

@@ -12,17 +12,23 @@ import { mockReport } from '../src/mocks/report.js'
 const root = fileURLToPath(new URL('../', import.meta.url))
 let server
 let getReport
+let checkReportPassword
+let resetMockReportAccess
 let FinancialTable
 let BalanceSummary
 let FinancialReportPage
 before(async () => {
   server = await createServer({ root, server: { middlewareMode: true, ws: false, hmr: false }, appType: 'custom', define: { 'import.meta.env.VITE_DATA_SOURCE': JSON.stringify('mock') } })
-  ;({ getReport } = await server.ssrLoadModule('/src/services/reportService.js'))
+  ;({ getReport, checkReportPassword, resetMockReportAccess } = await server.ssrLoadModule('/src/services/reportService.js'))
+  await checkReportPassword('demo123')
   ;({ default: FinancialTable } = await server.ssrLoadModule('/src/components/FinancialTable.jsx'))
   ;({ default: BalanceSummary } = await server.ssrLoadModule('/src/components/BalanceSummary.jsx'))
   ;({ default: FinancialReportPage } = await server.ssrLoadModule('/src/pages/FinancialReportPage.jsx'))
 })
-after(async () => { await server?.close() })
+after(async () => {
+  resetMockReportAccess?.()
+  await server?.close()
+})
 
 test('audit 50 transaksi integer menghasilkan total dan saldo akhir sesuai rekonsiliasi', async () => {
   const report = await getReport()

@@ -11,16 +11,22 @@ import { formatReportRange, formatReportYear } from '../src/utils/reportFormatte
 
 let server
 let getReport
+let checkReportPassword
+let resetMockReportAccess
 let ReportPreview
 let ReportFormatPicker
 before(async () => {
   const root = fileURLToPath(new URL('../', import.meta.url))
   server = await createServer({ root, server: { middlewareMode: true, ws: false, hmr: false }, appType: 'custom', define: { 'import.meta.env.VITE_DATA_SOURCE': JSON.stringify('mock') } })
-  ;({ getReport } = await server.ssrLoadModule('/src/services/reportService.js'))
+  ;({ getReport, checkReportPassword, resetMockReportAccess } = await server.ssrLoadModule('/src/services/reportService.js'))
+  await checkReportPassword('demo123')
   ;({ default: ReportPreview } = await server.ssrLoadModule('/src/components/ReportPreview.jsx'))
   ;({ default: ReportFormatPicker } = await server.ssrLoadModule('/src/components/ReportFormatPicker.jsx'))
 })
-after(async () => { await server?.close() })
+after(async () => {
+  resetMockReportAccess?.()
+  await server?.close()
+})
 
 test('laporan April dibagi berdasarkan geometri A4 dengan ringkasan hanya pada lembar terakhir', async () => {
   const report = await getReport()

@@ -2,6 +2,7 @@ import { defaultFinanceReportRepository } from '../repositories/financeReportRep
 import { verifyAccountPassword } from '../utils/adminAuth.js'
 import { createHttpError } from '../utils/httpError.js'
 import { verifyScryptPassword } from '../utils/passwordHash.js'
+import { signReportAccessToken, verifyReportAccessToken } from '../utils/reportAccessToken.js'
 
 const MAX_PASSWORD_LENGTH = 128
 const MAX_RANGE_DAYS = 366
@@ -87,17 +88,21 @@ export function createReportService(repository = defaultFinanceReportRepository)
     return { startDate, endDate }
   }
 
+  async function resolveExpectedPasswordHash(fallbackPasswordHash) {
+    const dbHash =
+      typeof repository.findReportAccessPasswordHash === 'function'
+        ? await repository.findReportAccessPasswordHash()
+        : ''
+    return dbHash || fallbackPasswordHash || ''
+  }
+
   return {
     verifyReportPassword,
 
     async checkPassword(body, fallbackPasswordHash) {
       const password = extractValidPasswordInput(body)
       await assertPublicReportEnabled()
-      const dbHash =
-        typeof repository.findReportAccessPasswordHash === 'function'
-          ? await repository.findReportAccessPasswordHash()
-          : ''
-      const expectedHash = dbHash || fallbackPasswordHash
+      const expectedHash = await resolveExpectedPasswordHash(fallbackPasswordHash)
 
       if (!expectedHash) {
         throw createHttpError(503, 'SERVICE_UNAVAILABLE', 'Pemeriksaan sandi laporan belum dikonfigurasi.')
@@ -105,6 +110,34 @@ export function createReportService(repository = defaultFinanceReportRepository)
 
       const valid = await verifyAccountPassword(password, expectedHash)
       return { valid }
+    },
+
+    async authorizeReportAccess(body, fallbackPasswordHash, accessSecret, ttlMs) {
+      const password = extractValidPasswordInput(body)
+      await assertPublicReportEnabled()
+      const expectedHash = await resolveExpectedPasswordHash(fallbackPasswordHash)
+
+      if (!expectedHash) {
+        throw createHttpError(503, 'SERVICE_UNAVAILABLE', 'Pemeriksaan sandi laporan belum dikonfigurasi.')
+      }
+
+      const valid = await verifyAccountPassword(password, expectedHash)
+      const token = valid
+        ? signReportAccessToken(accessSecret, { ttlMs, expectedPasswordHash: expectedHash })
+        : ''
+      return { valid, token }
+    },
+
+    async verifyReportAccessSession(token, accessSecret, fallbackPasswordHash) {
+      await assertPublicReportEnabled()
+      const expectedHash = await resolveExpectedPasswordHash(fallbackPasswordHash)
+      if (!expectedHash || !verifyReportAccessToken(token, accessSecret, { expectedPasswordHash: expectedHash })) {
+        throw createHttpError(
+          401,
+          'REPORT_ACCESS_REQUIRED',
+          'Masukkan kode akses laporan terlebih dahulu.'
+        )
+      }
     },
 
     async getFinanceReport(query = {}) {

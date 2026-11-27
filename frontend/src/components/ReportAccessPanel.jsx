@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react'
+import { Link } from 'react-router'
 import { checkReportPassword, isPublicReportDisabledError, PUBLIC_REPORT_DISABLED_MESSAGE } from '../services/reportService.js'
 
-export default function ReportAccessPanel({ onAccessGranted }) {
+export default function ReportAccessPanel({ onAccessGranted, backTo = '' }) {
   const [password, setPassword] = useState('')
   const [isChecking, setIsChecking] = useState(false)
   const [error, setError] = useState('')
@@ -56,6 +57,7 @@ export default function ReportAccessPanel({ onAccessGranted }) {
         {isChecking && <span role="status" className="sr-only">Pemeriksaan sandi sedang berlangsung.</span>}
       </form>
       <p className="report-access-note">Akses menggunakan sandi bersama</p>
+      {backTo && <p className="report-access-back"><Link to={backTo}><ArrowLeft size={15} aria-hidden="true" />Kembali ke Beranda</Link></p>}
     </section>
   )
 }
