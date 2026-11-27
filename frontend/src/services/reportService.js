@@ -6,6 +6,16 @@ import { calculateReport, DEFAULT_REPORT_RANGE, validateReportRange } from '../u
 
 export const PUBLIC_REPORT_DISABLED_MESSAGE = 'Laporan keuangan publik sedang tidak ditampilkan oleh pengurus masjid.'
 
+let mockAccessGranted = false
+
+export function hasMockReportAccess() {
+  return mockAccessGranted
+}
+
+export function resetMockReportAccess() {
+  mockAccessGranted = false
+}
+
 export function isPublicReportEnabled(content) {
   return content?.publicReportEnabled !== false
 }
@@ -13,6 +23,11 @@ export function isPublicReportEnabled(content) {
 export function isPublicReportDisabledError(error) {
   if (!error || typeof error !== 'object') return false
   return error.status === 403 || error.status === 404 || error.code === 'PUBLIC_REPORT_DISABLED' || error.code === 'FORBIDDEN'
+}
+
+export function isReportAccessRequiredError(error) {
+  if (!error || typeof error !== 'object') return false
+  return error.status === 401 || error.code === 'REPORT_ACCESS_REQUIRED' || error.code === 'UNAUTHORIZED'
 }
 
 export async function checkReportPassword(password, { signal } = {}) {
@@ -41,7 +56,9 @@ export async function checkReportPassword(password, { signal } = {}) {
     }
     signal?.addEventListener('abort', onAbort, { once: true })
   })
-  return { valid: password === mockReportAccess.password }
+  const valid = password === mockReportAccess.password
+  if (valid) mockAccessGranted = true
+  return { valid }
 }
 
 export async function getReport({ startDate, endDate, signal } = {}) {
@@ -66,6 +83,13 @@ export async function getReport({ startDate, endDate, signal } = {}) {
         ? data.months.map((item) => (typeof item === 'string' ? item : item.id))
         : [],
     }
+  }
+
+  if (!mockAccessGranted) {
+    const error = new Error('Masukkan kode akses laporan terlebih dahulu.')
+    error.status = 401
+    error.code = 'REPORT_ACCESS_REQUIRED'
+    throw error
   }
 
   const range = {

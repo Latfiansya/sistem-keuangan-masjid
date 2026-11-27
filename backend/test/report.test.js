@@ -13,6 +13,7 @@ const reportService = createReportService(repositories.financeReportRepository)
 
 let server
 let baseUrl
+let reportAccessCookie = ''
 
 before(async () => {
   const testApp = createApp({
@@ -25,6 +26,15 @@ before(async () => {
     server = testApp.listen(0, '127.0.0.1', resolve)
   })
   baseUrl = `http://127.0.0.1:${server.address().port}`
+
+  const authRes = await fetch(`${baseUrl}/api/public/report/check-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: TEST_PASSWORD }),
+  })
+  assert.equal(authRes.status, 200)
+  reportAccessCookie = (authRes.headers.get('set-cookie') || '').split(';')[0]
+  assert.match(reportAccessCookie, /^masjid_report_access=/)
 })
 
 after(async () => {
@@ -118,8 +128,56 @@ test('POST /api/public/report/check-password mengembalikan 503 bila sandi belum 
   }
 })
 
+test('GET /api/public/finance/report menolak akses langsung tanpa kode akses (401) dan saat cookie diubah', async () => {
+  const noCookieRes = await fetch(`${baseUrl}/api/public/finance/report`)
+  assert.equal(noCookieRes.status, 401)
+  const noCookieBody = await noCookieRes.json()
+  assert.equal(noCookieBody.success, false)
+  assert.equal(noCookieBody.error.code, 'REPORT_ACCESS_REQUIRED')
+
+  const badCookieRes = await fetch(`${baseUrl}/api/public/finance/report`, {
+    headers: { Cookie: 'masjid_report_access=token-palsu' },
+  })
+  assert.equal(badCookieRes.status, 401)
+  assert.equal((await badCookieRes.json()).error.code, 'REPORT_ACCESS_REQUIRED')
+
+  // Jika kode akses di DB berubah, sesi akses lama otomatis tidak berlaku.
+  let currentHash = hashPassword('kode-awal-1')
+  const rotatingRepos = createTestRepositories()
+  rotatingRepos.financeReportRepository.findReportAccessPasswordHash = async () => currentHash
+  const rotatingApp = createApp({ repositories: rotatingRepos })
+  const rotatingServer = await new Promise((resolve) => {
+    const s = rotatingApp.listen(0, '127.0.0.1', () => resolve(s))
+  })
+  const rotatingUrl = `http://127.0.0.1:${rotatingServer.address().port}/api/public`
+  try {
+    const firstAuth = await fetch(`${rotatingUrl}/report/check-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: 'kode-awal-1' }),
+    })
+    assert.equal(firstAuth.status, 200)
+    const firstCookie = (firstAuth.headers.get('set-cookie') || '').split(';')[0]
+    const okRes = await fetch(`${rotatingUrl}/finance/report`, {
+      headers: { Cookie: firstCookie },
+    })
+    assert.equal(okRes.status, 200)
+
+    currentHash = hashPassword('kode-baru-2')
+    const staleRes = await fetch(`${rotatingUrl}/finance/report`, {
+      headers: { Cookie: firstCookie },
+    })
+    assert.equal(staleRes.status, 401)
+    assert.equal((await staleRes.json()).error.code, 'REPORT_ACCESS_REQUIRED')
+  } finally {
+    await new Promise((resolve) => rotatingServer.close(resolve))
+  }
+})
+
 test('GET /api/public/finance/report default April 2026 cocok dengan rekonsiliasi audit', async () => {
-  const res = await fetch(`${baseUrl}/api/public/finance/report`)
+  const res = await fetch(`${baseUrl}/api/public/finance/report`, {
+    headers: { Cookie: reportAccessCookie },
+  })
   assert.equal(res.status, 200)
   const body = await res.json()
   assert.equal(body.success, true)
@@ -157,7 +215,9 @@ test('GET /api/public/finance/report default April 2026 cocok dengan rekonsilias
 })
 
 test('GET /api/public/finance/report menghitung rentang inklusif, hari akhir, dan hari kosong dengan tepat', async () => {
-  const customRes = await fetch(`${baseUrl}/api/public/finance/report?startDate=2026-04-03&endDate=2026-04-05`)
+  const customRes = await fetch(`${baseUrl}/api/public/finance/report?startDate=2026-04-03&endDate=2026-04-05`, {
+    headers: { Cookie: reportAccessCookie },
+  })
   assert.equal(customRes.status, 200)
   const custom = (await customRes.json()).data
   assert.equal(custom.status, 'ready')
@@ -170,13 +230,17 @@ test('GET /api/public/finance/report menghitung rentang inklusif, hari akhir, da
     closingBalance: 19000700,
   })
 
-  const finalDayRes = await fetch(`${baseUrl}/api/public/finance/report?startDate=2026-04-30&endDate=2026-04-30`)
+  const finalDayRes = await fetch(`${baseUrl}/api/public/finance/report?startDate=2026-04-30&endDate=2026-04-30`, {
+    headers: { Cookie: reportAccessCookie },
+  })
   const finalDay = (await finalDayRes.json()).data
   assert.equal(finalDay.transactions.length, 1)
   assert.equal(finalDay.summary.totals.openingBalance, 20161700)
   assert.equal(finalDay.summary.totals.closingBalance, 20484700)
 
-  const emptyDayRes = await fetch(`${baseUrl}/api/public/finance/report?startDate=2026-04-04&endDate=2026-04-04`)
+  const emptyDayRes = await fetch(`${baseUrl}/api/public/finance/report?startDate=2026-04-04&endDate=2026-04-04`, {
+    headers: { Cookie: reportAccessCookie },
+  })
   const emptyDay = (await emptyDayRes.json()).data
   assert.equal(emptyDay.status, 'ready')
   assert.equal(emptyDay.transactions.length, 0)
@@ -190,7 +254,9 @@ test('GET /api/public/finance/report mengembalikan HTTP 200 status unavailable d
     ['2026-02-01', '2026-04-30'],
     ['2026-04-01', '2026-05-01'],
   ]) {
-    const res = await fetch(`${baseUrl}/api/public/finance/report?startDate=${startDate}&endDate=${endDate}`)
+    const res = await fetch(`${baseUrl}/api/public/finance/report?startDate=${startDate}&endDate=${endDate}`, {
+      headers: { Cookie: reportAccessCookie },
+    })
     assert.equal(res.status, 200)
     const body = await res.json()
     assert.equal(body.success, true)
@@ -210,7 +276,9 @@ test('GET /api/public/finance/report menolak query tanggal tidak valid dengan HT
     'startDate=2026-04-01&startDate=2026-04-02&endDate=2026-04-30',
     'startDate=2025-01-01&endDate=2026-04-30',
   ]) {
-    const res = await fetch(`${baseUrl}/api/public/finance/report?${qs}`)
+    const res = await fetch(`${baseUrl}/api/public/finance/report?${qs}`, {
+      headers: { Cookie: reportAccessCookie },
+    })
     assert.equal(res.status, 400)
     const body = await res.json()
     assert.equal(body.success, false)

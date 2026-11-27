@@ -139,13 +139,12 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
     await send('Emulation.setDeviceMetricsOverride', { width: 1366, height: 768, deviceScaleFactor: 1, mobile: false })
     await send('Emulation.setPageScaleFactor', { pageScaleFactor: 1 })
 
-    await t.test('akses langsung dan refresh memuat laporan tanpa gate atau Navbar/Footer publik', async () => {
+    await t.test('akses langsung dan refresh mewajibkan gate kode akses sebelum laporan tampil', async () => {
       await send('Page.navigate', { url: `${baseUrl}/laporan-keuangan` })
-      await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 50')
-      assert.equal(await evaluate('document.querySelectorAll("nav, .public-footer, #report-password").length'), 0)
+      await waitFor('!!document.querySelector("#report-password")')
+      assert.equal(await evaluate('document.querySelectorAll("nav, .public-footer, .financial-transactions-table").length'), 0)
       await send('Page.reload', { ignoreCache: true })
-      await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 50')
-      assert.equal(await evaluate('!!document.querySelector("#report-password")'), false)
+      await waitFor('!!document.querySelector("#report-password")')
     })
     await t.test('modal berada di halaman asal, mengunci scroll/fokus, Escape dan tutup mengembalikan fokus', async () => {
       await openGate()
@@ -377,11 +376,13 @@ test('interaksi gate dan laporan pada Chrome terpisah', {
       assert.equal(await evaluate('document.cookie'), '')
       assert.equal(await evaluate('location.href.includes("demo123") || /password|valid|access=true/.test(location.search)'), false)
     })
-    await t.test('refresh dari pratinjau tetap di laporan dan mereset tampilan tanpa sandi', async () => {
+    await t.test('refresh di mode mock mengembalikan ke gate sandi', async () => {
       await send('Page.reload', { ignoreCache: true })
-      await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 50')
-      assert.equal(await evaluate('!!document.querySelector("#report-password")'), false)
+      await waitFor('!!document.querySelector("#report-password")')
       assert.equal(await evaluate('location.pathname'), '/laporan-keuangan')
+      await fillPassword('demo123')
+      await submit()
+      await waitFor('document.querySelectorAll(".financial-transactions-table tbody tr").length === 50')
     })
     await t.test('mode API gagal dengan pesan integrasi dan dapat dicoba kembali', async () => {
       await openGate(apiUrl)
