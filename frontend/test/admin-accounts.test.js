@@ -99,4 +99,7 @@ test('menu Kelola Akun disembunyikan untuk role Admin di mode API dan tampil unt
   assert.deepEqual(settingsItems(getVisibleAdminNavigation(undefined, 'api')), ['/admin/kode-akses-laporan'])
   assert.deepEqual(settingsItems(getVisibleAdminNavigation('Super Admin', 'api')), ['/admin/kelola-akun', '/admin/kode-akses-laporan'])
   assert.deepEqual(settingsItems(getVisibleAdminNavigation(undefined, 'mock')), ['/admin/kelola-akun', '/admin/kode-akses-laporan'])
+
+  const financeItems = getVisibleAdminNavigation('Super Admin', 'api').find((group) => group.label === 'Keuangan')?.items.map((item) => item.to) ?? []
+  assert.deepEqual(financeItems.slice(0, 4), ['/admin/dashboard', '/admin/laporan', '/admin/kelola-dana', '/admin/kategori-dana'])
 })
