@@ -15,7 +15,7 @@ export function createTestRepositories() {
     publicReportEnabled: true,
     statistics: [
       { id: 'founded', label: 'Tahun Berdiri', value: '1980', icon: 'calendar' },
-      { id: 'area', label: 'Luas Tanah', value: '265 m²', amount: 265, unit: 'm²', profileLabel: 'Luas Tanah', description: 'Luas keseluruhan area masjid', icon: 'expand' },
+      { id: 'area', label: 'Luas Bangunan', value: '265 m²', amount: 265, unit: 'm²', profileLabel: 'Luas Bangunan', description: 'Luas keseluruhan area masjid', icon: 'expand' },
       { id: 'capacity', label: 'Kapasitas', value: '290 Jamaah', amount: 290, unit: 'Jamaah', profileLabel: 'Kapasitas Jamaah', description: 'Daya tampung jamaah utama', icon: 'users' },
     ],
     vision: 'Menjadikan Masjid Al-Hidayah sebagai pusat ibadah yang makmur dan transparan.',

@@ -119,12 +119,12 @@ export function createPublicContentRepository(db = getDefaultDatabasePool()) {
       const mapLabel = settings?.label_peta?.trim() || ''
       const mapsEmbedUrl = mapsUrl
         ? resolveGoogleMapsEmbedUrl({
-            url: mapsUrl,
-            latitude: settings?.latitude,
-            longitude: settings?.longitude,
-            address: addressValue,
-            label: mapLabel,
-          })
+          url: mapsUrl,
+          latitude: settings?.latitude,
+          longitude: settings?.longitude,
+          address: addressValue,
+          label: mapLabel,
+        })
         : null
 
       const statistics = []
@@ -139,7 +139,7 @@ export function createPublicContentRepository(db = getDefaultDatabasePool()) {
       if (profil?.luas_bangunan_m2) {
         statistics.push({
           id: 'area',
-          label: 'Luas Tanah',
+          label: 'Luas Bangunan',
           value: `${profil.luas_bangunan_m2} m²`,
           amount: Number(profil.luas_bangunan_m2),
           unit: 'm²',
