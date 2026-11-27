@@ -85,7 +85,7 @@ export function createPublicContentRepository(db = getDefaultDatabasePool()) {
              ORDER BY urutan ASC, id ASC`
           )
           const pengurusResult = await client.query(
-            `SELECT id, nama, jabatan, keterangan, foto_path, urutan
+            `SELECT id, nama, jabatan, keterangan, urutan
              FROM keu_masjid.m_pengurus
              WHERE aktif = true
              ORDER BY urutan ASC, id ASC`

@@ -445,7 +445,7 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
       const trxId = Number(rawId)
 
       const { rows } = await db.query(
-        `SELECT id, kategori_dana_id, kategori_transaksi_id, pengguna_id,
+        `SELECT id, kategori_dana_id, pengguna_id,
                 jenis, nama_kategori, uraian, nominal,
                 to_char(tanggal, 'YYYY-MM-DD') AS tanggal,
                 created_by_nama
