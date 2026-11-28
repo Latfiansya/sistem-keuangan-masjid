@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, it } from 'node:test'
 import { createApp } from '../src/app.js'
+import { createAdminFinanceRepository } from '../src/repositories/adminFinanceRepository.js'
 import { createTestRepositories } from './helpers/testRepositories.js'
 
 describe('Endpoint keuangan, kategori, dan transaksi pengurus (/api/admin)', () => {
@@ -166,6 +167,7 @@ describe('Endpoint keuangan, kategori, dan transaksi pengurus (/api/admin)', () 
     assert.equal(createIncomeRes.status, 201)
     const createdTrx = (await createIncomeRes.json()).data
     assert.equal(createdTrx.amount, 250000)
+    assert.equal(createdTrx.notes, 'Tunai melalui takmir')
     assert.equal(createdTrx.showDonorNamePublic, true)
 
     // Kategori baru kini memiliki transaksi aktif sehingga tidak boleh dihapus
@@ -204,7 +206,19 @@ describe('Endpoint keuangan, kategori, dan transaksi pengurus (/api/admin)', () 
     // Lihat detail transaksi
     const detailRes = await fetch(`${baseUrl}/transactions/${createdTrx.id}`)
     assert.equal(detailRes.status, 200)
-    assert.equal((await detailRes.json()).data.description, 'Infaq Buka Bersama')
+    const detailTrx = (await detailRes.json()).data
+    assert.equal(detailTrx.description, 'Infaq Buka Bersama')
+    assert.equal(detailTrx.notes, 'Tunai melalui takmir')
+
+    // Pastikan catatan keterangan juga tampil pada laporan versi admin
+    const adminReportRes = await fetch(
+      `${baseUrl}/finance/report?startDate=2026-10-18&endDate=2026-10-18`
+    )
+    assert.equal(adminReportRes.status, 200)
+    const adminReportTrx = (await adminReportRes.json()).data.transactions.find(
+      (item) => item.id === createdTrx.id
+    )
+    assert.equal(adminReportTrx?.notes, 'Tunai melalui takmir')
 
     // Edit transaksi
     const editRes = await fetch(`${baseUrl}/transactions/${createdTrx.id}`, {
@@ -224,6 +238,7 @@ describe('Endpoint keuangan, kategori, dan transaksi pengurus (/api/admin)', () 
     const editedTrx = (await editRes.json()).data
     assert.equal(editedTrx.amount, 300000)
     assert.equal(editedTrx.description, 'Infaq Buka Bersama (Koreksi)')
+    assert.equal(editedTrx.notes, 'Koreksi nominal')
 
     // Hapus transaksi
     const deleteTrxRes = await fetch(`${baseUrl}/transactions/${createdTrx.id}`, {
@@ -239,6 +254,161 @@ describe('Endpoint keuangan, kategori, dan transaksi pengurus (/api/admin)', () 
       method: 'DELETE',
     })
     assert.equal(cleanCatDelete.status, 200)
+  })
+
+  it('adminFinanceRepository menyertakan kolom keterangan (notes) pada query laporan, detail, INSERT, dan UPDATE', async () => {
+    const queries = []
+    const mockClient = {
+      async query(sql, params = []) {
+        queries.push({ sql, params })
+        if (sql.includes('FROM keu_masjid.m_pengguna')) {
+          return { rows: [{ id: 1, nama: 'Super Admin', email: 'superadmin@masjid.id' }] }
+        }
+        if (sql.includes('FROM keu_masjid.v_saldo_kategori_dana')) {
+          return {
+            rows: [
+              {
+                kategori_dana_id: 1,
+                nama_kategori: 'Kas Masjid',
+                aktif: true,
+                saldo_awal: 0,
+                total_masuk: 0,
+                total_keluar: 0,
+                transfer_masuk: 0,
+                transfer_keluar: 0,
+                saldo_terkini: 0,
+              },
+            ],
+          }
+        }
+        if (sql.includes('MIN(tanggal)')) {
+          return { rows: [{ min_date: '2026-10-01', max_date: '2026-10-20', total_count: 1 }] }
+        }
+        if (sql.includes('FROM keu_masjid.m_kategori_dana')) {
+          return { rows: [{ id: 1, nama_kategori: 'Kas Masjid' }] }
+        }
+        if (sql.startsWith('INSERT INTO keu_masjid.t_transaksi')) {
+          return {
+            rows: [
+              {
+                id: 77,
+                kategori_dana_id: 1,
+                jenis: 'MASUK',
+                uraian: 'Infaq Jumatan',
+                nominal: 50000,
+                keterangan: params[6],
+                tanggal: '2026-10-18',
+              },
+            ],
+          }
+        }
+        if (sql.startsWith('UPDATE keu_masjid.t_transaksi')) {
+          return {
+            rows: [
+              {
+                id: 77,
+                kategori_dana_id: 1,
+                jenis: 'MASUK',
+                uraian: 'Infaq Jumatan Revisi',
+                nominal: 75000,
+                keterangan: params[4],
+                tanggal: '2026-10-19',
+              },
+            ],
+          }
+        }
+        return { rows: [] }
+      },
+      release() {},
+    }
+    const mockDb = {
+      async connect() {
+        return mockClient
+      },
+      async query(sql, params = []) {
+        queries.push({ sql, params })
+        if (sql.includes('SUM(CASE WHEN jenis')) {
+          return { rows: [{ count: 1, total_income: 50000, total_expense: 0 }] }
+        }
+        if (sql.includes('WHERE id = $1')) {
+          return {
+            rows: [
+              {
+                id: 77,
+                kategori_dana_id: 1,
+                pengguna_id: 1,
+                jenis: 'MASUK',
+                nama_kategori: 'Kas Masjid',
+                uraian: 'Infaq Jumatan',
+                nominal: 50000,
+                keterangan: 'Catatan detail transaksi',
+                tanggal: '2026-10-18',
+                created_by_nama: 'Super Admin',
+              },
+            ],
+          }
+        }
+        if (sql.includes('FROM keu_masjid.t_transaksi') && sql.includes('LIMIT')) {
+          return {
+            rows: [
+              {
+                id: 77,
+                tanggal: '2026-10-18',
+                kategori_dana_id: 1,
+                jenis: 'MASUK',
+                uraian: 'Infaq Jumatan',
+                nominal: 50000,
+                keterangan: 'Catatan laporan admin',
+                created_by_nama: 'Super Admin',
+              },
+            ],
+          }
+        }
+        return { rows: [] }
+      },
+    }
+
+    const repo = createAdminFinanceRepository(mockDb)
+    const inserted = await repo.insertTransaction(
+      {
+        categoryId: 'mosque',
+        type: 'income',
+        description: 'Infaq Jumatan',
+        amount: 50000,
+        notes: 'Catatan awal',
+        date: '2026-10-18',
+      },
+      1
+    )
+    assert.equal(inserted.notes, 'Catatan awal')
+
+    const updated = await repo.updateTransactionById(
+      77,
+      {
+        categoryId: 'mosque',
+        description: 'Infaq Jumatan Revisi',
+        amount: 75000,
+        notes: 'Catatan edit',
+        date: '2026-10-19',
+      },
+      1
+    )
+    assert.equal(updated.notes, 'Catatan edit')
+
+    const detail = await repo.findTransactionById(77)
+    assert.equal(detail.notes, 'Catatan detail transaksi')
+
+    const report = await repo.queryFinanceReport({
+      startDate: '2026-10-01',
+      endDate: '2026-10-20',
+    })
+    assert.equal(report.transactions[0].notes, 'Catatan laporan admin')
+
+    const sqlTexts = queries.map((item) => item.sql)
+    assert.ok(sqlTexts.some((sql) => sql.includes('INSERT INTO keu_masjid.t_transaksi') && sql.includes('keterangan')))
+    assert.ok(sqlTexts.some((sql) => sql.includes('UPDATE keu_masjid.t_transaksi') && sql.includes('keterangan = $5')))
+    assert.ok(sqlTexts.some((sql) => sql.includes('WHERE id = $1') && sql.includes('keterangan')))
+    assert.ok(sqlTexts.some((sql) => sql.includes('LIMIT') && sql.includes('keterangan')))
   })
 })
 

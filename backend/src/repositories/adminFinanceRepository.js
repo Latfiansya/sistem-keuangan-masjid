@@ -42,6 +42,22 @@ function mapCategoryRow(row) {
   }
 }
 
+function mapTransactionRow(row, { includeCreatedBy = false } = {}) {
+  const mapped = {
+    id: String(row.id),
+    date: row.tanggal,
+    categoryId: mapCategoryApiId(row.kategori_dana_id),
+    type: row.jenis === 'MASUK' ? 'income' : 'expense',
+    description: row.uraian,
+    amount: toRupiahInteger(row.nominal, 'Nominal transaksi'),
+    notes: row.keterangan || '',
+  }
+  if (includeCreatedBy) {
+    mapped.createdByName = row.created_by_nama || ''
+  }
+  return mapped
+}
+
 // Data access layer keuangan pengurus menggunakan PostgreSQL (keu_masjid.*).
 export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
   return {
@@ -367,7 +383,7 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
       const trxParams = [...params, limitValue, offsetValue]
       const trxRes = await db.query(
         `SELECT id, to_char(tanggal, 'YYYY-MM-DD') AS tanggal, kategori_dana_id,
-                jenis, uraian, nominal, created_by_nama
+                jenis, uraian, nominal, keterangan, created_by_nama
          FROM keu_masjid.t_transaksi
          WHERE ${whereSql}
          ORDER BY tanggal ASC, id ASC
@@ -421,15 +437,7 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
         ),
       }))
 
-      const transactions = trxRes.rows.map((row) => ({
-        id: String(row.id),
-        date: row.tanggal,
-        categoryId: mapCategoryApiId(row.kategori_dana_id),
-        type: row.jenis === 'MASUK' ? 'income' : 'expense',
-        description: row.uraian,
-        amount: toRupiahInteger(row.nominal, 'Nominal transaksi'),
-        createdByName: row.created_by_nama || '',
-      }))
+      const transactions = trxRes.rows.map((row) => mapTransactionRow(row, { includeCreatedBy: true }))
 
       return {
         ...metadata,
@@ -446,7 +454,7 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
 
       const { rows } = await db.query(
         `SELECT id, kategori_dana_id, pengguna_id,
-                jenis, nama_kategori, uraian, nominal,
+                jenis, nama_kategori, uraian, nominal, keterangan,
                 to_char(tanggal, 'YYYY-MM-DD') AS tanggal,
                 created_by_nama
          FROM keu_masjid.t_transaksi
@@ -458,15 +466,7 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
       const row = rows[0]
       if (!row) return null
 
-      return {
-        id: String(row.id),
-        date: row.tanggal,
-        categoryId: mapCategoryApiId(row.kategori_dana_id),
-        type: row.jenis === 'MASUK' ? 'income' : 'expense',
-        description: row.uraian,
-        amount: toRupiahInteger(row.nominal, 'Nominal transaksi'),
-        createdByName: row.created_by_nama || '',
-      }
+      return mapTransactionRow(row, { includeCreatedBy: true })
     },
 
     async insertTransaction(payload, auditUserId = null) {
@@ -491,10 +491,10 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
           const dbJenis = payload.type === 'income' ? 'MASUK' : 'KELUAR'
           const insertRes = await client.query(
             `INSERT INTO keu_masjid.t_transaksi (
-               kategori_dana_id, pengguna_id, jenis, nama_kategori, uraian, nominal, tanggal, created_by
+               kategori_dana_id, pengguna_id, jenis, nama_kategori, uraian, nominal, keterangan, tanggal, created_by
              )
-             VALUES ($1, $2, $3, $4, $5, $6, $7::date, $8)
-             RETURNING id, kategori_dana_id, jenis, uraian, nominal, to_char(tanggal, 'YYYY-MM-DD') AS tanggal`,
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8::date, $9)
+             RETURNING id, kategori_dana_id, jenis, uraian, nominal, keterangan, to_char(tanggal, 'YYYY-MM-DD') AS tanggal`,
             [
               dbCategoryId,
               userId,
@@ -502,20 +502,13 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
               catRes.rows[0].nama_kategori,
               payload.description,
               payload.amount,
+              payload.notes || null,
               payload.date,
               userId,
             ]
           )
 
-          const row = insertRes.rows[0]
-          return {
-            id: String(row.id),
-            date: row.tanggal,
-            categoryId: mapCategoryApiId(row.kategori_dana_id),
-            type: row.jenis === 'MASUK' ? 'income' : 'expense',
-            description: row.uraian,
-            amount: toRupiahInteger(row.nominal, 'Nominal transaksi'),
-          }
+          return mapTransactionRow(insertRes.rows[0])
         })
       } catch (error) {
         throw mapPgErrorToHttpError(error)
@@ -549,16 +542,18 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
                  nama_kategori = $2,
                  uraian = $3,
                  nominal = $4,
-                 tanggal = $5::date,
+                 keterangan = $5,
+                 tanggal = $6::date,
                  updated_at = CURRENT_TIMESTAMP,
-                 updated_by = $6
-             WHERE id = $7
-             RETURNING id, kategori_dana_id, jenis, uraian, nominal, to_char(tanggal, 'YYYY-MM-DD') AS tanggal`,
+                 updated_by = $7
+             WHERE id = $8
+             RETURNING id, kategori_dana_id, jenis, uraian, nominal, keterangan, to_char(tanggal, 'YYYY-MM-DD') AS tanggal`,
             [
               dbCategoryId,
               catRes.rows[0].nama_kategori,
               changes.description,
               changes.amount,
+              changes.notes || null,
               changes.date,
               userId,
               trxId,
@@ -568,14 +563,7 @@ export function createAdminFinanceRepository(db = getDefaultDatabasePool()) {
           const row = updateRes.rows[0]
           if (!row) return null
 
-          return {
-            id: String(row.id),
-            date: row.tanggal,
-            categoryId: mapCategoryApiId(row.kategori_dana_id),
-            type: row.jenis === 'MASUK' ? 'income' : 'expense',
-            description: row.uraian,
-            amount: toRupiahInteger(row.nominal, 'Nominal transaksi'),
-          }
+          return mapTransactionRow(row)
         })
       } catch (error) {
         throw mapPgErrorToHttpError(error)

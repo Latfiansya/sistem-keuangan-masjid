@@ -135,11 +135,11 @@ export function createTestRepositories() {
 
   let nextTrxSeq = 1000
   let adminTransactions = [
-    { id: '1', date: '2026-10-15', categoryId: 'mosque', type: 'income', description: 'Infaq Pengajian Malam Kamis', amount: 117000 },
-    { id: '2', date: '2026-10-15', categoryId: 'mosque', type: 'expense', description: 'Snack Pengajian Malam Kamis', amount: 110000 },
-    { id: '3', date: '2026-10-15', categoryId: 'mosque', type: 'expense', description: 'Donasi Paud', amount: 100000 },
-    { id: '4', date: '2026-10-14', categoryId: 'mosque', type: 'expense', description: 'Pembelian Pewangi Karpet & Pembersih Lantai', amount: 118500 },
-    { id: '5', date: '2026-10-09', categoryId: 'maintenance', type: 'income', description: 'Kotak Pembangunan & Pemeliharaan', amount: 403000 },
+    { id: '1', date: '2026-10-15', categoryId: 'mosque', type: 'income', description: 'Infaq Pengajian Malam Kamis', amount: 117000, notes: '' },
+    { id: '2', date: '2026-10-15', categoryId: 'mosque', type: 'expense', description: 'Snack Pengajian Malam Kamis', amount: 110000, notes: '' },
+    { id: '3', date: '2026-10-15', categoryId: 'mosque', type: 'expense', description: 'Donasi Paud', amount: 100000, notes: '' },
+    { id: '4', date: '2026-10-14', categoryId: 'mosque', type: 'expense', description: 'Pembelian Pewangi Karpet & Pembersih Lantai', amount: 118500, notes: '' },
+    { id: '5', date: '2026-10-09', categoryId: 'maintenance', type: 'income', description: 'Kotak Pembangunan & Pemeliharaan', amount: 403000, notes: '' },
   ]
 
   let adminProfile = {
